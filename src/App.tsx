@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
+import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -27,6 +28,14 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <Index />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Profile />
           </PrivateRoute>
         }
       />

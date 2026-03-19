@@ -206,6 +206,7 @@ export type Database = {
           mapeamento_dor_url: string | null
           mapeamento_sintomas_url: string | null
           my_score_url: string | null
+          relatorio_pdf_url: string | null
         }
         Insert: {
           anamnese_url?: string | null
@@ -215,6 +216,7 @@ export type Database = {
           mapeamento_dor_url?: string | null
           mapeamento_sintomas_url?: string | null
           my_score_url?: string | null
+          relatorio_pdf_url?: string | null
         }
         Update: {
           anamnese_url?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           mapeamento_dor_url?: string | null
           mapeamento_sintomas_url?: string | null
           my_score_url?: string | null
+          relatorio_pdf_url?: string | null
         }
         Relationships: [
           {
@@ -492,6 +495,7 @@ export const Constants = {
 //   mapeamento_dor_url: text (nullable)
 //   bia_url: text (nullable)
 //   my_score_url: text (nullable)
+//   relatorio_pdf_url: text (nullable)
 // Table: medicamentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)

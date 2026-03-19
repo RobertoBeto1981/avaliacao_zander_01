@@ -19,6 +19,7 @@ export default function Register() {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [role, setRole] = useState('')
+  const [periodo, setPeriodo] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,7 +31,13 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error } = await signUp(email, password, { nome, telefone, role })
+
+    const metaData: any = { nome, telefone, role }
+    if (role === 'professor') {
+      metaData.periodo = periodo
+    }
+
+    const { error } = await signUp(email, password, metaData)
     setIsSubmitting(false)
     if (error) {
       toast({ variant: 'destructive', title: 'Erro', description: error.message })
@@ -76,11 +83,29 @@ export default function Register() {
                 <SelectContent>
                   <SelectItem value="professor">Professor</SelectItem>
                   <SelectItem value="avaliador">Avaliador</SelectItem>
+                  <SelectItem value="coordenador">Coordenador</SelectItem>
                   <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
                   <SelectItem value="nutricionista">Nutricionista</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {role === 'professor' && (
+              <div className="space-y-2 animate-fade-in-up">
+                <Label htmlFor="periodo">Em qual período você trabalha atualmente?</Label>
+                <Select value={periodo} onValueChange={setPeriodo} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o período..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manhã">Manhã</SelectItem>
+                    <SelectItem value="Tarde">Tarde</SelectItem>
+                    <SelectItem value="Noite">Noite</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input

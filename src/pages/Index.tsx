@@ -6,6 +6,7 @@ import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -78,9 +79,10 @@ export default function Index() {
               <TableRow>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Avaliador</TableHead>
+                <TableHead>Professor Resp.</TableHead>
                 <TableHead>Data da Avaliação</TableHead>
                 <TableHead>Reavaliação</TableHead>
-                <TableHead>Objetivo</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -88,13 +90,28 @@ export default function Index() {
               {filtered.map((ev) => (
                 <TableRow key={ev.id} className="hover:bg-muted/20">
                   <TableCell className="font-medium">{ev.nome_cliente}</TableCell>
-                  <TableCell>{ev.users?.nome || '-'}</TableCell>
+                  <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
+                  <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>{format(new Date(ev.data_avaliacao), 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="text-accent font-semibold">
                     {format(new Date(ev.data_reavaliacao), 'dd/MM/yyyy')}
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px]">
-                    {ev.objectives?.join(', ') || '-'}
+                  <TableCell>
+                    <Badge
+                      variant={
+                        ev.status === 'concluido'
+                          ? 'default'
+                          : ev.status === 'em_progresso'
+                            ? 'secondary'
+                            : 'outline'
+                      }
+                    >
+                      {ev.status === 'em_progresso'
+                        ? 'Em Progresso'
+                        : ev.status === 'concluido'
+                          ? 'Concluído'
+                          : 'Pendente'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" asChild title="Visualizar Avaliação">

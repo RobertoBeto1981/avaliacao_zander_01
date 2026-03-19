@@ -1,11 +1,23 @@
 import { useEffect, useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
-import { FileText, HeartPulse, Activity, Scale, Target, CheckCircle, FileCheck } from 'lucide-react'
+import {
+  FileText,
+  HeartPulse,
+  Activity,
+  Scale,
+  Target,
+  CheckCircle,
+  FileCheck,
+  Eye,
+  AlertCircle,
+} from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
@@ -47,13 +59,11 @@ export default function ProfessorDashboard() {
     loadData()
   }, [])
 
-  const handleComplete = async (id: string) => {
+  const handleStatusChange = async (id: string, status: string) => {
     try {
-      await updateEvaluationStatus(id, 'concluido')
-      setEvaluations((prev) =>
-        prev.map((ev) => (ev.id === id ? { ...ev, status: 'concluido' } : ev)),
-      )
-      toast({ title: 'Sucesso', description: 'Status atualizado para Concluído.' })
+      await updateEvaluationStatus(id, status)
+      setEvaluations((prev) => prev.map((ev) => (ev.id === id ? { ...ev, status } : ev)))
+      toast({ title: 'Sucesso', description: 'Status atualizado com sucesso.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     }
@@ -72,11 +82,35 @@ export default function ProfessorDashboard() {
     })
   }, [evaluations, statusFilter, periodoFilter])
 
+  const lateEvals = useMemo(() => {
+    const today = startOfDay(new Date())
+    return evaluations.filter((ev) => {
+      if (ev.status === 'concluido') return false
+      const deadline = calculateDeadline(ev.data_avaliacao, 3)
+      return isAfter(today, deadline)
+    })
+  }, [evaluations])
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Painel do Professor</h1>
+
+      {lateEvals.length > 0 && (
+        <Alert
+          variant="destructive"
+          className="mb-6 animate-pulse border-destructive/50 bg-destructive/10"
+        >
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-bold">Atenção: Avaliações Atrasadas!</AlertTitle>
+          <AlertDescription className="text-base">
+            Você possui <strong>{lateEvals.length}</strong>{' '}
+            {lateEvals.length === 1 ? 'avaliação' : 'avaliações'} com prazo de montagem de treino
+            expirado (mais de 3 dias úteis). Por favor, priorize-as.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex gap-4 mb-6">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -188,26 +222,35 @@ export default function ProfessorDashboard() {
                   </TableCell>
                   <TableCell>{ev.periodo_treino || '-'}</TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        ev.status === 'concluido'
-                          ? 'default'
-                          : ev.status === 'em_progresso'
-                            ? 'secondary'
-                            : 'outline'
-                      }
-                    >
-                      {ev.status === 'em_progresso'
-                        ? 'Em Progresso'
-                        : ev.status === 'concluido'
-                          ? 'Concluído'
-                          : 'Pendente'}
-                    </Badge>
+                    {ev.status === 'concluido' ? (
+                      <Badge variant="default">Concluído</Badge>
+                    ) : (
+                      <Select
+                        value={ev.status}
+                        onValueChange={(val) => handleStatusChange(ev.id, val)}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            'w-[140px] h-8 text-xs font-semibold',
+                            ev.status === 'pendente'
+                              ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950/20'
+                              : 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20',
+                          )}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 font-medium">
                       <span
-                        className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-red-500' : 'bg-green-500'}`}
+                        className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}
                       />
                       {format(deadline, 'dd/MM/yyyy')}
                     </div>
@@ -244,16 +287,11 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    {ev.status !== 'concluido' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleComplete(ev.id)}
-                        className="hover:bg-green-500 hover:text-white transition-colors"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1" /> Concluir
-                      </Button>
-                    )}
+                    <Button variant="ghost" size="icon" asChild title="Visualizar Avaliação">
+                      <Link to={`/evaluation/${ev.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               )

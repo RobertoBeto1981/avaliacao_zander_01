@@ -75,7 +75,11 @@ export default function EvaluationDetails() {
                   {data.periodo_treino || '-'}
                 </div>
                 <div>
-                  <span className="font-medium">Avaliador:</span> {data.users?.nome || '-'}
+                  <span className="font-medium">Avaliador:</span> {data.avaliador?.nome || '-'}
+                </div>
+                <div>
+                  <span className="font-medium">Professor Responsável:</span>{' '}
+                  {data.professor?.nome || '-'}
                 </div>
                 <div className="col-span-2">
                   <span className="font-medium">Objetivos:</span>{' '}

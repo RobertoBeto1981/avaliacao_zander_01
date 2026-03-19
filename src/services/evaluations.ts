@@ -23,7 +23,8 @@ export const getEvaluations = async () => {
     .from('avaliacoes')
     .select(`
       *,
-      users:avaliador_id (nome),
+      avaliador:users!avaliacoes_avaliador_id_fkey (nome),
+      professor:users!avaliacoes_professor_id_fkey (nome),
       links_avaliacao (*)
     `)
     .order('created_at', { ascending: false })
@@ -36,7 +37,8 @@ export const getEvaluationById = async (id: string) => {
     .from('avaliacoes')
     .select(`
       *,
-      users:avaliador_id (nome),
+      avaliador:users!avaliacoes_avaliador_id_fkey (nome),
+      professor:users!avaliacoes_professor_id_fkey (nome),
       links_avaliacao (*)
     `)
     .eq('id', id)

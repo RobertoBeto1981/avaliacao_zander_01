@@ -3,8 +3,17 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Dumbbell, LogOut, LayoutDashboard, AlertCircle } from 'lucide-react'
+import { Dumbbell, LogOut, LayoutDashboard, AlertCircle, UserCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
@@ -18,11 +27,9 @@ export default function Layout() {
 
     if (user) {
       setProfileLoading(true)
-      // Use maybeSingle() instead of single() to avoid HTTP 406 (PGRST116)
-      // when the user profile hasn't finished synchronizing yet.
       supabase
         .from('users')
-        .select('role')
+        .select('role, nome, foto_url')
         .eq('id', user.id)
         .maybeSingle()
         .then(({ data, error }) => {
@@ -31,7 +38,7 @@ export default function Layout() {
               setProfile(data)
             } else {
               if (error) console.error('Failed to fetch user profile:', error)
-              setProfile(null) // Safe fallback state
+              setProfile(null)
             }
             setProfileLoading(false)
           }
@@ -79,21 +86,55 @@ export default function Layout() {
             </div>
 
             {user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </Button>
+              <div className="flex items-center gap-4">
+                {profile ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage
+                            src={profile.foto_url}
+                            alt={profile.nome}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>
+                            {profile.nome?.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{profile.nome}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile">
+                          <UserCircle className="mr-2 h-4 w-4" />
+                          <span>Meu Perfil</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sair</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </header>
       )}
 
-      {/* Fallback UI if the user exists but the profile record is completely missing */}
       {!isAuthPage && user && !profileLoading && !profile && (
         <div className="container mt-6 no-print animate-fade-in-down">
           <Alert
