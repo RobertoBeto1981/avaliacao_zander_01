@@ -2,7 +2,7 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { useEffect } from 'react'
 import { addDays } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { FInput, FSelect } from '@/components/shared/FormControls'
+import { FInput, FSelect, FPhoneInput } from '@/components/shared/FormControls'
 import { FDatePicker, FMultiSelect } from '@/components/shared/FormAdvanced'
 import { PREFERRED_TIMES, OBJECTIVES } from '@/constants/options'
 
@@ -24,10 +24,10 @@ export function IdentificationFields() {
       <CardContent className="space-y-6 animate-fade-in">
         <div className="grid md:grid-cols-2 gap-6">
           <FInput name="nome_cliente" label="Nome do Cliente" placeholder="Ex: João da Silva" />
-          <FInput
+          <FPhoneInput
             name="telefone_cliente"
             label="Telefone do Cliente"
-            placeholder="Ex: (44) 99999-9999"
+            placeholder="+55 (44) 99999-9999"
           />
         </div>
         <div className="grid md:grid-cols-3 gap-6">

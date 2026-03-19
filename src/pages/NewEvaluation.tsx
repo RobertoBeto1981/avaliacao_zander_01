@@ -65,7 +65,6 @@ export default function NewEvaluation() {
       }
 
       const links = {
-        anamnese_url: client_links?.anamnese,
         mapeamento_sintomas_url: client_links?.symptoms,
         mapeamento_dor_url: client_links?.pain,
         bia_url: client_links?.bia,

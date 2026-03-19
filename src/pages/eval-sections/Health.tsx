@@ -1,8 +1,21 @@
 import { useFormContext, useWatch } from 'react-hook-form'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FInput, FSelect, FTextarea, FSwitch } from '@/components/shared/FormControls'
 import { YES_NO, HEALTH_INSURANCES } from '@/constants/options'
+import { searchMedicamentos } from '@/services/medicamentos'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Check, ChevronsUpDown } from 'lucide-react'
 
 export function HealthFields() {
   const { control, setValue, getValues } = useFormContext()
@@ -14,12 +27,26 @@ export function HealthFields() {
   const painChoice = useWatch({ control, name: 'pains.choice' })
   const insuranceChoice = useWatch({ control, name: 'health_insurance.choice' })
 
+  const [medSearchOpen, setMedSearchOpen] = useState(false)
+  const [medQuery, setMedQuery] = useState('')
+  const [medResults, setMedResults] = useState<
+    { id: string; nome: string; acao_principal: string }[]
+  >([])
+
   useEffect(() => {
     if (painChoice) {
       if (!getValues('pains.observation'))
         setValue('pains.observation', 'Observar Mapeamento de Dor')
     }
   }, [painChoice, setValue, getValues])
+
+  useEffect(() => {
+    if (medQuery.length > 2) {
+      searchMedicamentos(medQuery).then(setMedResults)
+    } else {
+      setMedResults([])
+    }
+  }, [medQuery])
 
   return (
     <Card className="border-border/50">
@@ -31,8 +58,61 @@ export function HealthFields() {
           <div className="space-y-4">
             <FSwitch name="medications.choice" label="Remédio Contínuo?" />
             {medChoice && (
-              <div className="animate-slide-up">
-                <FTextarea name="medications.list" label="Quais?" />
+              <div className="animate-slide-up space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <Label>Buscar e Adicionar Medicamento</Label>
+                  <Popover open={medSearchOpen} onOpenChange={setMedSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={medSearchOpen}
+                        className="justify-between text-muted-foreground font-normal"
+                      >
+                        Selecione um medicamento...
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] md:w-[400px] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Buscar medicamento..."
+                          value={medQuery}
+                          onValueChange={setMedQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {medQuery.length > 2
+                              ? 'Nenhum medicamento encontrado.'
+                              : 'Digite pelo menos 3 letras...'}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {medResults.map((med) => (
+                              <CommandItem
+                                key={med.id}
+                                value={med.nome}
+                                onSelect={() => {
+                                  const currentList = getValues('medications.list') || ''
+                                  const addition = `${med.nome} - ${med.acao_principal}`
+                                  setValue(
+                                    'medications.list',
+                                    currentList ? `${currentList}\n${addition}` : addition,
+                                  )
+                                  setMedSearchOpen(false)
+                                  setMedQuery('')
+                                }}
+                              >
+                                <Check className="mr-2 h-4 w-4 opacity-0" />
+                                {med.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <FTextarea name="medications.list" label="Lista de Medicamentos" />
               </div>
             )}
           </div>
@@ -95,7 +175,11 @@ export function HealthFields() {
               </div>
             )}
           </div>
-          <FInput name="emergency_contact" label="Contato de Emergência" />
+          <FInput
+            name="emergency_contact"
+            label="Contato de Emergência"
+            placeholder="Nome, telefone e grau de parentesco"
+          />
         </div>
       </CardContent>
     </Card>

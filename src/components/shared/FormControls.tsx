@@ -37,6 +37,48 @@ export const FInput = ({ name, label, placeholder, type = 'text', ...props }: an
   )
 }
 
+export const FPhoneInput = ({ name, label, placeholder, ...props }: any) => {
+  const { control } = useFormContext()
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          let val = e.target.value.replace(/\D/g, '')
+          if (val.startsWith('55')) val = val.substring(2)
+
+          let formatted = '+55 '
+          if (val.length > 0) formatted += '(' + val.substring(0, 2)
+          if (val.length >= 3) formatted += ') ' + val.substring(2, 7)
+          if (val.length >= 8) formatted += '-' + val.substring(7, 11)
+
+          if (val.length === 0) formatted = ''
+
+          field.onChange(formatted)
+        }
+
+        return (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            <FormControl>
+              <Input
+                placeholder={placeholder || '+55 (00) 00000-0000'}
+                {...field}
+                value={field.value || ''}
+                onChange={handleChange}
+                maxLength={19}
+                {...props}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
+  )
+}
+
 export const FTextarea = ({ name, label, placeholder, ...props }: any) => {
   const { control } = useFormContext()
   return (

@@ -66,7 +66,6 @@ export const evaluationSchema = z.object({
 
   client_links: z
     .object({
-      anamnese: z.string().optional(),
       symptoms: z.string().optional(),
       pain: z.string().optional(),
       bia: z.string().optional(),
