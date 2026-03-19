@@ -6,7 +6,10 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import Layout from './components/Layout'
 import Index from './pages/Index'
 import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
+import EvaluationDetails from './pages/EvaluationDetails'
 import NotFound from './pages/NotFound'
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -34,7 +37,17 @@ const AppRoutes = () => (
           </PrivateRoute>
         }
       />
+      <Route
+        path="/evaluation/:id"
+        element={
+          <PrivateRoute>
+            <EvaluationDetails />
+          </PrivateRoute>
+        }
+      />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>

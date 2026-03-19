@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '@/hooks/use-auth'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,27 +8,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dumbbell } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-export default function Login() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { signIn, session } = useAuth()
-  const navigate = useNavigate()
   const { toast } = useToast()
-
-  useEffect(() => {
-    if (session) navigate('/')
-  }, [session, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error } = await signIn(email, password)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
     setIsSubmitting(false)
     if (error) {
-      toast({ variant: 'destructive', title: 'Erro de Login', description: error.message })
+      toast({ variant: 'destructive', title: 'Erro', description: error.message })
     } else {
-      navigate('/')
+      toast({
+        title: 'E-mail enviado',
+        description: 'Verifique sua caixa de entrada para redefinir a senha.',
+      })
     }
   }
 
@@ -40,8 +38,8 @@ export default function Login() {
             <Dumbbell className="text-primary w-12 h-12" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold tracking-tight">ZANDER Academia</CardTitle>
-            <CardDescription>Acesso ao Sistema de Avaliação</CardDescription>
+            <CardTitle className="text-2xl font-bold tracking-tight">Recuperar Senha</CardTitle>
+            <CardDescription>Enviaremos um link para seu e-mail</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -56,25 +54,13 @@ export default function Login() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
             <Button type="submit" className="w-full font-bold" disabled={isSubmitting}>
-              {isSubmitting ? 'Entrando...' : 'Login'}
+              {isSubmitting ? 'Enviando...' : 'Enviar Link'}
             </Button>
-            <div className="flex flex-col space-y-2 mt-4 text-center text-sm">
-              <Link to="/forgot-password" className="text-primary hover:underline">
-                Esqueci minha senha
-              </Link>
-              <Link to="/register" className="text-muted-foreground hover:underline">
-                Primeiro acesso, clique aqui
+            <div className="text-center mt-4 text-sm text-muted-foreground">
+              Lembrou a senha?{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                Voltar ao login
               </Link>
             </div>
           </form>

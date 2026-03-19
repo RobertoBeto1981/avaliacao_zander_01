@@ -6,12 +6,12 @@ import { Dumbbell, LogOut } from 'lucide-react'
 export default function Layout() {
   const { user, signOut } = useAuth()
   const location = useLocation()
-  const isAuthPage = location.pathname === '/login'
+  const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
 
   return (
     <main className="flex flex-col min-h-screen bg-background">
       {!isAuthPage && (
-        <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 no-print">
           <div className="container flex h-16 items-center justify-between">
             <div className="flex items-center gap-2 text-primary select-none">
               <Dumbbell size={28} strokeWidth={2.5} />

@@ -21,7 +21,7 @@ export default function NewEvaluation() {
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
-      evaluation_date: new Date(),
+      data_avaliacao: new Date(),
       objectives: [],
       available_days: [],
       enjoys_training: [],
@@ -43,15 +43,38 @@ export default function NewEvaluation() {
 
   const onSubmit = async (data: EvaluationFormValues) => {
     try {
-      const payload = {
-        ...data,
-        evaluation_date: format(data.evaluation_date, 'yyyy-MM-dd'),
-        reevaluation_date: format(data.reevaluation_date, 'yyyy-MM-dd'),
-        target_date: data.target_date ? format(data.target_date, 'yyyy-MM-dd') : null,
+      const {
+        nome_cliente,
+        telefone_cliente,
+        data_avaliacao,
+        data_reavaliacao,
+        periodo_treino,
+        objectives,
+        client_links,
+        ...rest
+      } = data
+
+      const avaliacao = {
+        nome_cliente,
+        telefone_cliente,
+        data_avaliacao: format(data_avaliacao, 'yyyy-MM-dd'),
+        data_reavaliacao: format(data_reavaliacao, 'yyyy-MM-dd'),
+        periodo_treino,
+        objectives,
+        respostas: rest,
       }
-      await createEvaluation(payload)
+
+      const links = {
+        anamnese_url: client_links?.anamnese,
+        mapeamento_sintomas_url: client_links?.symptoms,
+        mapeamento_dor_url: client_links?.pain,
+        bia_url: client_links?.bia,
+        my_score_url: client_links?.myscore,
+      }
+
+      const res = await createEvaluation(avaliacao, links)
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
-      navigate('/')
+      navigate(`/evaluation/${res.id}`)
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message })
     }

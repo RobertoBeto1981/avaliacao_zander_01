@@ -1,13 +1,13 @@
 import { z } from 'zod'
-import { EVALUATORS } from '@/constants/options'
 
 export const evaluationSchema = z.object({
-  client_name: z.string().min(2, 'Obrigatório'),
-  evaluator_name: z.enum(EVALUATORS, { required_error: 'Obrigatório' }),
-  evaluation_date: z.date({ required_error: 'Obrigatório' }),
-  reevaluation_date: z.date(),
-  preferred_time: z.string().optional(),
+  nome_cliente: z.string().min(2, 'Obrigatório'),
+  telefone_cliente: z.string().min(8, 'Obrigatório'),
+  data_avaliacao: z.date({ required_error: 'Obrigatório' }),
+  data_reavaliacao: z.date(),
+  periodo_treino: z.string().optional(),
   objectives: z.array(z.string()).default([]),
+
   main_objective: z.string().optional(),
   target_date: z.date().optional().nullable(),
   training_frequency: z.string().optional(),
@@ -63,8 +63,10 @@ export const evaluationSchema = z.object({
     .optional(),
   emergency_contact: z.string().optional(),
   final_observations: z.string().optional(),
+
   client_links: z
     .object({
+      anamnese: z.string().optional(),
       symptoms: z.string().optional(),
       pain: z.string().optional(),
       bia: z.string().optional(),

@@ -11,6 +11,7 @@ export function LinksFields() {
       </CardHeader>
       <CardContent className="space-y-6 animate-fade-in">
         <div className="grid md:grid-cols-2 gap-6">
+          <FInput name="client_links.anamnese" label="Link: Anamnese" placeholder="https://" />
           <FInput
             name="client_links.symptoms"
             label="Link: Mapeamento de Sintomas"

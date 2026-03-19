@@ -27,7 +27,7 @@ export function CurrentLifestyleFields() {
         <div className="grid md:grid-cols-2 gap-6">
           <FSelect name="meals_per_day" label="Refeições" options={MEALS_PER_DAY} />
           <FSelect name="sleep_hours" label="Sono" options={SLEEP_HOURS} />
-          <FSelect name="alcohol" label="Consumo de Bebidas Alcoólicas" options={ALCOHOL_FREQ} />
+          <FSelect name="alcohol" label="Consumo de bebidas alcoólicas" options={ALCOHOL_FREQ} />
         </div>
 
         <div className="pt-4 border-t border-border grid md:grid-cols-2 gap-6">
@@ -44,7 +44,7 @@ export function CurrentLifestyleFields() {
             )}
           </div>
           <div className="space-y-4">
-            <FSwitch name="supplements.choice" label="Usa Suplementos Alimentares?" />
+            <FSwitch name="supplements.choice" label="Usa suplementos alimentares?" />
             {supChoice && (
               <div className="animate-slide-up">
                 <FTextarea name="supplements.list" label="Quais?" />

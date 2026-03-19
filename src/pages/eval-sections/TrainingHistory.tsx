@@ -8,7 +8,7 @@ import { FREQUENCIES, ACTIVITY_LEVELS, PRACTICE_TIMES } from '@/constants/option
 
 export function TrainingHistoryFields() {
   const { control, setValue, getValues } = useFormContext()
-  const evalDate = useWatch({ control, name: 'evaluation_date' })
+  const evalDate = useWatch({ control, name: 'data_avaliacao' })
   const selectedObjectives = useWatch({ control, name: 'objectives' }) || []
 
   const baseDate = evalDate ? new Date(evalDate) : new Date()
@@ -45,12 +45,12 @@ export function TrainingHistoryFields() {
           />
           <FSelect
             name="training_frequency"
-            label="Frequência Semanal Atual"
+            label="Frequência semanal atual"
             options={FREQUENCIES}
           />
           <FSelect
             name="activity_level"
-            label="Nível de Condicionamento Atual"
+            label="Nível de condicionamento atual"
             options={ACTIVITY_LEVELS}
           />
           <FSelect name="practice_time" label="Tempo de Prática" options={PRACTICE_TIMES} />

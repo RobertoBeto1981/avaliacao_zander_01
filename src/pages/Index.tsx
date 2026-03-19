@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User } from 'lucide-react'
+import { FilePlus2, Search, User, Eye } from 'lucide-react'
 import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ export default function Index() {
   }, [session])
 
   const filtered = evaluations.filter((e) =>
-    e.client_name.toLowerCase().includes(search.toLowerCase()),
+    e.nome_cliente.toLowerCase().includes(search.toLowerCase()),
   )
 
   if (loading || loadingData)
@@ -80,20 +80,28 @@ export default function Index() {
                 <TableHead>Avaliador</TableHead>
                 <TableHead>Data da Avaliação</TableHead>
                 <TableHead>Reavaliação</TableHead>
-                <TableHead className="text-right">Objetivo</TableHead>
+                <TableHead>Objetivo</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((ev) => (
                 <TableRow key={ev.id} className="hover:bg-muted/20">
-                  <TableCell className="font-medium">{ev.client_name}</TableCell>
-                  <TableCell>{ev.evaluator_name}</TableCell>
-                  <TableCell>{format(new Date(ev.evaluation_date), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="font-medium">{ev.nome_cliente}</TableCell>
+                  <TableCell>{ev.users?.nome || '-'}</TableCell>
+                  <TableCell>{format(new Date(ev.data_avaliacao), 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="text-accent font-semibold">
-                    {format(new Date(ev.reevaluation_date), 'dd/MM/yyyy')}
+                    {format(new Date(ev.data_reavaliacao), 'dd/MM/yyyy')}
                   </TableCell>
-                  <TableCell className="text-right truncate max-w-[200px]">
-                    {ev.main_objective || ev.objectives?.join(', ')}
+                  <TableCell className="truncate max-w-[200px]">
+                    {ev.objectives?.join(', ') || '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" asChild title="Visualizar Avaliação">
+                      <Link to={`/evaluation/${ev.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

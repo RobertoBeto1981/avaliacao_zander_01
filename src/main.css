@@ -1,78 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root,
-  .dark {
-    --background: 60 4% 11%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 76 54% 50%;
-    --primary-foreground: 60 4% 11%;
-
-    --secondary: 0 0% 34%;
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 11.4%; /* #1d1d1b */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11.4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11.4%;
+    --primary: 80 54% 50%; /* #95c23d */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 34%; /* #575757 */
     --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 25%;
-    --muted-foreground: 0 0% 70%;
-
-    --accent: 87 100% 64%;
-    --accent-foreground: 60 4% 11%;
-
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 85 100% 64%; /* #abff45 */
+    --accent-foreground: 0 0% 11.4%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 87 100% 64%;
-
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 80 54% 50%;
     --radius: 0.5rem;
-  }
-
-  body {
-    font-family: 'Inter', sans-serif;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-
-  section[aria-label='Notifications alt+T'] {
-    padding: 0 !important;
-    margin: 0 !important;
   }
 }
 
-@layer utilities {
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+@media print {
+  body {
+    background: white;
+    color: black;
   }
-  @keyframes slide-up {
-    from {
-      transform: translateY(10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  .no-print {
+    display: none !important;
   }
-  .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+  @page {
+    margin: 1cm;
   }
-  .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
   }
 }
