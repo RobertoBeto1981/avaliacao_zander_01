@@ -3,24 +3,46 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Dumbbell, LogOut, LayoutDashboard } from 'lucide-react'
+import { Dumbbell, LogOut, LayoutDashboard, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
   const [profile, setProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
+    let mounted = true
+
     if (user) {
+      setProfileLoading(true)
+      // Use maybeSingle() instead of single() to avoid HTTP 406 (PGRST116)
+      // when the user profile hasn't finished synchronizing yet.
       supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
-        .single()
-        .then(({ data }) => setProfile(data))
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (mounted) {
+            if (!error && data) {
+              setProfile(data)
+            } else {
+              if (error) console.error('Failed to fetch user profile:', error)
+              setProfile(null) // Safe fallback state
+            }
+            setProfileLoading(false)
+          }
+        })
     } else {
       setProfile(null)
+      setProfileLoading(false)
+    }
+
+    return () => {
+      mounted = false
     }
   }, [user])
 
@@ -70,6 +92,25 @@ export default function Layout() {
           </div>
         </header>
       )}
+
+      {/* Fallback UI if the user exists but the profile record is completely missing */}
+      {!isAuthPage && user && !profileLoading && !profile && (
+        <div className="container mt-6 no-print animate-fade-in-down">
+          <Alert
+            variant="destructive"
+            className="border-destructive/50 bg-destructive/10 text-destructive"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Perfil em Sincronização</AlertTitle>
+            <AlertDescription>
+              Os dados do seu perfil ainda estão sendo sincronizados ou não foram encontrados.
+              Algumas funcionalidades da plataforma podem estar limitadas temporariamente. Tente
+              recarregar a página em alguns instantes.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="flex-1">
         <Outlet />
       </div>

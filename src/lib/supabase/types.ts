@@ -525,6 +525,10 @@ export const Constants = {
 // Table: avaliacoes
 //   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//   Policy "Professors can update avaliacoes status" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
+//   Policy "Professors can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = avaliador_id)
 //     WITH CHECK: (auth.uid() = avaliador_id)
@@ -535,6 +539,8 @@ export const Constants = {
 // Table: links_avaliacao
 //   Policy "Coordinators can view all links" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//   Policy "Professors can view all links" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
 //   Policy "Users can manage links of their avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
