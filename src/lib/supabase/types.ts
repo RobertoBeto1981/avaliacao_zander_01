@@ -235,6 +235,24 @@ export type Database = {
           },
         ]
       }
+      medicamentos: {
+        Row: {
+          acao_principal: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          acao_principal: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          acao_principal?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           email: string
@@ -474,6 +492,10 @@ export const Constants = {
 //   mapeamento_dor_url: text (nullable)
 //   bia_url: text (nullable)
 //   my_score_url: text (nullable)
+// Table: medicamentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome: text (not null)
+//   acao_principal: text (not null)
 // Table: users
 //   id: uuid (not null)
 //   email: text (not null)
@@ -492,6 +514,9 @@ export const Constants = {
 // Table: links_avaliacao
 //   FOREIGN KEY links_avaliacao_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
 //   PRIMARY KEY links_avaliacao_pkey: PRIMARY KEY (id)
+// Table: medicamentos
+//   UNIQUE medicamentos_nome_key: UNIQUE (nome)
+//   PRIMARY KEY medicamentos_pkey: PRIMARY KEY (id)
 // Table: users
 //   FOREIGN KEY users_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
@@ -513,6 +538,9 @@ export const Constants = {
 //   Policy "Users can manage links of their avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
+// Table: medicamentos
+//   Policy "authenticated_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: users
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)
@@ -544,3 +572,7 @@ export const Constants = {
 //   END;
 //   $function$
 //
+
+// --- INDEXES ---
+// Table: medicamentos
+//   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)

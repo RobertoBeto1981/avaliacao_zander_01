@@ -23,7 +23,8 @@ export const getEvaluations = async () => {
     .from('avaliacoes')
     .select(`
       *,
-      users:avaliador_id (nome)
+      users:avaliador_id (nome),
+      links_avaliacao (*)
     `)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -39,6 +40,17 @@ export const getEvaluationById = async (id: string) => {
       links_avaliacao (*)
     `)
     .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const updateEvaluationStatus = async (id: string, status: string) => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .update({ status })
+    .eq('id', id)
+    .select()
     .single()
   if (error) throw error
   return data
