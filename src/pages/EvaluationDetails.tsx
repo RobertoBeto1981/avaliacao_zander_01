@@ -298,6 +298,19 @@ export default function EvaluationDetails() {
                     </a>
                   </div>
                 )}
+                {data.links_avaliacao?.[0]?.relatorio_pdf_url && (
+                  <div>
+                    <span className="font-medium">Relatório PDF Final:</span>{' '}
+                    <a
+                      href={data.links_avaliacao[0].relatorio_pdf_url}
+                      className="text-red-600 underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {data.links_avaliacao[0].relatorio_pdf_url}
+                    </a>
+                  </div>
+                )}
               </div>
             </section>
           </div>

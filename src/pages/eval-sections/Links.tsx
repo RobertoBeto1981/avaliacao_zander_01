@@ -19,6 +19,11 @@ export function LinksFields() {
           <FInput name="client_links.pain" label="Link: Mapeamento da Dor" placeholder="https://" />
           <FInput name="client_links.bia" label="Link: BIA" placeholder="https://" />
           <FInput name="client_links.myscore" label="Link: My Score" placeholder="https://" />
+          <FInput
+            name="client_links.pdf_report"
+            label="Link: Relatório PDF (Final)"
+            placeholder="https://"
+          />
         </div>
 
         <div className="pt-4 border-t border-border">

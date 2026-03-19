@@ -564,16 +564,15 @@ export const Constants = {
 //    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
-//     IF NEW.raw_user_meta_data->>'nome' IS NOT NULL THEN
-//       INSERT INTO public.users (id, email, nome, telefone, role)
-//       VALUES (
-//         NEW.id,
-//         NEW.email,
-//         NEW.raw_user_meta_data->>'nome',
-//         NEW.raw_user_meta_data->>'telefone',
-//         (NEW.raw_user_meta_data->>'role')::user_role
-//       );
-//     END IF;
+//     INSERT INTO public.users (id, email, nome, telefone, role)
+//     VALUES (
+//       NEW.id,
+//       NEW.email,
+//       COALESCE(NEW.raw_user_meta_data->>'nome', 'Usuário ' || split_part(NEW.email, '@', 1)),
+//       NEW.raw_user_meta_data->>'telefone',
+//       COALESCE((NEW.raw_user_meta_data->>'role'), 'avaliador')::public.user_role
+//     )
+//     ON CONFLICT (id) DO NOTHING;
 //     RETURN NEW;
 //   END;
 //   $function$

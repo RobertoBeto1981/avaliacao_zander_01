@@ -70,6 +70,7 @@ export const evaluationSchema = z.object({
       pain: z.string().optional(),
       bia: z.string().optional(),
       myscore: z.string().optional(),
+      pdf_report: z.string().optional(),
     })
     .optional(),
 })

@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from 'react'
-import { format, isAfter, startOfDay } from 'date-fns'
-import { FileText, HeartPulse, Activity, Scale, Target, CheckCircle } from 'lucide-react'
+import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
+import { FileText, HeartPulse, Activity, Scale, Target, CheckCircle, FileCheck } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -111,6 +112,7 @@ export default function ProfessorDashboard() {
             <TableRow>
               <TableHead>Nome do Cliente</TableHead>
               <TableHead>Data da Avaliação</TableHead>
+              <TableHead>Reavaliação</TableHead>
               <TableHead>Período de Treino</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prazo para Treino</TableHead>
@@ -120,10 +122,31 @@ export default function ProfessorDashboard() {
           </TableHeader>
           <TableBody>
             {filtered.map((ev) => {
-              const deadline = calculateDeadline(ev.data_avaliacao, 3)
               const today = startOfDay(new Date())
+              const evalDate = new Date(ev.data_avaliacao + 'T00:00:00')
+              const deadline = calculateDeadline(ev.data_avaliacao, 3)
               const isLate = isAfter(today, deadline) && ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
+
+              const daysSinceEval = differenceInDays(today, evalDate)
+              let reevalColorClass = ''
+              let reevalDotClass = ''
+              let isPulsing = false
+
+              if (daysSinceEval <= 29) {
+                reevalColorClass = 'text-green-600 dark:text-green-400'
+                reevalDotClass = 'bg-green-600 dark:bg-green-400'
+              } else if (daysSinceEval <= 59) {
+                reevalColorClass = 'text-orange-600 dark:text-orange-400'
+                reevalDotClass = 'bg-orange-600 dark:bg-orange-400'
+              } else if (daysSinceEval <= 90) {
+                reevalColorClass = 'text-red-600 dark:text-red-400'
+                reevalDotClass = 'bg-red-600 dark:bg-red-400'
+              } else {
+                reevalColorClass = 'text-red-600 dark:text-red-400 font-bold'
+                reevalDotClass = 'bg-red-600 dark:bg-red-400'
+                isPulsing = true
+              }
 
               const linkItems = [
                 { url: links.anamnese_url, icon: FileText, label: 'Anamnese' },
@@ -135,13 +158,33 @@ export default function ProfessorDashboard() {
                 { url: links.mapeamento_dor_url, icon: Activity, label: 'Mapeamento da Dor' },
                 { url: links.bia_url, icon: Scale, label: 'BIA' },
                 { url: links.my_score_url, icon: Target, label: 'My Score' },
+                { url: links.relatorio_pdf_url, icon: FileCheck, label: 'Visualizar PDF' },
               ]
 
               return (
                 <TableRow key={ev.id} className="hover:bg-muted/20">
                   <TableCell className="font-medium">{ev.nome_cliente}</TableCell>
+                  <TableCell>{format(evalDate, 'dd/MM/yyyy')}</TableCell>
                   <TableCell>
-                    {format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
+                    <div
+                      className={cn(
+                        'flex flex-col',
+                        reevalColorClass,
+                        isPulsing && 'animate-pulse',
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                        <span>
+                          {ev.data_reavaliacao
+                            ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                            : '-'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] opacity-80 mt-0.5 ml-4">
+                        ({daysSinceEval} dias)
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>{ev.periodo_treino || '-'}</TableCell>
                   <TableCell>
@@ -180,7 +223,12 @@ export default function ProfessorDashboard() {
                                 href={item.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1.5 hover:bg-accent rounded-md text-primary transition-colors"
+                                className={cn(
+                                  'p-1.5 hover:bg-accent rounded-md transition-colors',
+                                  item.label === 'Visualizar PDF'
+                                    ? 'text-red-500 hover:text-red-600'
+                                    : 'text-primary',
+                                )}
                               >
                                 <Icon className="w-4 h-4" />
                               </a>
@@ -212,7 +260,7 @@ export default function ProfessorDashboard() {
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhuma avaliação encontrada.
                 </TableCell>
               </TableRow>
