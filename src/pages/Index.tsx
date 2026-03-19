@@ -1,12 +1,106 @@
-/* Home Page - Replace this page layout, components, content, behavior with what you want and translate to the language of the user */
-const Index = () => {
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
+import { FilePlus2, Search, User } from 'lucide-react'
+import { getEvaluations } from '@/services/evaluations'
+import { useAuth } from '@/hooks/use-auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardContent } from '@/components/ui/card'
+
+export default function Index() {
+  const { session, loading } = useAuth()
+  const navigate = useNavigate()
+  const [evaluations, setEvaluations] = useState<any[]>([])
+  const [search, setSearch] = useState('')
+  const [loadingData, setLoadingData] = useState(true)
+
+  useEffect(() => {
+    if (!loading && !session) navigate('/login')
+  }, [session, loading, navigate])
+
+  useEffect(() => {
+    if (session) {
+      getEvaluations().then((data) => {
+        setEvaluations(data)
+        setLoadingData(false)
+      })
+    }
+  }, [session])
+
+  const filtered = evaluations.filter((e) =>
+    e.client_name.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  if (loading || loadingData)
+    return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">
-        This is a example page ready to be rewritten with your own content
-      </h1>
+    <div className="container mx-auto py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <h1 className="text-3xl font-bold">Avaliações Físicas</h1>
+        <Button asChild size="lg" className="font-bold">
+          <Link to="/evaluation/new">
+            <FilePlus2 className="mr-2" /> Nova Avaliação
+          </Link>
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2 mb-6 max-w-sm">
+        <Search className="text-muted-foreground" size={20} />
+        <Input
+          placeholder="Buscar por nome do cliente..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <Card className="border-dashed bg-transparent mt-8">
+          <CardContent className="flex flex-col items-center justify-center p-16 text-center text-muted-foreground">
+            <User className="w-16 h-16 mb-4 opacity-20" />
+            <h3 className="text-xl font-medium mb-2">Nenhuma avaliação encontrada</h3>
+            <p>Clique em "Nova Avaliação" para começar.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden border-border/50">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Avaliador</TableHead>
+                <TableHead>Data da Avaliação</TableHead>
+                <TableHead>Reavaliação</TableHead>
+                <TableHead className="text-right">Objetivo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((ev) => (
+                <TableRow key={ev.id} className="hover:bg-muted/20">
+                  <TableCell className="font-medium">{ev.client_name}</TableCell>
+                  <TableCell>{ev.evaluator_name}</TableCell>
+                  <TableCell>{format(new Date(ev.evaluation_date), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="text-accent font-semibold">
+                    {format(new Date(ev.reevaluation_date), 'dd/MM/yyyy')}
+                  </TableCell>
+                  <TableCell className="text-right truncate max-w-[200px]">
+                    {ev.main_objective || ev.objectives?.join(', ')}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </div>
   )
 }
-
-export default Index
