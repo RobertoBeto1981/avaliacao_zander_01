@@ -28,7 +28,7 @@ export function IdentificationFields() {
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           <FDatePicker name="evaluation_date" label="Data da Avaliação" />
-          <FDatePicker name="reevaluation_date" label="Data da Reavaliação (Automático)" readOnly />
+          <FDatePicker name="reevaluation_date" label="Data da Reavaliação" readOnly />
           <FSelect name="preferred_time" label="Horário de Preferência" options={PREFERRED_TIMES} />
         </div>
         <div className="pt-4 border-t border-border">

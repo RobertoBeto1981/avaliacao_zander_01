@@ -8,7 +8,8 @@ import { useToast } from '@/hooks/use-toast'
 import { evaluationSchema, EvaluationFormValues } from '@/schemas/evaluation'
 import { createEvaluation } from '@/services/evaluations'
 import { IdentificationFields } from './eval-sections/Identification'
-import { LifestyleFields } from './eval-sections/Lifestyle'
+import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
+import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
 import { LinksFields } from './eval-sections/Links'
@@ -68,7 +69,8 @@ export default function NewEvaluation() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
           <IdentificationFields />
-          <LifestyleFields />
+          <TrainingHistoryFields />
+          <CurrentLifestyleFields />
           <HealthFields />
           <TrainingFields />
           <LinksFields />

@@ -1,50 +1,34 @@
 import { useFormContext, useWatch } from 'react-hook-form'
-import { addDays } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FInput, FSelect, FTextarea, FSwitch } from '@/components/shared/FormControls'
-import { FDatePicker } from '@/components/shared/FormAdvanced'
+import { FMultiSelect } from '@/components/shared/FormAdvanced'
 import {
-  OBJECTIVES,
-  FREQUENCIES,
-  ACTIVITY_LEVELS,
-  PRACTICE_TIMES,
   YES_NO_HAD,
   MEALS_PER_DAY,
   SLEEP_HOURS,
   ALCOHOL_FREQ,
+  INTOLERANCES,
 } from '@/constants/options'
 
-export function LifestyleFields() {
+export function CurrentLifestyleFields() {
   const { control } = useFormContext()
-  const today = new Date()
-  const minTarget = addDays(today, 60)
-  const maxTarget = addDays(today, 90)
 
   const nutChoice = useWatch({ control, name: 'nutritional_status.choice' })
   const supChoice = useWatch({ control, name: 'supplements.choice' })
   const smokeChoice = useWatch({ control, name: 'smoking.choice' })
+  const intolChoices = useWatch({ control, name: 'intolerances.choices' }) || []
 
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <CardTitle className="text-xl text-primary">Estilo de Vida e Histórico</CardTitle>
+        <CardTitle className="text-xl text-primary">Estilo de Vida Atual</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 animate-fade-in">
         <div className="grid md:grid-cols-2 gap-6">
-          <FSelect name="main_objective" label="Principal Objetivo" options={OBJECTIVES} />
-          <FDatePicker
-            name="target_date"
-            label="Data Alvo (60 a 90 dias)"
-            disabled={(d: Date) => d < minTarget || d > maxTarget}
-          />
-          <FSelect name="training_frequency" label="Frequência Atual" options={FREQUENCIES} />
-          <FSelect name="activity_level" label="Nível de Atividade" options={ACTIVITY_LEVELS} />
-          <FSelect name="practice_time" label="Tempo de Prática" options={PRACTICE_TIMES} />
-          <FSelect name="meals_per_day" label="Refeições/Dia" options={MEALS_PER_DAY} />
-          <FSelect name="sleep_hours" label="Sono/Noite" options={SLEEP_HOURS} />
-          <FSelect name="alcohol" label="Consumo de Álcool" options={ALCOHOL_FREQ} />
+          <FSelect name="meals_per_day" label="Refeições" options={MEALS_PER_DAY} />
+          <FSelect name="sleep_hours" label="Sono" options={SLEEP_HOURS} />
+          <FSelect name="alcohol" label="Consumo de Bebidas Alcoólicas" options={ALCOHOL_FREQ} />
         </div>
-        <FTextarea name="modalities" label="Modalidades" />
 
         <div className="pt-4 border-t border-border grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -60,7 +44,7 @@ export function LifestyleFields() {
             )}
           </div>
           <div className="space-y-4">
-            <FSwitch name="supplements.choice" label="Usa Suplementos?" />
+            <FSwitch name="supplements.choice" label="Usa Suplementos Alimentares?" />
             {supChoice && (
               <div className="animate-slide-up">
                 <FTextarea name="supplements.list" label="Quais?" />
@@ -75,6 +59,15 @@ export function LifestyleFields() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="pt-4 border-t border-border">
+          <FMultiSelect name="intolerances.choices" label="Intolerâncias" options={INTOLERANCES} />
+          {intolChoices.includes('OUTRO') && (
+            <div className="mt-4 animate-slide-up">
+              <FTextarea name="intolerances.list" label="Quais outras?" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -2,15 +2,13 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FInput, FSelect, FTextarea, FSwitch } from '@/components/shared/FormControls'
-import { FMultiSelect } from '@/components/shared/FormAdvanced'
-import { YES_NO, INTOLERANCES, HEALTH_INSURANCES } from '@/constants/options'
+import { YES_NO, HEALTH_INSURANCES } from '@/constants/options'
 
 export function HealthFields() {
   const { control, setValue, getValues } = useFormContext()
 
   const medChoice = useWatch({ control, name: 'medications.choice' })
   const allergyChoice = useWatch({ control, name: 'allergies.choice' })
-  const intolChoices = useWatch({ control, name: 'intolerances.choices' }) || []
   const cardioChoice = useWatch({ control, name: 'cardio_pathology.choice' })
   const surgChoice = useWatch({ control, name: 'surgeries.choice' })
   const painChoice = useWatch({ control, name: 'pains.choice' })
@@ -46,15 +44,6 @@ export function HealthFields() {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <FMultiSelect name="intolerances.choices" label="Intolerâncias" options={INTOLERANCES} />
-          {intolChoices.includes('OUTRO') && (
-            <div className="mt-4 animate-slide-up">
-              <FTextarea name="intolerances.list" label="Quais outras?" />
-            </div>
-          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
