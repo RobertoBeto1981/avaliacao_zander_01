@@ -14,7 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Check, ChevronsUpDown, Loader2, Plus } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, Plus, AlertTriangle, ShieldCheck } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ export function HealthFields() {
   const [medQuery, setMedQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [medResults, setMedResults] = useState<
-    { id: string; nome: string; acao_principal: string }[]
+    { id: string; nome: string; acao_principal: string; verified?: boolean }[]
   >([])
 
   const [isLearning, setIsLearning] = useState(false)
@@ -88,13 +88,13 @@ export function HealthFields() {
   const handleAddMed = async (medName: string) => {
     setIsLearning(true)
     try {
-      const action = await learnMedicamento(medName)
-      if (action) {
-        const newMed = await addMedicamento(medName, action)
+      const result = await learnMedicamento(medName)
+      if (result) {
+        const newMed = await addMedicamento(medName, result.action, result.verified)
         appendMedToList(newMed.nome, newMed.acao_principal)
         toast({
-          title: 'Medicamento aprendido!',
-          description: `Adicionado à base de dados com a ação: ${action}`,
+          title: 'Medicamento validado e adicionado!',
+          description: `Ação confirmada em bases oficiais: ${result.action}`,
         })
         setMedSearchOpen(false)
         setMedQuery('')
@@ -113,11 +113,11 @@ export function HealthFields() {
     if (!manualAcao) return
     setIsLearning(true)
     try {
-      const newMed = await addMedicamento(medQuery, manualAcao)
+      const newMed = await addMedicamento(medQuery, manualAcao, false)
       appendMedToList(newMed.nome, newMed.acao_principal)
       toast({
         title: 'Medicamento adicionado!',
-        description: `Registrado manualmente na base de dados.`,
+        description: `Registrado com revisão pendente.`,
       })
       setManualAddOpen(false)
       setMedSearchOpen(false)
@@ -191,7 +191,14 @@ export function HealthFields() {
                                     }}
                                   >
                                     <Check className="mr-2 h-4 w-4 opacity-0" />
-                                    {med.nome}{' '}
+                                    <span className="flex items-center gap-1.5 font-medium">
+                                      {med.verified ? (
+                                        <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                                      ) : (
+                                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                                      )}
+                                      {med.nome}
+                                    </span>
                                     <span className="text-muted-foreground ml-1 line-clamp-1">
                                       - {med.acao_principal}
                                     </span>
@@ -213,7 +220,7 @@ export function HealthFields() {
                                       <Plus className="mr-2 h-4 w-4" />
                                     )}
                                     {isLearning
-                                      ? 'Buscando informações...'
+                                      ? 'Buscando e validando em bases oficiais...'
                                       : `Aprender e adicionar "${medQuery}"`}
                                   </CommandItem>
                                 )}
@@ -305,8 +312,13 @@ export function HealthFields() {
           <DialogHeader>
             <DialogTitle>Ação não encontrada</DialogTitle>
             <DialogDescription>
-              Não conseguimos encontrar automaticamente a ação para <strong>{medQuery}</strong>. Por
+              Não conseguimos validar automaticamente a ação para <strong>{medQuery}</strong>. Por
               favor, informe a ação principal deste medicamento para adicioná-lo à base.
+              <br />
+              <span className="text-amber-500 flex items-center gap-1 mt-2">
+                <AlertTriangle className="h-4 w-4" />
+                Este item ficará marcado como "Revisão Pendente".
+              </span>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -331,7 +343,7 @@ export function HealthFields() {
             </Button>
             <Button onClick={handleManualSubmit} disabled={!manualAcao || isLearning}>
               {isLearning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar e Adicionar
+              Salvar (Pendente)
             </Button>
           </DialogFooter>
         </DialogContent>
