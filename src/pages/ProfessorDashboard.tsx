@@ -9,7 +9,6 @@ import {
   Target,
   CheckCircle,
   FileCheck,
-  Eye,
   AlertCircle,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
@@ -151,7 +150,6 @@ export default function ProfessorDashboard() {
               <TableHead>Status</TableHead>
               <TableHead>Prazo para Treino</TableHead>
               <TableHead>Links</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -183,16 +181,32 @@ export default function ProfessorDashboard() {
               }
 
               const linkItems = [
-                { url: links.anamnese_url, icon: FileText, label: 'Anamnese' },
                 {
+                  type: 'internal',
+                  url: `/evaluation/${ev.id}`,
+                  icon: FileText,
+                  label: 'Anamnese',
+                },
+                {
+                  type: 'external',
                   url: links.mapeamento_sintomas_url,
                   icon: HeartPulse,
                   label: 'Mapeamento Sintomas',
                 },
-                { url: links.mapeamento_dor_url, icon: Activity, label: 'Mapeamento da Dor' },
-                { url: links.bia_url, icon: Scale, label: 'BIA' },
-                { url: links.my_score_url, icon: Target, label: 'My Score' },
-                { url: links.relatorio_pdf_url, icon: FileCheck, label: 'Visualizar PDF' },
+                {
+                  type: 'external',
+                  url: links.mapeamento_dor_url,
+                  icon: Activity,
+                  label: 'Mapeamento da Dor',
+                },
+                { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
+                { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
+                {
+                  type: 'external',
+                  url: links.relatorio_pdf_url,
+                  icon: FileCheck,
+                  label: 'Visualizar PDF',
+                },
               ]
 
               return (
@@ -253,46 +267,62 @@ export default function ProfessorDashboard() {
                     <div className="flex gap-1">
                       {linkItems.map((item, idx) => {
                         const Icon = item.icon
-                        return item.url ? (
+                        if (item.url) {
+                          return (
+                            <Tooltip key={idx}>
+                              <TooltipTrigger asChild>
+                                {item.type === 'internal' ? (
+                                  <Link
+                                    to={item.url}
+                                    className={cn(
+                                      'p-1.5 hover:bg-accent rounded-md transition-colors',
+                                      item.label === 'Visualizar PDF'
+                                        ? 'text-red-500 hover:text-red-600'
+                                        : 'text-primary',
+                                    )}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                  </Link>
+                                ) : (
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={cn(
+                                      'p-1.5 hover:bg-accent rounded-md transition-colors',
+                                      item.label === 'Visualizar PDF'
+                                        ? 'text-red-500 hover:text-red-600'
+                                        : 'text-primary',
+                                    )}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>{item.label}</TooltipContent>
+                            </Tooltip>
+                          )
+                        }
+
+                        return (
                           <Tooltip key={idx}>
                             <TooltipTrigger asChild>
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={cn(
-                                  'p-1.5 hover:bg-accent rounded-md transition-colors',
-                                  item.label === 'Visualizar PDF'
-                                    ? 'text-red-500 hover:text-red-600'
-                                    : 'text-primary',
-                                )}
-                              >
+                              <div className="p-1.5 opacity-20 cursor-not-allowed">
                                 <Icon className="w-4 h-4" />
-                              </a>
+                              </div>
                             </TooltipTrigger>
-                            <TooltipContent>{item.label}</TooltipContent>
+                            <TooltipContent>{item.label} (Indisponível)</TooltipContent>
                           </Tooltip>
-                        ) : (
-                          <div key={idx} className="p-1.5 opacity-20 cursor-not-allowed">
-                            <Icon className="w-4 h-4" />
-                          </div>
                         )
                       })}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild title="Visualizar Avaliação">
-                      <Link to={`/evaluation/${ev.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
                   </TableCell>
                 </TableRow>
               )
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhuma avaliação encontrada.
                 </TableCell>
               </TableRow>
