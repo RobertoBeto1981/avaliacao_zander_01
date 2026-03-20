@@ -225,8 +225,14 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
               {displayItems.map((notif) => (
                 <div
                   key={notif.id}
+                  onClick={() => {
+                    if (!notif.is_read && notif.type !== 'alert') {
+                      handleMarkAsRead(notif.id)
+                    }
+                  }}
                   className={cn(
                     'flex items-start gap-3 p-4 border-b border-border transition-colors hover:bg-muted/50 group',
+                    !notif.is_read && notif.type !== 'alert' && 'cursor-pointer',
                     !notif.is_read ? 'bg-primary/5' : 'opacity-75',
                     notif.priority === 'high' && !notif.is_read
                       ? 'border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/20'
@@ -290,7 +296,10 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-primary hover:bg-primary/20"
-                        onClick={() => handleMarkAsRead(notif.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMarkAsRead(notif.id)
+                        }}
                         title="Marcar como lida"
                       >
                         <Check className="h-4 w-4" />
@@ -301,7 +310,10 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleArchive(notif.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleArchive(notif.id)
+                        }}
                         title="Arquivar"
                       >
                         <Archive className="h-3.5 w-3.5" />
