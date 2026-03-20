@@ -16,6 +16,8 @@ import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 
 const InfoField = ({
   label,
@@ -76,8 +78,23 @@ const Section = ({ title, icon: Icon, children }: any) => (
 
 export default function EvaluationDetails() {
   const { id } = useParams()
+  const { user } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setUserRole(data.role)
+        })
+    }
+  }, [user])
 
   useEffect(() => {
     if (id) {
@@ -117,9 +134,11 @@ export default function EvaluationDetails() {
             <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
-        <Button onClick={() => window.print()} className="font-bold">
-          <Printer className="mr-2 h-4 w-4" /> Exportar em PDF
-        </Button>
+        {userRole !== 'professor' && (
+          <Button onClick={() => window.print()} className="font-bold">
+            <Printer className="mr-2 h-4 w-4" /> Exportar em PDF
+          </Button>
+        )}
       </div>
 
       <Card className="border-border/50 print:border-none print:shadow-none bg-white text-black">
@@ -385,11 +404,13 @@ export default function EvaluationDetails() {
             )}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-dashed border-gray-300 text-center no-print">
-            <p className="text-sm text-muted-foreground mb-4">
-              Fim do relatório gerado. Utilize o botão acima para exportar.
-            </p>
-          </div>
+          {userRole !== 'professor' && (
+            <div className="mt-12 pt-8 border-t border-dashed border-gray-300 text-center no-print">
+              <p className="text-sm text-muted-foreground mb-4">
+                Fim do relatório gerado. Utilize o botão acima para exportar.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
