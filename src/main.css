@@ -31,12 +31,14 @@
   body {
     background: white;
     color: black;
+    font-size: 12pt;
   }
   .no-print {
     display: none !important;
   }
   @page {
-    margin: 1cm;
+    size: A4 portrait;
+    margin: 1.5cm;
   }
   * {
     -webkit-print-color-adjust: exact !important;
@@ -44,5 +46,16 @@
   }
   .print-break-inside-avoid {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Utilities for clean printing */
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:border-none {
+    border: none !important;
+  }
+  .print\:bg-transparent {
+    background-color: transparent !important;
   }
 }

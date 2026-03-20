@@ -108,7 +108,9 @@ export type Database = {
           created_at: string
           data_avaliacao: string
           data_reavaliacao: string
+          evo_id: string | null
           id: string
+          is_pre_avaliacao: boolean
           nome_cliente: string
           objectives: string[] | null
           periodo_treino: string | null
@@ -122,7 +124,9 @@ export type Database = {
           created_at?: string
           data_avaliacao: string
           data_reavaliacao: string
+          evo_id?: string | null
           id?: string
+          is_pre_avaliacao?: boolean
           nome_cliente: string
           objectives?: string[] | null
           periodo_treino?: string | null
@@ -136,7 +140,9 @@ export type Database = {
           created_at?: string
           data_avaliacao?: string
           data_reavaliacao?: string
+          evo_id?: string | null
           id?: string
+          is_pre_avaliacao?: boolean
           nome_cliente?: string
           objectives?: string[] | null
           periodo_treino?: string | null
@@ -673,6 +679,8 @@ export const Constants = {
 //   status: avaliacao_status (nullable, default: 'concluido'::avaliacao_status)
 //   created_at: timestamp with time zone (not null, default: now())
 //   professor_id: uuid (nullable)
+//   evo_id: text (nullable)
+//   is_pre_avaliacao: boolean (not null, default: false)
 // Table: bulk_messages
 //   id: uuid (not null, default: gen_random_uuid())
 //   sender_id: uuid (not null)
@@ -805,6 +813,10 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: avaliacoes
+//   Policy "Anyone can update pre-evaluations" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (is_pre_avaliacao = true)
+//   Policy "Anyone can view pre-evaluations" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (is_pre_avaliacao = true)
 //   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 //   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
@@ -1054,5 +1066,7 @@ export const Constants = {
 // --- INDEXES ---
 // Table: avaliacao_history
 //   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
+// Table: avaliacoes
+//   CREATE INDEX idx_avaliacoes_evo_id ON public.avaliacoes USING btree (evo_id)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
