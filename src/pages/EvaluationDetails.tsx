@@ -13,10 +13,23 @@ export default function EvaluationDetails() {
 
   useEffect(() => {
     if (id) {
-      getEvaluationById(id).then((res) => {
-        setData(res)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(id)) {
+        setData(null)
         setLoading(false)
-      })
+        return
+      }
+
+      getEvaluationById(id)
+        .then((res) => {
+          setData(res)
+          setLoading(false)
+        })
+        .catch((err) => {
+          console.error(err)
+          setData(null)
+          setLoading(false)
+        })
     }
   }, [id])
 
