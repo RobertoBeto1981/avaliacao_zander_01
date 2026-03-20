@@ -20,16 +20,28 @@ export const searchMedicamentos = async (query: string) => {
 
 export const learnMedicamento = async (nome: string) => {
   try {
-    const res = await fetch(
-      `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(nome)}`,
+    const searchRes = await fetch(
+      `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&utf8=&format=json&origin=*`,
     )
-    if (res.ok) {
-      const data = await res.json()
-      // Ignora páginas de desambiguação
-      if (data.extract && !data.title?.toLowerCase().includes('desambiguação')) {
-        let acao = data.extract.split('.')[0]
-        if (acao.length > 100) acao = acao.substring(0, 97) + '...'
-        return acao
+
+    if (!searchRes.ok) return null
+
+    const searchData = await searchRes.json()
+
+    if (searchData.query?.search && searchData.query.search.length > 0) {
+      const title = searchData.query.search[0].title
+      const res = await fetch(
+        `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+      )
+
+      if (res.ok) {
+        const data = await res.json()
+        // Ignora páginas de desambiguação
+        if (data.extract && !data.title?.toLowerCase().includes('desambiguação')) {
+          let acao = data.extract.split('.')[0]
+          if (acao.length > 100) acao = acao.substring(0, 97) + '...'
+          return acao
+        }
       }
     }
   } catch (err) {
