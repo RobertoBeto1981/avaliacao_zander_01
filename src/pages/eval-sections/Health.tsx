@@ -15,7 +15,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 
 export function HealthFields() {
   const { control, setValue, getValues } = useFormContext()
@@ -29,6 +29,7 @@ export function HealthFields() {
 
   const [medSearchOpen, setMedSearchOpen] = useState(false)
   const [medQuery, setMedQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
   const [medResults, setMedResults] = useState<
     { id: string; nome: string; acao_principal: string }[]
   >([])
@@ -41,10 +42,26 @@ export function HealthFields() {
   }, [painChoice, setValue, getValues])
 
   useEffect(() => {
-    if (medQuery.length > 2) {
-      searchMedicamentos(medQuery).then(setMedResults)
-    } else {
-      setMedResults([])
+    let isMounted = true
+
+    const fetchMeds = async () => {
+      if (medQuery.length > 2) {
+        setIsSearching(true)
+        const results = await searchMedicamentos(medQuery)
+        if (isMounted) {
+          setMedResults(results)
+          setIsSearching(false)
+        }
+      } else {
+        setMedResults([])
+        setIsSearching(false)
+      }
+    }
+
+    const timeoutId = setTimeout(fetchMeds, 300)
+    return () => {
+      isMounted = false
+      clearTimeout(timeoutId)
     }
   }, [medQuery])
 
@@ -74,17 +91,23 @@ export function HealthFields() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] md:w-[400px] p-0" align="start">
-                      <Command>
+                      <Command shouldFilter={false}>
                         <CommandInput
-                          placeholder="Buscar medicamento..."
+                          placeholder="Nome ou ação (ex: losartana, pressão)..."
                           value={medQuery}
                           onValueChange={setMedQuery}
                         />
                         <CommandList>
                           <CommandEmpty>
-                            {medQuery.length > 2
-                              ? 'Nenhum medicamento encontrado.'
-                              : 'Digite pelo menos 3 letras...'}
+                            {isSearching ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              </div>
+                            ) : medQuery.length > 2 ? (
+                              'Nenhum medicamento encontrado.'
+                            ) : (
+                              'Digite pelo menos 3 letras...'
+                            )}
                           </CommandEmpty>
                           <CommandGroup>
                             {medResults.map((med) => (
@@ -103,7 +126,10 @@ export function HealthFields() {
                                 }}
                               >
                                 <Check className="mr-2 h-4 w-4 opacity-0" />
-                                {med.nome}
+                                {med.nome}{' '}
+                                <span className="text-muted-foreground ml-1">
+                                  - {med.acao_principal}
+                                </span>
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -112,7 +138,11 @@ export function HealthFields() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <FTextarea name="medications.list" label="Lista de Medicamentos" />
+                <FTextarea
+                  name="medications.list"
+                  label="Lista de Medicamentos"
+                  className="min-h-[100px]"
+                />
               </div>
             )}
           </div>
