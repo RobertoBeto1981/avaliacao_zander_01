@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FInput, FSelect, FTextarea, FSwitch } from '@/components/shared/FormControls'
 import { YES_NO, HEALTH_INSURANCES } from '@/constants/options'
 import { searchMedicamentos, learnMedicamento, addMedicamento } from '@/services/medicamentos'
+import { getClientPastMedications } from '@/services/evaluations'
 import {
   Command,
   CommandGroup,
@@ -14,7 +15,15 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Check, ChevronsUpDown, Loader2, Plus, AlertTriangle, ShieldCheck } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  Plus,
+  AlertTriangle,
+  ShieldCheck,
+  History,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -25,11 +34,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 export function HealthFields() {
   const { control, setValue, getValues } = useFormContext()
 
+  const clientName = useWatch({ control, name: 'nome_cliente' })
   const medChoice = useWatch({ control, name: 'medications.choice' })
+  const currentMedList = useWatch({ control, name: 'medications.list' }) || ''
   const allergyChoice = useWatch({ control, name: 'allergies.choice' })
   const cardioChoice = useWatch({ control, name: 'cardio_pathology.choice' })
   const surgChoice = useWatch({ control, name: 'surgeries.choice' })
@@ -43,6 +55,7 @@ export function HealthFields() {
     { id: string; nome: string; acao_principal: string; verified?: boolean }[]
   >([])
 
+  const [pastMeds, setPastMeds] = useState<string[]>([])
   const [isLearning, setIsLearning] = useState(false)
   const [manualAddOpen, setManualAddOpen] = useState(false)
   const [manualAcao, setManualAcao] = useState('')
@@ -54,6 +67,23 @@ export function HealthFields() {
         setValue('pains.observation', 'Observar Mapeamento de Dor')
     }
   }, [painChoice, setValue, getValues])
+
+  useEffect(() => {
+    if (!clientName || clientName.length < 3) {
+      setPastMeds([])
+      return
+    }
+    let isMounted = true
+    const fetchPast = async () => {
+      const meds = await getClientPastMedications(clientName)
+      if (isMounted) setPastMeds(meds)
+    }
+    const timeoutId = setTimeout(fetchPast, 600)
+    return () => {
+      isMounted = false
+      clearTimeout(timeoutId)
+    }
+  }, [clientName])
 
   useEffect(() => {
     let isMounted = true
@@ -231,6 +261,50 @@ export function HealthFields() {
                       </PopoverContent>
                     </Popover>
                   </div>
+
+                  {pastMeds.length > 0 && (
+                    <div className="bg-muted/40 border border-border rounded-lg p-3 space-y-2 animate-fade-in-up">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <History className="h-3.5 w-3.5" />
+                        Histórico do Paciente
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {pastMeds.map((med, idx) => {
+                          const isAdded = currentMedList.includes(med)
+                          return (
+                            <Button
+                              key={idx}
+                              type="button"
+                              variant={isAdded ? 'secondary' : 'outline'}
+                              size="sm"
+                              className={cn(
+                                'h-7 text-xs rounded-full px-3',
+                                !isAdded &&
+                                  'hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors',
+                              )}
+                              disabled={isAdded}
+                              onClick={() => {
+                                if (!isAdded) {
+                                  setValue(
+                                    'medications.list',
+                                    currentMedList ? `${currentMedList}\n${med}` : med,
+                                  )
+                                }
+                              }}
+                            >
+                              {med}
+                              {isAdded ? (
+                                <Check className="ml-1.5 h-3 w-3" />
+                              ) : (
+                                <Plus className="ml-1.5 h-3 w-3" />
+                              )}
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <FTextarea
                     name="medications.list"
                     label="Lista de Medicamentos"

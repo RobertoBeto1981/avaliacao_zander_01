@@ -57,3 +57,35 @@ export const updateEvaluationStatus = async (id: string, status: string) => {
   if (error) throw error
   return data
 }
+
+export const getClientPastMedications = async (clientName: string) => {
+  if (!clientName || clientName.trim().length < 3) return []
+
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .select('respostas')
+    .ilike('nome_cliente', `%${clientName.trim()}%`)
+    .not('respostas', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (error) {
+    console.error('Error fetching past medications:', error)
+    return []
+  }
+
+  const allMeds = new Set<string>()
+
+  data?.forEach((ev) => {
+    const meds = (ev.respostas as any)?.medications
+    if (meds?.choice && meds?.list && typeof meds.list === 'string') {
+      const lines = meds.list
+        .split('\n')
+        .map((l: string) => l.trim())
+        .filter(Boolean)
+      lines.forEach((l: string) => allMeds.add(l))
+    }
+  })
+
+  return Array.from(allMeds)
+}
