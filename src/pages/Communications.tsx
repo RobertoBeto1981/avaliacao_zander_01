@@ -5,16 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Accordion,
   AccordionContent,
@@ -28,7 +22,7 @@ import { cn } from '@/lib/utils'
 
 export default function Communications() {
   const { toast } = useToast()
-  const [targetRole, setTargetRole] = useState('todos')
+  const [targetRoles, setTargetRoles] = useState<string[]>(['todos'])
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [isHighPriority, setIsHighPriority] = useState(false)
@@ -50,9 +44,19 @@ export default function Communications() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (targetRoles.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Atenção',
+        description: 'Selecione pelo menos um grupo de destinatários.',
+      })
+      return
+    }
+
     setSending(true)
     try {
-      await sendBulkMessage(targetRole, title, message, isHighPriority ? 'high' : 'normal')
+      await sendBulkMessage(targetRoles, title, message, isHighPriority ? 'high' : 'normal')
       toast({
         title: 'Sucesso',
         description: 'Mensagem enviada com sucesso para os destinatários.',
@@ -60,11 +64,28 @@ export default function Communications() {
       setTitle('')
       setMessage('')
       setIsHighPriority(false)
+      setTargetRoles(['todos'])
       loadStats()
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao enviar', description: err.message })
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleRoleToggle = (roleId: string, checked: boolean) => {
+    if (roleId === 'todos') {
+      setTargetRoles(checked ? ['todos'] : [])
+    } else {
+      setTargetRoles((prev) => {
+        let next = prev.filter((r) => r !== 'todos')
+        if (checked) {
+          next.push(roleId)
+        } else {
+          next = next.filter((r) => r !== roleId)
+        }
+        return next
+      })
     }
   }
 
@@ -105,22 +126,42 @@ export default function Communications() {
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={handleSend} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="targetRole" className="text-base">
-                    Destinatários
-                  </Label>
-                  <Select value={targetRole} onValueChange={setTargetRole} required>
-                    <SelectTrigger id="targetRole" className="h-12 text-base">
-                      <SelectValue placeholder="Selecione o público alvo..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos (Toda a Equipe)</SelectItem>
-                      <SelectItem value="professor">Apenas Professores</SelectItem>
-                      <SelectItem value="avaliador">Apenas Avaliadores</SelectItem>
-                      <SelectItem value="fisioterapeuta">Apenas Fisioterapeutas</SelectItem>
-                      <SelectItem value="nutricionista">Apenas Nutricionistas</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3">
+                  <Label className="text-base">Destinatários</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-5 bg-muted/20">
+                    <div className="flex items-center space-x-3 col-span-1 sm:col-span-2 pb-3 border-b border-border">
+                      <Checkbox
+                        id="role-todos"
+                        checked={targetRoles.includes('todos')}
+                        onCheckedChange={(c) => handleRoleToggle('todos', c as boolean)}
+                        className="w-5 h-5"
+                      />
+                      <Label
+                        htmlFor="role-todos"
+                        className="font-semibold text-base cursor-pointer"
+                      >
+                        Todos (Toda a Equipe)
+                      </Label>
+                    </div>
+                    {[
+                      { id: 'professor', label: 'Professores' },
+                      { id: 'avaliador', label: 'Avaliadores' },
+                      { id: 'fisioterapeuta', label: 'Fisioterapeutas' },
+                      { id: 'nutricionista', label: 'Nutricionistas' },
+                    ].map((role) => (
+                      <div key={role.id} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`role-${role.id}`}
+                          checked={targetRoles.includes(role.id)}
+                          onCheckedChange={(c) => handleRoleToggle(role.id, c as boolean)}
+                          className="w-5 h-5"
+                        />
+                        <Label htmlFor={`role-${role.id}`} className="text-base cursor-pointer">
+                          {role.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -235,8 +276,11 @@ export default function Communications() {
                                   Urgente
                                 </Badge>
                               )}
-                              <Badge variant="outline" className="capitalize text-xs">
-                                {stat.target_role}
+                              <Badge
+                                variant="outline"
+                                className="capitalize text-xs max-w-[120px] truncate"
+                              >
+                                {stat.target_role.replace(/,/g, ', ')}
                               </Badge>
                               <div className="flex items-center gap-1.5 text-sm font-medium bg-muted px-2 py-1 rounded-md">
                                 <CheckCheck className="w-4 h-4 text-green-500" />

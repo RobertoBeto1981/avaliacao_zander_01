@@ -160,7 +160,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
               variant={view === 'active' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setView('active')}
-              className="h-7 text-xs flex-1 bg-background shadow-sm border"
+              className="h-7 text-xs flex-1 shadow-none"
             >
               Ativas
             </Button>
@@ -168,7 +168,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
               variant={view === 'archived' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setView('archived')}
-              className="h-7 text-xs flex-1 bg-background shadow-sm border"
+              className="h-7 text-xs flex-1 shadow-none"
             >
               Arquivadas
             </Button>

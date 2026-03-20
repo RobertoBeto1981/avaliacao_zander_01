@@ -35,13 +35,13 @@ export const archiveAllReadNotifications = async (userId: string) => {
 }
 
 export const sendBulkMessage = async (
-  targetRole: string,
+  targetRoles: string[],
   title: string,
   message: string,
   priority: string = 'normal',
 ) => {
   const { error } = await supabase.rpc('send_bulk_message', {
-    p_target_role: targetRole,
+    p_target_roles: targetRoles,
     p_title: title,
     p_message: message,
     p_priority: priority,

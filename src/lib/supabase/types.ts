@@ -69,6 +69,44 @@ export type Database = {
           },
         ]
       }
+      bulk_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          priority: string
+          sender_id: string
+          target_role: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          priority?: string
+          sender_id: string
+          target_role: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          priority?: string
+          sender_id?: string
+          target_role?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bulk_messages_sender_id_fkey'
+            columns: ['sender_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       evaluations: {
         Row: {
           activity_level: string | null
@@ -268,33 +306,49 @@ export type Database = {
       }
       notifications: {
         Row: {
+          bulk_message_id: string | null
           created_at: string
           id: string
+          is_archived: boolean
           is_read: boolean
           message: string
+          priority: string
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          bulk_message_id?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           is_read?: boolean
           message: string
+          priority?: string
           title: string
           type?: string
           user_id: string
         }
         Update: {
+          bulk_message_id?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           is_read?: boolean
           message?: string
+          priority?: string
           title?: string
           type?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'notifications_bulk_message_id_fkey'
+            columns: ['bulk_message_id']
+            isOneToOne: false
+            referencedRelation: 'bulk_messages'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'notifications_user_id_fkey'
             columns: ['user_id']
@@ -340,7 +394,12 @@ export type Database = {
     }
     Functions: {
       send_bulk_message: {
-        Args: { p_message: string; p_target_role: string; p_title: string }
+        Args: {
+          p_message: string
+          p_priority?: string
+          p_target_role: string
+          p_title: string
+        }
         Returns: undefined
       }
     }
@@ -501,6 +560,14 @@ export const Constants = {
 //   status: avaliacao_status (nullable, default: 'concluido'::avaliacao_status)
 //   created_at: timestamp with time zone (not null, default: now())
 //   professor_id: uuid (nullable)
+// Table: bulk_messages
+//   id: uuid (not null, default: gen_random_uuid())
+//   sender_id: uuid (not null)
+//   target_role: text (not null)
+//   title: text (not null)
+//   message: text (not null)
+//   priority: text (not null, default: 'normal'::text)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: evaluations
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_name: text (not null)
@@ -566,6 +633,9 @@ export const Constants = {
 //   type: text (not null, default: 'system'::text)
 //   is_read: boolean (not null, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
+//   is_archived: boolean (not null, default: false)
+//   priority: text (not null, default: 'normal'::text)
+//   bulk_message_id: uuid (nullable)
 // Table: users
 //   id: uuid (not null)
 //   email: text (not null)
@@ -580,6 +650,9 @@ export const Constants = {
 //   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE CASCADE
 //   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY avaliacoes_professor_id_fkey: FOREIGN KEY (professor_id) REFERENCES users(id)
+// Table: bulk_messages
+//   PRIMARY KEY bulk_messages_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY bulk_messages_sender_id_fkey: FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 // Table: evaluations
 //   CHECK check_evaluator_name: CHECK ((evaluator_name = ANY (ARRAY['Carlos Falaschi'::text, 'Milena Bonifácio'::text, 'Roberto Fernandes'::text])))
 //   PRIMARY KEY evaluations_pkey: PRIMARY KEY (id)
@@ -591,6 +664,7 @@ export const Constants = {
 //   UNIQUE medicamentos_nome_key: UNIQUE (nome)
 //   PRIMARY KEY medicamentos_pkey: PRIMARY KEY (id)
 // Table: notifications
+//   FOREIGN KEY notifications_bulk_message_id_fkey: FOREIGN KEY (bulk_message_id) REFERENCES bulk_messages(id) ON DELETE CASCADE
 //   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 // Table: users
@@ -608,6 +682,11 @@ export const Constants = {
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = avaliador_id)
 //     WITH CHECK: (auth.uid() = avaliador_id)
+// Table: bulk_messages
+//   Policy "Coordinators can insert bulk messages" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//   Policy "Coordinators can view all bulk messages" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 // Table: evaluations
 //   Policy "Users can manage their own evaluations" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
@@ -724,26 +803,36 @@ export const Constants = {
 //   END;
 //   $function$
 //
-// FUNCTION send_bulk_message(text, text, text)
-//   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_role text, p_title text, p_message text)
+// FUNCTION send_bulk_message(text, text, text, text)
+//   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_role text, p_title text, p_message text, p_priority text DEFAULT 'normal'::text)
 //    RETURNS void
 //    LANGUAGE plpgsql
 //    SECURITY DEFINER
 //   AS $function$
+//   DECLARE
+//     v_sender_id UUID;
+//     v_bulk_id UUID;
 //   BEGIN
+//     v_sender_id := auth.uid();
+//
 //     -- Verify caller is coordinator
-//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
+//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND role = 'coordenador') THEN
 //       RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
 //     END IF;
 //
+//     -- Insert into bulk_messages
+//     INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority)
+//     VALUES (v_sender_id, p_target_role, p_title, p_message, p_priority)
+//     RETURNING id INTO v_bulk_id;
+//
 //     IF p_target_role = 'todos' THEN
 //       -- Insert for everyone except the sender
-//       INSERT INTO public.notifications (user_id, title, message, type)
-//       SELECT id, p_title, p_message, 'message' FROM public.users WHERE id != auth.uid();
+//       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id;
 //     ELSE
 //       -- Insert for specific role
-//       INSERT INTO public.notifications (user_id, title, message, type)
-//       SELECT id, p_title, p_message, 'message' FROM public.users WHERE role::text = p_target_role AND id != auth.uid();
+//       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE role::text = p_target_role AND id != v_sender_id;
 //     END IF;
 //   END;
 //   $function$
