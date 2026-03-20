@@ -9,6 +9,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      avaliacao_acompanhamentos: {
+        Row: {
+          autor_id: string
+          avaliacao_id: string
+          concluido: boolean
+          concluido_em: string | null
+          created_at: string
+          id: string
+          observacao: string
+          prazo: string | null
+        }
+        Insert: {
+          autor_id: string
+          avaliacao_id: string
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          observacao: string
+          prazo?: string | null
+        }
+        Update: {
+          autor_id?: string
+          avaliacao_id?: string
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          observacao?: string
+          prazo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'avaliacao_acompanhamentos_autor_id_fkey'
+            columns: ['autor_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'avaliacao_acompanhamentos_avaliacao_id_fkey'
+            columns: ['avaliacao_id']
+            isOneToOne: false
+            referencedRelation: 'avaliacoes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           avaliador_id: string
@@ -550,6 +598,15 @@ export const Constants = {
 // --- COLUMN TYPES (actual PostgreSQL types) ---
 // Use this to know the real database type when writing migrations.
 // "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: avaliacao_acompanhamentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   avaliacao_id: uuid (not null)
+//   autor_id: uuid (not null)
+//   observacao: text (not null)
+//   prazo: date (nullable)
+//   concluido: boolean (not null, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+//   concluido_em: timestamp with time zone (nullable)
 // Table: avaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   avaliador_id: uuid (not null, default: auth.uid())
@@ -650,6 +707,10 @@ export const Constants = {
 //   foto_url: text (nullable)
 
 // --- CONSTRAINTS ---
+// Table: avaliacao_acompanhamentos
+//   FOREIGN KEY avaliacao_acompanhamentos_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES users(id) ON DELETE CASCADE
+//   FOREIGN KEY avaliacao_acompanhamentos_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
+//   PRIMARY KEY avaliacao_acompanhamentos_pkey: PRIMARY KEY (id)
 // Table: avaliacoes
 //   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE CASCADE
 //   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
@@ -676,6 +737,13 @@ export const Constants = {
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
 
 // --- ROW LEVEL SECURITY POLICIES ---
+// Table: avaliacao_acompanhamentos
+//   Policy "Allow insert for authenticated" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "Allow update for authenticated" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: avaliacoes
 //   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))

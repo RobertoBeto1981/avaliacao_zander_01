@@ -9,6 +9,7 @@ import {
   Target,
   AlertCircle,
   MessageSquare,
+  History,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
@@ -34,6 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
+import { HistoryDialog } from '@/components/HistoryDialog'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -43,6 +45,7 @@ export default function ProfessorDashboard() {
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{ id: string; nome: string } | null>(
     null,
   )
+  const [historyEval, setHistoryEval] = useState<{ id: string; nome: string } | null>(null)
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -150,7 +153,7 @@ export default function ProfessorDashboard() {
               <TableHead>Reavaliação</TableHead>
               <TableHead>Período de Treino</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Prazo para Treino</TableHead>
+              <TableHead>Prazo</TableHead>
               <TableHead>Acompanhamento</TableHead>
               <TableHead>Links</TableHead>
             </TableRow>
@@ -261,15 +264,30 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs px-2"
-                      onClick={() => setAcompanhamentoEval({ id: ev.id, nome: ev.nome_cliente })}
-                    >
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      Anotações
-                    </Button>
+                    <div className="flex gap-1.5 items-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs px-2 flex-1 font-medium bg-background hover:bg-muted"
+                        onClick={() => setAcompanhamentoEval({ id: ev.id, nome: ev.nome_cliente })}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                        Anotações
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-muted-foreground"
+                            onClick={() => setHistoryEval({ id: ev.id, nome: ev.nome_cliente })}
+                          >
+                            <History className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Ver Histórico de Auditoria</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -334,6 +352,13 @@ export default function ProfessorDashboard() {
         onOpenChange={(open) => !open && setAcompanhamentoEval(null)}
         avaliacaoId={acompanhamentoEval?.id || ''}
         nomeCliente={acompanhamentoEval?.nome || ''}
+      />
+
+      <HistoryDialog
+        open={!!historyEval}
+        onOpenChange={(open) => !open && setHistoryEval(null)}
+        avaliacaoId={historyEval?.id || ''}
+        nomeCliente={historyEval?.nome || ''}
       />
     </div>
   )
