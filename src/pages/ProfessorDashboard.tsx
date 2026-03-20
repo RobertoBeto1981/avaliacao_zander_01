@@ -1,16 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
-import {
-  FileText,
-  HeartPulse,
-  Activity,
-  Scale,
-  Target,
-  CheckCircle,
-  FileCheck,
-  AlertCircle,
-} from 'lucide-react'
+import { FileText, HeartPulse, Activity, Scale, Target, AlertCircle } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
@@ -201,12 +192,6 @@ export default function ProfessorDashboard() {
                 },
                 { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
                 { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
-                {
-                  type: 'external',
-                  url: links.relatorio_pdf_url,
-                  icon: FileCheck,
-                  label: 'Visualizar PDF',
-                },
               ]
 
               return (
@@ -274,12 +259,7 @@ export default function ProfessorDashboard() {
                                 {item.type === 'internal' ? (
                                   <Link
                                     to={item.url}
-                                    className={cn(
-                                      'p-1.5 hover:bg-accent rounded-md transition-colors',
-                                      item.label === 'Visualizar PDF'
-                                        ? 'text-red-500 hover:text-red-600'
-                                        : 'text-primary',
-                                    )}
+                                    className="p-1.5 hover:bg-accent rounded-md transition-colors text-primary"
                                   >
                                     <Icon className="w-4 h-4" />
                                   </Link>
@@ -288,12 +268,7 @@ export default function ProfessorDashboard() {
                                     href={item.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className={cn(
-                                      'p-1.5 hover:bg-accent rounded-md transition-colors',
-                                      item.label === 'Visualizar PDF'
-                                        ? 'text-red-500 hover:text-red-600'
-                                        : 'text-primary',
-                                    )}
+                                    className="p-1.5 hover:bg-accent rounded-md transition-colors text-primary"
                                   >
                                     <Icon className="w-4 h-4" />
                                   </a>
