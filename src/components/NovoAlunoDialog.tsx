@@ -1,0 +1,109 @@
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import { createPreAvaliacao } from '@/services/evaluations'
+import { useAuth } from '@/hooks/use-auth'
+import { Loader2 } from 'lucide-react'
+
+export function NovoAlunoDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess: () => void
+}) {
+  const [evoId, setEvoId] = useState('')
+  const [nome, setNome] = useState('')
+  const [telefone, setTelefone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+  const { user } = useAuth()
+
+  const handleSave = async () => {
+    if (!evoId || !nome) {
+      toast({
+        title: 'Atenção',
+        description: 'ID EVO e Nome são obrigatórios.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setLoading(true)
+    try {
+      await createPreAvaliacao({
+        evo_id: evoId,
+        nome_cliente: nome,
+        telefone_cliente: telefone,
+        professor_id: user?.id || '',
+      })
+      toast({ title: 'Sucesso', description: 'Aluno registrado para pré-avaliação.' })
+      setEvoId('')
+      setNome('')
+      setTelefone('')
+      onSuccess()
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Novo Aluno (Pré-Avaliação)</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="evo_id">ID EVO *</Label>
+            <Input
+              id="evo_id"
+              value={evoId}
+              onChange={(e) => setEvoId(e.target.value)}
+              placeholder="Ex: 12345"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome do Cliente *</Label>
+            <Input
+              id="nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Maria da Silva"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="telefone">Telefone</Label>
+            <Input
+              id="telefone"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              placeholder="Opcional"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={loading || !evoId || !nome}>
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -57,6 +57,51 @@ export type Database = {
           },
         ]
       }
+      avaliacao_history: {
+        Row: {
+          action_type: string
+          avaliacao_id: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          avaliacao_id: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          avaliacao_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'avaliacao_history_avaliacao_id_fkey'
+            columns: ['avaliacao_id']
+            isOneToOne: false
+            referencedRelation: 'avaliacoes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'avaliacao_history_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           avaliador_id: string
@@ -607,6 +652,14 @@ export const Constants = {
 //   concluido: boolean (not null, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
 //   concluido_em: timestamp with time zone (nullable)
+// Table: avaliacao_history
+//   id: uuid (not null, default: gen_random_uuid())
+//   avaliacao_id: uuid (not null)
+//   user_id: uuid (nullable)
+//   action_type: text (not null)
+//   description: text (not null)
+//   metadata: jsonb (nullable, default: '{}'::jsonb)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: avaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   avaliador_id: uuid (not null, default: auth.uid())
@@ -711,6 +764,10 @@ export const Constants = {
 //   FOREIGN KEY avaliacao_acompanhamentos_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES users(id) ON DELETE CASCADE
 //   FOREIGN KEY avaliacao_acompanhamentos_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
 //   PRIMARY KEY avaliacao_acompanhamentos_pkey: PRIMARY KEY (id)
+// Table: avaliacao_history
+//   FOREIGN KEY avaliacao_history_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
+//   PRIMARY KEY avaliacao_history_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY avaliacao_history_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 // Table: avaliacoes
 //   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE CASCADE
 //   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
@@ -743,6 +800,9 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "Allow update for authenticated" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: avaliacao_history
+//   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: avaliacoes
 //   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
@@ -857,6 +917,75 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION log_acompanhamento_changes()
+//   CREATE OR REPLACE FUNCTION public.log_acompanhamento_changes()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     current_user_id UUID := auth.uid();
+//   BEGIN
+//     IF TG_OP = 'INSERT' THEN
+//       INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//       VALUES (
+//         NEW.avaliacao_id,
+//         current_user_id,
+//         'ACOMPANHAMENTO_ADDED',
+//         'Nova observação ou tarefa adicionada',
+//         jsonb_build_object('acompanhamento_id', NEW.id, 'prazo', NEW.prazo)
+//       );
+//     ELSIF TG_OP = 'UPDATE' THEN
+//       IF OLD.concluido IS DISTINCT FROM NEW.concluido THEN
+//         INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//         VALUES (
+//           NEW.avaliacao_id,
+//           current_user_id,
+//           'ACOMPANHAMENTO_TOGGLED',
+//           CASE WHEN NEW.concluido THEN 'Tarefa marcada como concluída' ELSE 'Tarefa reaberta' END,
+//           jsonb_build_object('acompanhamento_id', NEW.id, 'concluido', NEW.concluido)
+//         );
+//       END IF;
+//     END IF;
+//     RETURN NULL;
+//   END;
+//   $function$
+//
+// FUNCTION log_avaliacao_updates()
+//   CREATE OR REPLACE FUNCTION public.log_avaliacao_updates()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     current_user_id UUID := auth.uid();
+//   BEGIN
+//     IF OLD.status IS DISTINCT FROM NEW.status THEN
+//       INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//       VALUES (
+//         NEW.id,
+//         current_user_id,
+//         'STATUS_CHANGE',
+//         'Status alterado de ' || COALESCE(OLD.status::text, 'nenhum') || ' para ' || COALESCE(NEW.status::text, 'nenhum'),
+//         jsonb_build_object('old_status', OLD.status, 'new_status', NEW.status)
+//       );
+//     END IF;
+//
+//     IF OLD.professor_id IS DISTINCT FROM NEW.professor_id AND NEW.professor_id IS NOT NULL THEN
+//        INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//        VALUES (
+//          NEW.id,
+//          current_user_id,
+//          'PROFESSOR_ASSIGNED',
+//          'Professor atribuído para acompanhamento de treino',
+//          jsonb_build_object('old_professor', OLD.professor_id, 'new_professor', NEW.professor_id)
+//        );
+//     END IF;
+//
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION notify_professor_on_assignment()
 //   CREATE OR REPLACE FUNCTION public.notify_professor_on_assignment()
 //    RETURNS trigger
@@ -915,10 +1044,15 @@ export const Constants = {
 //
 
 // --- TRIGGERS ---
+// Table: avaliacao_acompanhamentos
+//   on_acompanhamento_change_log: CREATE TRIGGER on_acompanhamento_change_log AFTER INSERT OR UPDATE ON public.avaliacao_acompanhamentos FOR EACH ROW EXECUTE FUNCTION log_acompanhamento_changes()
 // Table: avaliacoes
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
+//   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
 
 // --- INDEXES ---
+// Table: avaliacao_history
+//   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -17,6 +18,7 @@ import { LinksFields } from './eval-sections/Links'
 export default function NewEvaluation() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const [existingId, setExistingId] = useState<string | null>(null)
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -44,6 +46,7 @@ export default function NewEvaluation() {
   const onSubmit = async (data: EvaluationFormValues) => {
     try {
       const {
+        evo_id,
         nome_cliente,
         telefone_cliente,
         data_avaliacao,
@@ -55,6 +58,7 @@ export default function NewEvaluation() {
       } = data
 
       const avaliacao = {
+        evo_id,
         nome_cliente,
         telefone_cliente,
         data_avaliacao: format(data_avaliacao, 'yyyy-MM-dd'),
@@ -71,7 +75,7 @@ export default function NewEvaluation() {
         my_score_url: client_links?.myscore,
       }
 
-      const res = await createEvaluation(avaliacao, links)
+      const res = await createEvaluation(avaliacao, links, existingId || undefined)
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
       navigate(`/evaluation/${res.id}`)
     } catch (err: any) {
@@ -90,7 +94,7 @@ export default function NewEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-          <IdentificationFields />
+          <IdentificationFields setExistingId={setExistingId} />
           <TrainingHistoryFields />
           <CurrentLifestyleFields />
           <HealthFields />

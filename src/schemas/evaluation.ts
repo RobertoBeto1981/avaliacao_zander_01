@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const evaluationSchema = z.object({
+  evo_id: z.string().optional(),
   nome_cliente: z.string().min(2, 'Obrigatório'),
   telefone_cliente: z.string().min(8, 'Obrigatório'),
   data_avaliacao: z.date({ required_error: 'Obrigatório' }),

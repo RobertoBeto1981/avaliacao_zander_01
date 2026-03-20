@@ -10,6 +10,7 @@ import {
   AlertCircle,
   MessageSquare,
   History,
+  Plus,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
@@ -32,10 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
+import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -46,6 +49,7 @@ export default function ProfessorDashboard() {
     null,
   )
   const [historyEval, setHistoryEval] = useState<{ id: string; nome: string } | null>(null)
+  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -89,7 +93,7 @@ export default function ProfessorDashboard() {
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
     return evaluations.filter((ev) => {
-      if (ev.status === 'concluido') return false
+      if (ev.status === 'concluido' || ev.is_pre_avaliacao) return false
       const deadline = calculateDeadline(ev.data_avaliacao, 3)
       return isAfter(today, deadline)
     })
@@ -99,7 +103,13 @@ export default function ProfessorDashboard() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Painel do Professor</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold">Painel do Professor</h1>
+        <Button onClick={() => setIsNewStudentOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Aluno
+        </Button>
+      </div>
 
       {lateEvals.length > 0 && (
         <Alert
@@ -163,7 +173,8 @@ export default function ProfessorDashboard() {
               const today = startOfDay(new Date())
               const evalDate = new Date(ev.data_avaliacao + 'T00:00:00')
               const deadline = calculateDeadline(ev.data_avaliacao, 3)
-              const isLate = isAfter(today, deadline) && ev.status !== 'concluido'
+              const isLate =
+                !ev.is_pre_avaliacao && isAfter(today, deadline) && ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
               const daysSinceEval = differenceInDays(today, evalDate)
@@ -171,19 +182,21 @@ export default function ProfessorDashboard() {
               let reevalDotClass = ''
               let isPulsing = false
 
-              if (daysSinceEval <= 29) {
-                reevalColorClass = 'text-green-600 dark:text-green-400'
-                reevalDotClass = 'bg-green-600 dark:bg-green-400'
-              } else if (daysSinceEval <= 59) {
-                reevalColorClass = 'text-orange-600 dark:text-orange-400'
-                reevalDotClass = 'bg-orange-600 dark:bg-orange-400'
-              } else if (daysSinceEval <= 90) {
-                reevalColorClass = 'text-red-600 dark:text-red-400'
-                reevalDotClass = 'bg-red-600 dark:bg-red-400'
-              } else {
-                reevalColorClass = 'text-red-600 dark:text-red-400 font-bold'
-                reevalDotClass = 'bg-red-600 dark:bg-red-400'
-                isPulsing = true
+              if (!ev.is_pre_avaliacao) {
+                if (daysSinceEval <= 29) {
+                  reevalColorClass = 'text-green-600 dark:text-green-400'
+                  reevalDotClass = 'bg-green-600 dark:bg-green-400'
+                } else if (daysSinceEval <= 59) {
+                  reevalColorClass = 'text-orange-600 dark:text-orange-400'
+                  reevalDotClass = 'bg-orange-600 dark:bg-orange-400'
+                } else if (daysSinceEval <= 90) {
+                  reevalColorClass = 'text-red-600 dark:text-red-400'
+                  reevalDotClass = 'bg-red-600 dark:bg-red-400'
+                } else {
+                  reevalColorClass = 'text-red-600 dark:text-red-400 font-bold'
+                  reevalDotClass = 'bg-red-600 dark:bg-red-400'
+                  isPulsing = true
+                }
               }
 
               const linkItems = [
@@ -210,24 +223,62 @@ export default function ProfessorDashboard() {
               ]
 
               return (
-                <TableRow key={ev.id} className="hover:bg-muted/20">
-                  <TableCell className="font-medium">{ev.nome_cliente}</TableCell>
-                  <TableCell>{format(evalDate, 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>
-                    <div
-                      className={cn(
-                        'flex items-center gap-2',
-                        reevalColorClass,
-                        isPulsing && 'animate-pulse',
-                      )}
-                    >
-                      <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                      <span>
-                        {ev.data_reavaliacao
-                          ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                          : '-'}
-                      </span>
+                <TableRow
+                  key={ev.id}
+                  className={cn(
+                    'hover:bg-muted/20',
+                    ev.is_pre_avaliacao && 'bg-blue-50/30 dark:bg-blue-950/10',
+                  )}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col gap-1.5">
+                      <span>{ev.nome_cliente}</span>
+                      <div className="flex gap-2 items-center flex-wrap">
+                        {ev.is_pre_avaliacao && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 border-none"
+                          >
+                            Pré-Avaliação
+                          </Badge>
+                        )}
+                        {ev.evo_id && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-4 px-1.5 py-0 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
+                          >
+                            EVO: {ev.evo_id}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {ev.is_pre_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      format(evalDate, 'dd/MM/yyyy')
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {ev.is_pre_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <div
+                        className={cn(
+                          'flex items-center gap-2',
+                          reevalColorClass,
+                          isPulsing && 'animate-pulse',
+                        )}
+                      >
+                        <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                        <span>
+                          {ev.data_reavaliacao
+                            ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                            : '-'}
+                        </span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>{ev.periodo_treino || '-'}</TableCell>
                   <TableCell>
@@ -256,12 +307,16 @@ export default function ProfessorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 font-medium">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}
-                      />
-                      {format(deadline, 'dd/MM/yyyy')}
-                    </div>
+                    {ev.is_pre_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <div className="flex items-center gap-2 font-medium">
+                        <span
+                          className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}
+                        />
+                        {format(deadline, 'dd/MM/yyyy')}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1.5 items-center">
@@ -293,7 +348,7 @@ export default function ProfessorDashboard() {
                     <div className="flex gap-1">
                       {linkItems.map((item, idx) => {
                         const Icon = item.icon
-                        if (item.url) {
+                        if (!ev.is_pre_avaliacao && item.url) {
                           return (
                             <Tooltip key={idx}>
                               <TooltipTrigger asChild>
@@ -359,6 +414,15 @@ export default function ProfessorDashboard() {
         onOpenChange={(open) => !open && setHistoryEval(null)}
         avaliacaoId={historyEval?.id || ''}
         nomeCliente={historyEval?.nome || ''}
+      />
+
+      <NovoAlunoDialog
+        open={isNewStudentOpen}
+        onOpenChange={setIsNewStudentOpen}
+        onSuccess={() => {
+          setIsNewStudentOpen(false)
+          loadData()
+        }}
       />
     </div>
   )
