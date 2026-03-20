@@ -14,6 +14,7 @@ import ProfessorDashboard from './pages/ProfessorDashboard'
 import Communications from './pages/Communications'
 import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
+import CoordinatorDashboard from './pages/CoordinatorDashboard'
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const { session, loading } = useAuth()
@@ -45,6 +46,14 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <ProfessorDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/coordinator"
+        element={
+          <PrivateRoute>
+            <CoordinatorDashboard />
           </PrivateRoute>
         }
       />

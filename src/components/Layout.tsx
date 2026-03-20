@@ -10,6 +10,7 @@ import {
   AlertCircle,
   UserCircle,
   MessageSquare,
+  PieChart,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -80,6 +81,15 @@ export default function Layout() {
                   >
                     Início
                   </Link>
+                  {profile && profile.role === 'coordenador' && (
+                    <Link
+                      to="/coordinator"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/coordinator' ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <PieChart className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                  )}
                   {profile && ['professor', 'coordenador'].includes(profile.role) && (
                     <Link
                       to="/professor"
