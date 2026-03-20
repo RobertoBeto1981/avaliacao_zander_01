@@ -217,30 +217,29 @@ export default function ProfessorDashboard() {
                   </TableCell>
                   <TableCell>{ev.periodo_treino || '-'}</TableCell>
                   <TableCell>
-                    {ev.status === 'concluido' ? (
-                      <Badge variant="default">Concluído</Badge>
-                    ) : (
-                      <Select
-                        value={ev.status}
-                        onValueChange={(val) => handleStatusChange(ev.id, val)}
+                    <Select
+                      value={ev.status || 'pendente'}
+                      onValueChange={(val) => handleStatusChange(ev.id, val)}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          'w-[140px] h-8 text-xs font-semibold',
+                          (!ev.status || ev.status === 'pendente') &&
+                            'border-slate-300 text-slate-600 bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:bg-slate-800/50',
+                          ev.status === 'em_progresso' &&
+                            'border-blue-300 text-blue-700 bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:bg-blue-950/50',
+                          ev.status === 'concluido' &&
+                            'border-green-300 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-400 dark:bg-green-950/50',
+                        )}
                       >
-                        <SelectTrigger
-                          className={cn(
-                            'w-[140px] h-8 text-xs font-semibold',
-                            ev.status === 'pendente'
-                              ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950/20'
-                              : 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20',
-                          )}
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                          <SelectItem value="concluido">Concluído</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pendente">Pendente</SelectItem>
+                        <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                        <SelectItem value="concluido">Concluído</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 font-medium">
