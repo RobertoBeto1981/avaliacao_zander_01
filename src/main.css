@@ -31,14 +31,14 @@
   body {
     background: white;
     color: black;
-    font-size: 12pt;
+    font-size: 10pt;
   }
   .no-print {
     display: none !important;
   }
   @page {
     size: A4 portrait;
-    margin: 1.5cm;
+    margin: 1cm;
   }
   * {
     -webkit-print-color-adjust: exact !important;

@@ -10,6 +10,7 @@ import {
   CalendarDays,
   HeartPulse,
   Link as LinkIcon,
+  MessageSquareQuote,
 } from 'lucide-react'
 import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
@@ -27,14 +28,14 @@ const InfoField = ({
 }) => (
   <div
     className={cn(
-      'flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5',
+      'flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5 print:pb-1',
       className,
     )}
   >
-    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5">
+    <span className="text-[10px] print:text-[8px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5 print:mb-0">
       {label}
     </span>
-    <span className="text-sm font-medium text-foreground print:text-black leading-tight">
+    <span className="text-sm print:text-[11px] font-medium text-foreground print:text-black leading-tight">
       {value || '-'}
     </span>
   </div>
@@ -43,15 +44,15 @@ const InfoField = ({
 const LinkField = ({ label, url }: { label: string; url?: string | null }) => {
   if (!url) return null
   return (
-    <div className="flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5 col-span-1 md:col-span-2 lg:col-span-3">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5">
+    <div className="flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5 print:pb-1 col-span-1 md:col-span-2 lg:col-span-3 print:col-span-3">
+      <span className="text-[10px] print:text-[8px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5 print:mb-0">
         {label}
       </span>
       <a
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="text-sm font-medium text-blue-600 hover:underline print:text-blue-800 break-all leading-tight"
+        className="text-sm print:text-[10px] font-medium text-blue-600 hover:underline print:text-blue-800 break-all leading-tight"
       >
         {url}
       </a>
@@ -60,14 +61,14 @@ const LinkField = ({ label, url }: { label: string; url?: string | null }) => {
 }
 
 const Section = ({ title, icon: Icon, children }: any) => (
-  <section className="mb-8 print:mb-6 print-break-inside-avoid">
-    <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2 print:border-gray-300">
-      <Icon className="w-5 h-5 text-primary print:text-gray-600" />
-      <h3 className="text-lg font-bold uppercase text-primary print:text-black tracking-tight">
+  <section className="mb-8 print:mb-4 print-break-inside-avoid">
+    <div className="flex items-center gap-2 mb-4 print:mb-2 border-b-2 border-primary/20 pb-2 print:pb-1 print:border-gray-300">
+      <Icon className="w-5 h-5 print:w-4 print:h-4 text-primary print:text-gray-600" />
+      <h3 className="text-lg print:text-sm font-bold uppercase text-primary print:text-black tracking-tight">
         {title}
       </h3>
     </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 print:gap-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 gap-x-6 gap-y-4 print:gap-x-4 print:gap-y-2">
       {children}
     </div>
   </section>
@@ -101,6 +102,7 @@ export default function EvaluationDetails() {
   }, [id])
 
   const safeDate = (d?: string) => (d ? format(new Date(d), 'dd/MM/yyyy') : '-')
+  const safeArray = (arr: any) => (Array.isArray(arr) && arr.length > 0 ? arr.join(', ') : '-')
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
   if (!data) return <div className="p-8 text-center text-destructive">Avaliação não encontrada</div>
@@ -122,23 +124,22 @@ export default function EvaluationDetails() {
 
       <Card className="border-border/50 print:border-none print:shadow-none bg-white text-black">
         <CardContent className="p-8 md:p-10 print:p-0">
-          {/* Ficha Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-primary pb-6 mb-8 print:pb-4 print:mb-6 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary p-3 rounded-xl print:bg-transparent print:border-2 print:border-primary print:p-2">
-                <Dumbbell className="w-10 h-10 text-white print:text-primary" />
+          <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-primary pb-6 mb-8 print:pb-3 print:mb-4 gap-4 print:gap-2">
+            <div className="flex items-center gap-4 print:gap-3">
+              <div className="bg-primary p-3 rounded-xl print:bg-transparent print:border-2 print:border-primary print:p-1.5">
+                <Dumbbell className="w-10 h-10 print:w-6 print:h-6 text-white print:text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-black uppercase tracking-tighter text-[#1d1d1b]">
+                <h1 className="text-3xl print:text-xl font-black uppercase tracking-tighter text-[#1d1d1b]">
                   ZANDER Academia
                 </h1>
-                <p className="text-lg text-muted-foreground print:text-gray-600 font-medium">
+                <p className="text-lg print:text-xs text-muted-foreground print:text-gray-600 font-medium">
                   Ficha de Avaliação Física e Anamnese
                 </p>
               </div>
             </div>
-            <div className="text-right text-sm bg-muted/30 p-3 rounded-lg print:bg-transparent print:p-0">
-              <p className="text-muted-foreground print:text-gray-500 uppercase text-[10px] font-bold tracking-wider">
+            <div className="text-right text-sm print:text-xs bg-muted/30 p-3 rounded-lg print:bg-transparent print:p-0">
+              <p className="text-muted-foreground print:text-gray-500 uppercase text-[10px] print:text-[8px] font-bold tracking-wider">
                 Emitido em
               </p>
               <p className="font-bold text-foreground print:text-black">
@@ -147,12 +148,12 @@ export default function EvaluationDetails() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 print:space-y-0">
             <Section title="Identificação do Cliente" icon={User}>
               <InfoField
                 label="Nome Completo"
                 value={data.nome_cliente}
-                className="md:col-span-2"
+                className="md:col-span-2 print:col-span-2"
               />
               <InfoField label="ID EVO" value={data.evo_id} />
               <InfoField label="Telefone" value={data.telefone_cliente} />
@@ -163,8 +164,8 @@ export default function EvaluationDetails() {
               <InfoField label="Professor Designado" value={data.professor?.nome} />
               <InfoField
                 label="Objetivos Iniciais"
-                value={data.objectives?.join(', ')}
-                className="md:col-span-2 lg:col-span-3 bg-primary/5 print:bg-transparent p-2 rounded print:p-0"
+                value={safeArray(data.objectives)}
+                className="md:col-span-2 lg:col-span-3 print:col-span-3 bg-primary/5 print:bg-transparent p-2 rounded print:p-0"
               />
             </Section>
 
@@ -177,7 +178,7 @@ export default function EvaluationDetails() {
               <InfoField
                 label="Modalidades Praticadas"
                 value={r.modalities}
-                className="md:col-span-2 lg:col-span-3"
+                className="md:col-span-2 lg:col-span-3 print:col-span-3"
               />
             </Section>
 
@@ -191,7 +192,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Motivo S/ Acompanhamento"
                   value={r.nutritional_status?.reason}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -200,7 +201,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Quais suplementos"
                   value={r.supplements?.list}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -209,20 +210,20 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Quantidade/dia"
                   value={r.smoking?.amount}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
               <InfoField
                 label="Intolerâncias Alimentares"
-                value={r.intolerances?.choices?.join(', ')}
-                className="md:col-span-3"
+                value={safeArray(r.intolerances?.choices)}
+                className="md:col-span-3 print:col-span-3"
               />
               {r.intolerances?.list && (
                 <InfoField
                   label="Outras Intolerâncias"
                   value={r.intolerances?.list}
-                  className="md:col-span-3"
+                  className="md:col-span-3 print:col-span-3"
                 />
               )}
             </Section>
@@ -240,7 +241,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Obs. Exames"
                   value={r.health_exams?.notes}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -252,7 +253,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Qual"
                   value={r.cardio_pathology?.list}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -265,7 +266,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Lista de Medicamentos / Ações"
                   value={r.medications?.list}
-                  className="md:col-span-2 bg-orange-50 print:bg-transparent"
+                  className="md:col-span-2 print:col-span-2 bg-orange-50 print:bg-transparent"
                 />
               )}
 
@@ -274,7 +275,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Quais alergias"
                   value={r.allergies?.list}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -283,7 +284,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Quais cirurgias"
                   value={r.surgeries?.list}
-                  className="md:col-span-2"
+                  className="md:col-span-2 print:col-span-2"
                 />
               )}
 
@@ -295,7 +296,7 @@ export default function EvaluationDetails() {
                 <InfoField
                   label="Observação da Dor"
                   value={r.pains?.observation}
-                  className="md:col-span-2 text-red-600 print:text-red-800"
+                  className="md:col-span-2 print:col-span-2 text-red-600 print:text-red-800"
                 />
               )}
 
@@ -310,9 +311,58 @@ export default function EvaluationDetails() {
               <InfoField
                 label="Contato de Emergência"
                 value={r.emergency_contact}
-                className="md:col-span-2"
+                className="md:col-span-2 print:col-span-2"
               />
             </Section>
+
+            <Section title="Preferências de Treino" icon={Dumbbell}>
+              <InfoField
+                label="Dias Disponíveis"
+                value={safeArray(r.available_days)}
+                className="md:col-span-2 print:col-span-2"
+              />
+              <InfoField label="Tempo por Sessão" value={r.session_duration} />
+              <InfoField
+                label="Como soube da academia?"
+                value={r.discovery_source}
+                className="md:col-span-3 print:col-span-3"
+              />
+              <InfoField
+                label="Gosta de Treinar"
+                value={safeArray(r.enjoys_training)}
+                className="md:col-span-3 print:col-span-3"
+              />
+              <InfoField
+                label="Gostaria de Melhorar"
+                value={safeArray(r.dislikes_looking_at)}
+                className="md:col-span-3 print:col-span-3"
+              />
+              <InfoField
+                label="NÃO GOSTA de Treinar"
+                value={safeArray(r.dislikes_training)}
+                className="md:col-span-3 print:col-span-3"
+              />
+              <InfoField
+                label="Exercícios Favoritos"
+                value={r.favorite_exercises}
+                className="md:col-span-3 print:col-span-3"
+              />
+              <InfoField
+                label="Exercícios que não gosta"
+                value={r.hated_exercises}
+                className="md:col-span-3 print:col-span-3"
+              />
+            </Section>
+
+            {r.final_observations && (
+              <Section title="Observações Finais" icon={MessageSquareQuote}>
+                <InfoField
+                  label="Anotações do Avaliador"
+                  value={r.final_observations}
+                  className="md:col-span-3 print:col-span-3 whitespace-pre-wrap"
+                />
+              </Section>
+            )}
 
             {data.links_avaliacao && data.links_avaliacao.length > 0 && (
               <Section title="Anexos e Links" icon={LinkIcon}>
