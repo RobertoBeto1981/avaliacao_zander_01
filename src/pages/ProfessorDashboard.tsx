@@ -202,21 +202,16 @@ export default function ProfessorDashboard() {
                   <TableCell>
                     <div
                       className={cn(
-                        'flex flex-col',
+                        'flex items-center gap-2',
                         reevalColorClass,
                         isPulsing && 'animate-pulse',
                       )}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                        <span>
-                          {ev.data_reavaliacao
-                            ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                            : '-'}
-                        </span>
-                      </div>
-                      <span className="text-[10px] opacity-80 mt-0.5 ml-4">
-                        ({daysSinceEval} dias)
+                      <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                      <span>
+                        {ev.data_reavaliacao
+                          ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                          : '-'}
                       </span>
                     </div>
                   </TableCell>
