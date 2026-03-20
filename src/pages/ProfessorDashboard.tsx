@@ -1,11 +1,18 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
-import { FileText, HeartPulse, Activity, Scale, Target, AlertCircle } from 'lucide-react'
+import {
+  FileText,
+  HeartPulse,
+  Activity,
+  Scale,
+  Target,
+  AlertCircle,
+  MessageSquare,
+} from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
@@ -26,12 +33,16 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [periodoFilter, setPeriodoFilter] = useState<string>('all')
+  const [acompanhamentoEval, setAcompanhamentoEval] = useState<{ id: string; nome: string } | null>(
+    null,
+  )
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -140,6 +151,7 @@ export default function ProfessorDashboard() {
               <TableHead>Período de Treino</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prazo para Treino</TableHead>
+              <TableHead>Acompanhamento</TableHead>
               <TableHead>Links</TableHead>
             </TableRow>
           </TableHeader>
@@ -249,6 +261,17 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs px-2"
+                      onClick={() => setAcompanhamentoEval({ id: ev.id, nome: ev.nome_cliente })}
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      Anotações
+                    </Button>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex gap-1">
                       {linkItems.map((item, idx) => {
                         const Icon = item.icon
@@ -297,7 +320,7 @@ export default function ProfessorDashboard() {
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhuma avaliação encontrada.
                 </TableCell>
               </TableRow>
@@ -305,6 +328,13 @@ export default function ProfessorDashboard() {
           </TableBody>
         </Table>
       </Card>
+
+      <AcompanhamentoDialog
+        open={!!acompanhamentoEval}
+        onOpenChange={(open) => !open && setAcompanhamentoEval(null)}
+        avaliacaoId={acompanhamentoEval?.id || ''}
+        nomeCliente={acompanhamentoEval?.nome || ''}
+      />
     </div>
   )
 }

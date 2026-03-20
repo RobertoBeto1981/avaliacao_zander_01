@@ -10,6 +10,7 @@ import {
   archiveNotification,
   archiveAllReadNotifications,
 } from '@/services/notifications'
+import { getPendingAcompanhamentos } from '@/services/acompanhamentos'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -29,6 +30,8 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
       const dbNotifs = await getNotifications(user.id)
       setNotifications(dbNotifs)
 
+      let generatedAlerts: any[] = []
+
       if (profile?.role === 'professor') {
         const { data: evals } = await supabase
           .from('avaliacoes')
@@ -43,7 +46,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
             return isAfter(today, deadline)
           })
 
-          const generatedAlerts = lateEvals.map((ev) => ({
+          generatedAlerts = lateEvals.map((ev) => ({
             id: `alert-${ev.id}`,
             title: 'Prazo Expirado!',
             message: `A avaliação de ${ev.nome_cliente} está atrasada.`,
@@ -51,9 +54,23 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
             is_read: false,
             created_at: new Date().toISOString(),
           }))
-          setAlerts(generatedAlerts)
         }
       }
+
+      const pendingTasks = await getPendingAcompanhamentos(user.id)
+      const taskAlerts = pendingTasks.map((t: any) => {
+        const dateFormatted = new Date(t.prazo + 'T12:00:00').toLocaleDateString('pt-BR')
+        return {
+          id: `task-${t.id}`,
+          title: 'Tarefa Pendente!',
+          message: `Prazo: ${dateFormatted} - ${t.observacao.substring(0, 40)}${t.observacao.length > 40 ? '...' : ''} (Cliente: ${t.avaliacao?.nome_cliente || 'Desconhecido'})`,
+          type: 'alert',
+          is_read: false,
+          created_at: new Date().toISOString(),
+        }
+      })
+
+      setAlerts([...generatedAlerts, ...taskAlerts])
     } catch (e) {
       console.error(e)
     }
@@ -86,7 +103,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   }, [user, profile])
 
   const handleMarkAsRead = async (id: string) => {
-    if (id.startsWith('alert-')) return
+    if (id.startsWith('alert-') || id.startsWith('task-')) return
     try {
       await markAsRead(id)
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
