@@ -291,16 +291,19 @@ export type Database = {
           acao_principal: string
           id: string
           nome: string
+          verified: boolean
         }
         Insert: {
           acao_principal: string
           id?: string
           nome: string
+          verified?: boolean
         }
         Update: {
           acao_principal?: string
           id?: string
           nome?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -625,6 +628,7 @@ export const Constants = {
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
 //   acao_principal: text (not null)
+//   verified: boolean (not null, default: false)
 // Table: notifications
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)

@@ -1,5 +1,23 @@
 import { supabase } from '@/lib/supabase/client'
 
+const translateToPT = async (text: string): Promise<string> => {
+  try {
+    // Using MyMemory Translation API (Free, no auth required for low volume)
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|pt-br`,
+    )
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.responseData?.translatedText) {
+        return data.responseData.translatedText
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao traduzir texto:', err)
+  }
+  return text // Fallback to original English if translation fails
+}
+
 export const searchMedicamentos = async (query: string) => {
   // Remove commas to prevent breaking the .or() syntax
   const safeQuery = query.replace(/,/g, '')
@@ -22,7 +40,7 @@ export const learnMedicamento = async (
   nome: string,
 ): Promise<{ action: string; verified: boolean } | null> => {
   try {
-    // 1. Tentar OpenFDA (Base Oficial Internacional)
+    // 1. Tentar OpenFDA (Base Oficial Internacional - Resultados em Inglês)
     try {
       const fdaRes = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(nome)}"+openfda.generic_name:"${encodeURIComponent(nome)}"&limit=1`,
@@ -37,7 +55,12 @@ export const learnMedicamento = async (
             result.openfda?.pharm_class_epc?.[0]
 
           if (indication) {
+            // Pega apenas a primeira frase
             let acao = indication.split('.')[0]
+
+            // Traduz a indicação do inglês para o português
+            acao = await translateToPT(acao)
+
             if (acao.length > 100) acao = acao.substring(0, 97) + '...'
             return { action: acao, verified: true }
           }
@@ -47,7 +70,7 @@ export const learnMedicamento = async (
       console.error('Erro ao buscar no OpenFDA', err)
     }
 
-    // 2. Tentar Wikipedia PT como fallback
+    // 2. Tentar Wikipedia PT como fallback (Resultados já em Português)
     const searchRes = await fetch(
       `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&utf8=&format=json&origin=*`,
     )
