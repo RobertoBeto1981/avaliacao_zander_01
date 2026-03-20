@@ -158,14 +158,14 @@ export default function ProfessorDashboard() {
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead>Nome do Cliente</TableHead>
-              <TableHead>Data da Avaliação</TableHead>
-              <TableHead>Reavaliação</TableHead>
-              <TableHead>Período de Treino</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Prazo</TableHead>
-              <TableHead>Acompanhamento</TableHead>
-              <TableHead>Links</TableHead>
+              <TableHead className="min-w-[220px]">Nome do Cliente</TableHead>
+              <TableHead className="whitespace-nowrap">Data da Avaliação</TableHead>
+              <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
+              <TableHead className="whitespace-nowrap">Período de Treino</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="whitespace-nowrap">Prazo</TableHead>
+              <TableHead className="whitespace-nowrap">Acompanhamento</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Links</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -230,14 +230,16 @@ export default function ProfessorDashboard() {
                     ev.is_pre_avaliacao && 'bg-blue-50/30 dark:bg-blue-950/10',
                   )}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium min-w-[220px]">
                     <div className="flex flex-col gap-1.5">
-                      <span>{ev.nome_cliente}</span>
-                      <div className="flex gap-2 items-center flex-wrap">
+                      <span className="line-clamp-2 leading-snug" title={ev.nome_cliente}>
+                        {ev.nome_cliente}
+                      </span>
+                      <div className="flex gap-1.5 items-center flex-wrap">
                         {ev.is_pre_avaliacao && (
                           <Badge
                             variant="secondary"
-                            className="text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 border-none"
+                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 border-none leading-tight"
                           >
                             Pré-Avaliação
                           </Badge>
@@ -245,7 +247,7 @@ export default function ProfessorDashboard() {
                         {ev.evo_id && (
                           <Badge
                             variant="outline"
-                            className="text-[10px] h-4 px-1.5 py-0 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
+                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400 leading-tight"
                           >
                             EVO: {ev.evo_id}
                           </Badge>
@@ -253,14 +255,14 @@ export default function ProfessorDashboard() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {ev.is_pre_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       format(evalDate, 'dd/MM/yyyy')
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {ev.is_pre_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
@@ -280,7 +282,7 @@ export default function ProfessorDashboard() {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{ev.periodo_treino || '-'}</TableCell>
+                  <TableCell className="whitespace-nowrap">{ev.periodo_treino || '-'}</TableCell>
                   <TableCell>
                     <Select
                       value={ev.status || 'pendente'}
@@ -306,7 +308,7 @@ export default function ProfessorDashboard() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {ev.is_pre_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
@@ -323,7 +325,7 @@ export default function ProfessorDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs px-2 flex-1 font-medium bg-background hover:bg-muted"
+                        className="h-8 text-xs px-2 flex-1 font-medium bg-background hover:bg-muted whitespace-nowrap"
                         onClick={() => setAcompanhamentoEval({ id: ev.id, nome: ev.nome_cliente })}
                       >
                         <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
@@ -344,8 +346,8 @@ export default function ProfessorDashboard() {
                       </Tooltip>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+                  <TableCell className="text-right">
+                    <div className="flex gap-1 justify-end">
                       {linkItems.map((item, idx) => {
                         const Icon = item.icon
                         if (!ev.is_pre_avaliacao && item.url) {
