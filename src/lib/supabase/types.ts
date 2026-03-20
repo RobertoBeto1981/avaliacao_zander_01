@@ -266,6 +266,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       users: {
         Row: {
           email: string
@@ -301,7 +339,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      send_bulk_message: {
+        Args: { p_message: string; p_target_role: string; p_title: string }
+        Returns: undefined
+      }
     }
     Enums: {
       avaliacao_status: 'pendente' | 'em_progresso' | 'concluido'
@@ -517,6 +558,14 @@ export const Constants = {
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
 //   acao_principal: text (not null)
+// Table: notifications
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (not null)
+//   title: text (not null)
+//   message: text (not null)
+//   type: text (not null, default: 'system'::text)
+//   is_read: boolean (not null, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: users
 //   id: uuid (not null)
 //   email: text (not null)
@@ -541,6 +590,9 @@ export const Constants = {
 // Table: medicamentos
 //   UNIQUE medicamentos_nome_key: UNIQUE (nome)
 //   PRIMARY KEY medicamentos_pkey: PRIMARY KEY (id)
+// Table: notifications
+//   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 // Table: users
 //   FOREIGN KEY users_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
@@ -571,6 +623,13 @@ export const Constants = {
 // Table: medicamentos
 //   Policy "authenticated_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: notifications
+//   Policy "System can insert notifications" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "Users can update their own notifications" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (user_id = auth.uid())
+//   Policy "Users can view their own notifications" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (user_id = auth.uid())
 // Table: users
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)
@@ -645,9 +704,54 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION notify_professor_on_assignment()
+//   CREATE OR REPLACE FUNCTION public.notify_professor_on_assignment()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     IF NEW.professor_id IS NOT NULL THEN
+//       INSERT INTO public.notifications (user_id, title, message, type)
+//       VALUES (
+//         NEW.professor_id,
+//         'Nova Avaliação Atribuída',
+//         'O cliente ' || NEW.nome_cliente || ' foi atribuído a você para montagem do treino.',
+//         'system'
+//       );
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION send_bulk_message(text, text, text)
+//   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_role text, p_title text, p_message text)
+//    RETURNS void
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     -- Verify caller is coordinator
+//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
+//       RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
+//     END IF;
+//
+//     IF p_target_role = 'todos' THEN
+//       -- Insert for everyone except the sender
+//       INSERT INTO public.notifications (user_id, title, message, type)
+//       SELECT id, p_title, p_message, 'message' FROM public.users WHERE id != auth.uid();
+//     ELSE
+//       -- Insert for specific role
+//       INSERT INTO public.notifications (user_id, title, message, type)
+//       SELECT id, p_title, p_message, 'message' FROM public.users WHERE role::text = p_target_role AND id != auth.uid();
+//     END IF;
+//   END;
+//   $function$
+//
 
 // --- TRIGGERS ---
 // Table: avaliacoes
+//   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 
 // --- INDEXES ---
