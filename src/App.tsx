@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
+import Communications from './pages/Communications'
 import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 
@@ -44,6 +45,14 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <ProfessorDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/communications"
+        element={
+          <PrivateRoute>
+            <Communications />
           </PrivateRoute>
         }
       />

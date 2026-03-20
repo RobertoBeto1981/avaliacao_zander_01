@@ -3,7 +3,14 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Dumbbell, LogOut, LayoutDashboard, AlertCircle, UserCircle } from 'lucide-react'
+import {
+  Dumbbell,
+  LogOut,
+  LayoutDashboard,
+  AlertCircle,
+  UserCircle,
+  MessageSquare,
+} from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -14,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import NotificationsMenu from './NotificationsMenu'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
@@ -81,12 +89,22 @@ export default function Layout() {
                       Painel do Professor
                     </Link>
                   )}
+                  {profile && profile.role === 'coordenador' && (
+                    <Link
+                      to="/communications"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Comunicados
+                    </Link>
+                  )}
                 </nav>
               )}
             </div>
 
             {user && (
               <div className="flex items-center gap-4">
+                <NotificationsMenu profile={profile} />
                 {profile ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

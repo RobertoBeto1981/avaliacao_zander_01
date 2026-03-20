@@ -19,6 +19,7 @@ export type Database = {
           nome_cliente: string
           objectives: string[] | null
           periodo_treino: string | null
+          professor_id: string | null
           respostas: Json | null
           status: Database['public']['Enums']['avaliacao_status'] | null
           telefone_cliente: string | null
@@ -32,6 +33,7 @@ export type Database = {
           nome_cliente: string
           objectives?: string[] | null
           periodo_treino?: string | null
+          professor_id?: string | null
           respostas?: Json | null
           status?: Database['public']['Enums']['avaliacao_status'] | null
           telefone_cliente?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           nome_cliente?: string
           objectives?: string[] | null
           periodo_treino?: string | null
+          professor_id?: string | null
           respostas?: Json | null
           status?: Database['public']['Enums']['avaliacao_status'] | null
           telefone_cliente?: string | null
@@ -53,6 +56,13 @@ export type Database = {
           {
             foreignKeyName: 'avaliacoes_avaliador_id_fkey'
             columns: ['avaliador_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'avaliacoes_professor_id_fkey'
+            columns: ['professor_id']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
@@ -259,22 +269,28 @@ export type Database = {
       users: {
         Row: {
           email: string
+          foto_url: string | null
           id: string
           nome: string
+          periodo: string | null
           role: Database['public']['Enums']['user_role']
           telefone: string | null
         }
         Insert: {
           email: string
+          foto_url?: string | null
           id: string
           nome: string
+          periodo?: string | null
           role: Database['public']['Enums']['user_role']
           telefone?: string | null
         }
         Update: {
           email?: string
+          foto_url?: string | null
           id?: string
           nome?: string
+          periodo?: string | null
           role?: Database['public']['Enums']['user_role']
           telefone?: string | null
         }
@@ -443,6 +459,7 @@ export const Constants = {
 //   respostas: jsonb (nullable)
 //   status: avaliacao_status (nullable, default: 'concluido'::avaliacao_status)
 //   created_at: timestamp with time zone (not null, default: now())
+//   professor_id: uuid (nullable)
 // Table: evaluations
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_name: text (not null)
@@ -506,11 +523,14 @@ export const Constants = {
 //   role: user_role (not null)
 //   nome: text (not null)
 //   telefone: text (nullable)
+//   periodo: text (nullable)
+//   foto_url: text (nullable)
 
 // --- CONSTRAINTS ---
 // Table: avaliacoes
 //   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE CASCADE
 //   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY avaliacoes_professor_id_fkey: FOREIGN KEY (professor_id) REFERENCES users(id)
 // Table: evaluations
 //   CHECK check_evaluator_name: CHECK ((evaluator_name = ANY (ARRAY['Carlos Falaschi'::text, 'Milena Bonifácio'::text, 'Roberto Fernandes'::text])))
 //   PRIMARY KEY evaluations_pkey: PRIMARY KEY (id)
@@ -529,10 +549,10 @@ export const Constants = {
 // Table: avaliacoes
 //   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
-//   Policy "Professors can update avaliacoes status" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
-//   Policy "Professors can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
+//   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
+//   Policy "Professors can view assigned avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = avaliador_id)
 //     WITH CHECK: (auth.uid() = avaliador_id)
@@ -561,6 +581,46 @@ export const Constants = {
 //     WITH CHECK: (auth.uid() = id)
 
 // --- DATABASE FUNCTIONS ---
+// FUNCTION auto_assign_professor()
+//   CREATE OR REPLACE FUNCTION public.auto_assign_professor()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     selected_prof_id UUID;
+//   BEGIN
+//     -- Evaluation defaults to 'pendente' once saved by the evaluator
+//     NEW.status := 'pendente';
+//
+//     IF NEW.professor_id IS NULL THEN
+//       -- Find matching period with least workload
+//       SELECT u.id INTO selected_prof_id
+//       FROM public.users u
+//       LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
+//       WHERE u.role = 'professor' AND u.periodo = NEW.periodo_treino
+//       GROUP BY u.id
+//       ORDER BY COUNT(a.id) ASC
+//       LIMIT 1;
+//
+//       -- Fallback to any professor if no exact period match
+//       IF selected_prof_id IS NULL THEN
+//         SELECT u.id INTO selected_prof_id
+//         FROM public.users u
+//         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
+//         WHERE u.role = 'professor'
+//         GROUP BY u.id
+//         ORDER BY COUNT(a.id) ASC
+//         LIMIT 1;
+//       END IF;
+//
+//       NEW.professor_id := selected_prof_id;
+//     END IF;
+//
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION handle_new_user_custom()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user_custom()
 //    RETURNS trigger
@@ -568,19 +628,27 @@ export const Constants = {
 //    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
-//     INSERT INTO public.users (id, email, nome, telefone, role)
-//     VALUES (
-//       NEW.id,
-//       NEW.email,
-//       COALESCE(NEW.raw_user_meta_data->>'nome', 'Usuário ' || split_part(NEW.email, '@', 1)),
-//       NEW.raw_user_meta_data->>'telefone',
-//       COALESCE((NEW.raw_user_meta_data->>'role'), 'avaliador')::public.user_role
-//     )
-//     ON CONFLICT (id) DO NOTHING;
+//     IF NEW.raw_user_meta_data->>'nome' IS NOT NULL THEN
+//       INSERT INTO public.users (id, email, nome, telefone, role, periodo)
+//       VALUES (
+//         NEW.id,
+//         NEW.email,
+//         NEW.raw_user_meta_data->>'nome',
+//         NEW.raw_user_meta_data->>'telefone',
+//         (NEW.raw_user_meta_data->>'role')::public.user_role,
+//         NEW.raw_user_meta_data->>'periodo'
+//       )
+//       ON CONFLICT (id) DO UPDATE SET
+//         periodo = EXCLUDED.periodo;
+//     END IF;
 //     RETURN NEW;
 //   END;
 //   $function$
 //
+
+// --- TRIGGERS ---
+// Table: avaliacoes
+//   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 
 // --- INDEXES ---
 // Table: medicamentos
