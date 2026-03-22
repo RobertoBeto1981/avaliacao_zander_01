@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -43,6 +43,41 @@ export default function NewEvaluation() {
     },
   })
 
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const draft = localStorage.getItem('evaluationDraft')
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft)
+
+        // Restore dates correctly
+        if (parsed.data_avaliacao) parsed.data_avaliacao = new Date(parsed.data_avaliacao)
+        if (parsed.data_reavaliacao) parsed.data_reavaliacao = new Date(parsed.data_reavaliacao)
+        if (parsed.target_date) parsed.target_date = new Date(parsed.target_date)
+
+        form.reset({ ...form.getValues(), ...parsed })
+
+        toast({
+          title: 'Rascunho recuperado',
+          description: 'Seus dados preenchidos anteriormente foram restaurados.',
+        })
+      } catch (e) {
+        console.error('Failed to parse evaluation draft', e)
+      }
+    }
+  }, [form, toast])
+
+  // Autosave draft to localStorage whenever form changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      // Only save if there's actual data to avoid saving empty initialization
+      if (value && Object.keys(value).length > 0) {
+        localStorage.setItem('evaluationDraft', JSON.stringify(value))
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form])
+
   const onSubmit = async (data: EvaluationFormValues) => {
     try {
       const {
@@ -76,6 +111,10 @@ export default function NewEvaluation() {
       }
 
       const res = await createEvaluation(avaliacao, links, existingId || undefined)
+
+      // Clear draft on successful submission
+      localStorage.removeItem('evaluationDraft')
+
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
       navigate(`/evaluation/${res.id}`)
     } catch (err: any) {
@@ -83,11 +122,18 @@ export default function NewEvaluation() {
     }
   }
 
+  const handleCancel = () => {
+    if (window.confirm('Tem certeza que deseja cancelar? O rascunho atual será perdido.')) {
+      localStorage.removeItem('evaluationDraft')
+      navigate('/')
+    }
+  }
+
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Nova Avaliação</h1>
-        <Button variant="outline" onClick={() => navigate('/')}>
+        <Button variant="outline" onClick={handleCancel}>
           Cancelar
         </Button>
       </div>
