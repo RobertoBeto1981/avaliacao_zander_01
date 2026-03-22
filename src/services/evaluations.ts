@@ -4,11 +4,29 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   const { data: userData } = await supabase.auth.getUser()
 
   let result
-  if (existingId) {
+  let targetId = existingId
+
+  // Se não foi passado um ID mas temos o evo_id, tentamos buscar uma pré-avaliação existente
+  if (!targetId && avaliacao.evo_id) {
+    const { data: existingPre } = await supabase
+      .from('avaliacoes')
+      .select('id')
+      .eq('evo_id', avaliacao.evo_id)
+      .eq('is_pre_avaliacao', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (existingPre) {
+      targetId = existingPre.id
+    }
+  }
+
+  if (targetId) {
     const { data, error } = await supabase
       .from('avaliacoes')
       .update({ ...avaliacao, is_pre_avaliacao: false, avaliador_id: userData.user?.id })
-      .eq('id', existingId)
+      .eq('id', targetId)
       .select()
       .single()
     if (error) throw error
@@ -16,7 +34,7 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   } else {
     const { data, error } = await supabase
       .from('avaliacoes')
-      .insert({ ...avaliacao, is_pre_avaliacao: false })
+      .insert({ ...avaliacao, is_pre_avaliacao: false, avaliador_id: userData.user?.id })
       .select()
       .single()
     if (error) throw error
@@ -24,11 +42,26 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   }
 
   if (links && Object.values(links).some((v) => v)) {
-    const { error: linksError } = await supabase.from('links_avaliacao').insert({
-      ...links,
-      avaliacao_id: result.id,
-    })
-    if (linksError) throw linksError
+    const { data: existingLinks } = await supabase
+      .from('links_avaliacao')
+      .select('id')
+      .eq('avaliacao_id', result.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (existingLinks) {
+      const { error: linksError } = await supabase
+        .from('links_avaliacao')
+        .update(links)
+        .eq('id', existingLinks.id)
+      if (linksError) throw linksError
+    } else {
+      const { error: linksError } = await supabase.from('links_avaliacao').insert({
+        ...links,
+        avaliacao_id: result.id,
+      })
+      if (linksError) throw linksError
+    }
   }
   window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return result
@@ -66,6 +99,8 @@ export const getPreAvaliacaoByEvoId = async (evoId: string) => {
     .select('id, nome_cliente, telefone_cliente')
     .eq('evo_id', evoId)
     .eq('is_pre_avaliacao', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   if (error) throw error
