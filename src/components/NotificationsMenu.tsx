@@ -79,6 +79,10 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   useEffect(() => {
     loadNotifications()
 
+    const handleUpdate = () => loadNotifications()
+    window.addEventListener('acompanhamento_updated', handleUpdate)
+    window.addEventListener('avaliacao_updated', handleUpdate)
+
     if (!user) return
 
     const channel = supabase
@@ -99,8 +103,16 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
 
     return () => {
       supabase.removeChannel(channel)
+      window.removeEventListener('acompanhamento_updated', handleUpdate)
+      window.removeEventListener('avaliacao_updated', handleUpdate)
     }
   }, [user, profile])
+
+  useEffect(() => {
+    if (open) {
+      loadNotifications()
+    }
+  }, [open])
 
   const handleMarkAsRead = async (id: string) => {
     if (id.startsWith('alert-') || id.startsWith('task-')) return

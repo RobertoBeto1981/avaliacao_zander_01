@@ -25,6 +25,7 @@ export const addAcompanhamento = async (acompanhamento: any) => {
     .single()
 
   if (error) throw error
+  window.dispatchEvent(new CustomEvent('acompanhamento_updated'))
   return data
 }
 
@@ -37,6 +38,7 @@ export const toggleAcompanhamento = async (id: string, concluido: boolean) => {
     .single()
 
   if (error) throw error
+  window.dispatchEvent(new CustomEvent('acompanhamento_updated'))
   return data
 }
 

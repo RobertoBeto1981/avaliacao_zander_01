@@ -30,6 +30,7 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
     })
     if (linksError) throw linksError
   }
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return result
 }
 
@@ -55,6 +56,7 @@ export const createPreAvaliacao = async (data: {
     .single()
 
   if (error) throw error
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return result
 }
 
@@ -107,6 +109,7 @@ export const updateEvaluationStatus = async (id: string, status: string) => {
     .select()
     .single()
   if (error) throw error
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return data
 }
 
