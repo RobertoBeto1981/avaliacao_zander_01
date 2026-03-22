@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 
+const isValidUUID = (uuid: string) => {
+  if (!uuid) return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)
+}
+
 export const createEvaluation = async (avaliacao: any, links: any, existingId?: string) => {
   const { data: userData } = await supabase.auth.getUser()
 
@@ -23,6 +28,8 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   }
 
   if (targetId) {
+    if (!isValidUUID(targetId)) throw new Error('ID de avaliação inválido')
+
     const { data, error } = await supabase
       .from('avaliacoes')
       .update({ ...avaliacao, is_pre_avaliacao: false, avaliador_id: userData.user?.id })
@@ -68,6 +75,8 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
 }
 
 export const updateEvaluationFull = async (id: string, avaliacao: any, links: any) => {
+  if (!isValidUUID(id)) throw new Error('ID de avaliação inválido')
+
   const { data, error } = await supabase
     .from('avaliacoes')
     .update(avaliacao)
@@ -159,6 +168,8 @@ export const getEvaluations = async () => {
 }
 
 export const getEvaluationById = async (id: string) => {
+  if (!isValidUUID(id)) throw new Error('ID de avaliação inválido')
+
   const { data, error } = await supabase
     .from('avaliacoes')
     .select(`
@@ -174,6 +185,8 @@ export const getEvaluationById = async (id: string) => {
 }
 
 export const updateEvaluationStatus = async (id: string, status: string) => {
+  if (!isValidUUID(id)) throw new Error('ID de avaliação inválido')
+
   const { data, error } = await supabase
     .from('avaliacoes')
     .update({ status })
