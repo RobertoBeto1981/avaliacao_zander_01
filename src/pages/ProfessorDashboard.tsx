@@ -11,8 +11,11 @@ import {
   MessageSquare,
   History,
   Plus,
+  MessageCircle,
+  Loader2,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
+import { sendWhatsAppLinks } from '@/services/whatsapp'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -50,6 +53,7 @@ export default function ProfessorDashboard() {
   )
   const [historyEval, setHistoryEval] = useState<{ id: string; nome: string } | null>(null)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
+  const [sendingWa, setSendingWa] = useState<string | null>(null)
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -74,6 +78,41 @@ export default function ProfessorDashboard() {
       toast({ title: 'Sucesso', description: 'Status atualizado com sucesso.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
+  const handleSendWhatsApp = async (ev: any) => {
+    if (!ev.telefone_cliente) {
+      toast({
+        title: 'Atenção',
+        description: 'Cliente não possui telefone cadastrado.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setSendingWa(ev.id)
+    try {
+      const res = await sendWhatsAppLinks(ev.id)
+      if (res.simulated) {
+        toast({
+          title: 'Envio Simulado',
+          description: 'Configure as chaves do WhatsApp no Supabase para enviar mensagens reais.',
+        })
+      } else {
+        toast({
+          title: 'Sucesso',
+          description: 'Links enviados via WhatsApp com sucesso!',
+        })
+      }
+    } catch (e: any) {
+      toast({
+        title: 'Erro',
+        description: e.message || 'Falha ao enviar mensagem pelo WhatsApp',
+        variant: 'destructive',
+      })
+    } finally {
+      setSendingWa(null)
     }
   }
 
@@ -331,6 +370,28 @@ export default function ProfessorDashboard() {
                         <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
                         Anotações
                       </Button>
+
+                      {!ev.is_pre_avaliacao && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-green-600 border-green-200 hover:text-green-700 hover:border-green-300 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+                              onClick={() => handleSendWhatsApp(ev)}
+                              disabled={sendingWa === ev.id}
+                            >
+                              {sendingWa === ev.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <MessageCircle className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
+                        </Tooltip>
+                      )}
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
