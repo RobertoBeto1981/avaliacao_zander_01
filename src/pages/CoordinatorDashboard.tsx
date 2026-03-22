@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { getEvaluations } from '@/services/evaluations'
 import { supabase } from '@/lib/supabase/client'
+import { isAfter, startOfDay, differenceInDays } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Clock, Activity, CheckCircle2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -25,6 +26,7 @@ export default function CoordinatorDashboard() {
   const [profFilter, setProfFilter] = useState('all')
   const [periodFilter, setPeriodFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [reavFilter, setReavFilter] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [searchName, setSearchName] = useState('')
@@ -66,15 +68,44 @@ export default function CoordinatorDashboard() {
 
       let matchDate = true
       if (dateFrom || dateTo) {
-        const evDate = new Date(ev.data_avaliacao + 'T00:00:00')
-        const from = dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date('2000-01-01')
-        const to = dateTo ? new Date(dateTo + 'T23:59:59') : new Date('2100-01-01')
-        matchDate = evDate >= from && evDate <= to
+        if (ev.is_pre_avaliacao) {
+          matchDate = false
+        } else {
+          const evDate = new Date(ev.data_avaliacao + 'T00:00:00')
+          const from = dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date('2000-01-01')
+          const to = dateTo ? new Date(dateTo + 'T23:59:59') : new Date('2100-01-01')
+          matchDate = evDate >= from && evDate <= to
+        }
       }
 
-      return matchProf && matchPeriod && matchStatus && matchDate && matchName
+      let matchReav = true
+      if (reavFilter !== 'all') {
+        if (ev.is_pre_avaliacao) {
+          matchReav = false
+        } else {
+          const today = startOfDay(new Date())
+          const reavDate = new Date(ev.data_reavaliacao + 'T00:00:00')
+          if (reavFilter === 'vencidas') {
+            matchReav = isAfter(today, reavDate)
+          } else if (reavFilter === 'proximas') {
+            const diff = differenceInDays(reavDate, today)
+            matchReav = diff >= 0 && diff <= 30
+          }
+        }
+      }
+
+      return matchProf && matchPeriod && matchStatus && matchDate && matchName && matchReav
     })
-  }, [evaluations, profFilter, periodFilter, statusFilter, dateFrom, dateTo, searchName])
+  }, [
+    evaluations,
+    profFilter,
+    periodFilter,
+    statusFilter,
+    dateFrom,
+    dateTo,
+    searchName,
+    reavFilter,
+  ])
 
   // Filter options
   const professors = useMemo(
@@ -155,7 +186,7 @@ export default function CoordinatorDashboard() {
       </div>
 
       <Card className="mb-8 border-border/50 shadow-sm bg-muted/20">
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
           <div className="space-y-1.5 lg:col-span-1">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">
               Busca por Aluno
@@ -199,6 +230,21 @@ export default function CoordinatorDashboard() {
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="em_progresso">Em Progresso</SelectItem>
                 <SelectItem value="concluido">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Reavaliação
+            </Label>
+            <Select value={reavFilter} onValueChange={setReavFilter}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="vencidas">Vencidas</SelectItem>
+                <SelectItem value="proximas">Próximas (30 dias)</SelectItem>
               </SelectContent>
             </Select>
           </div>

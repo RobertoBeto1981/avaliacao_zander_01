@@ -284,10 +284,10 @@ export default function ProfessorDashboard() {
                       <div className="flex gap-1.5 items-center flex-wrap">
                         {ev.is_pre_avaliacao && (
                           <Badge
-                            variant="secondary"
-                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 border-none leading-tight"
+                            variant="destructive"
+                            className="whitespace-nowrap text-[10px] px-2 py-0.5 border-none leading-tight bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 flex items-center gap-1 w-fit"
                           >
-                            Pré-Avaliação
+                            <AlertCircle className="w-3 h-3" /> Nova Avaliação Pendente
                           </Badge>
                         )}
                         {ev.evo_id && (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User, Eye } from 'lucide-react'
+import { FilePlus2, Search, User, Eye, AlertCircle } from 'lucide-react'
 import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -38,19 +38,25 @@ export default function Index() {
     }
   }, [session])
 
+  if (loading || loadingData)
+    return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+
+  // Redirect professors directly to their dashboard when accessing home
+  if (profile?.role === 'professor') {
+    return <Navigate to="/professor" replace />
+  }
+
   const filtered = evaluations.filter((e) =>
     e.nome_cliente.toLowerCase().includes(search.toLowerCase()),
   )
 
-  if (loading || loadingData)
-    return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
-
   const canCreateEvaluation = profile && ['avaliador', 'coordenador'].includes(profile.role)
+  const title = profile?.role === 'avaliador' ? 'Painel do Avaliador' : 'Avaliações Físicas'
 
   return (
     <div className="container mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold">Avaliações Físicas</h1>
+        <h1 className="text-3xl font-bold">{title}</h1>
         {canCreateEvaluation && (
           <Button asChild size="lg" className="font-bold">
             <Link to="/evaluation/new">
@@ -101,14 +107,15 @@ export default function Index() {
                   )}
                 >
                   <TableCell className="font-medium">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5 items-start">
                       <span>{ev.nome_cliente}</span>
                       {ev.is_pre_avaliacao && (
                         <Badge
-                          variant="secondary"
-                          className="w-fit text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none"
+                          variant="destructive"
+                          className="w-fit text-[10px] h-5 px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1.5"
                         >
-                          Pré-Avaliação
+                          <AlertCircle className="w-3 h-3" />
+                          Nova Avaliação Pendente
                         </Badge>
                       )}
                     </div>

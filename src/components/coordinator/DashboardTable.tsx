@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { ListFilter } from 'lucide-react'
+import { ListFilter, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function DashboardTable({ data }: { data: any[] }) {
@@ -51,14 +51,15 @@ export function DashboardTable({ data }: { data: any[] }) {
                     )}
                   >
                     <TableCell className="font-medium">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1.5 items-start">
                         <span>{ev.nome_cliente}</span>
                         {isPre && (
                           <Badge
-                            variant="secondary"
-                            className="w-fit text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none"
+                            variant="destructive"
+                            className="w-fit text-[10px] h-5 px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1.5"
                           >
-                            Pré-Avaliação
+                            <AlertCircle className="w-3 h-3" />
+                            Nova Avaliação Pendente
                           </Badge>
                         )}
                       </div>
