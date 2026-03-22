@@ -813,19 +813,26 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: avaliacoes
-//   Policy "Anyone can update pre-evaluations" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: (is_pre_avaliacao = true)
-//   Policy "Anyone can view pre-evaluations" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (is_pre_avaliacao = true)
-//   Policy "Coordinators can view all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//   Policy "Avaliadores can insert avaliacoes" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
+//   Policy "Avaliadores can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
+//   Policy "Avaliadores can update avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
+//   Policy "Coordinators have full access to avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//   Policy "Everyone can view pre-evaluations" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (is_pre_avaliacao = true)
+//   Policy "Professors can insert pre-evaluations" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (is_pre_avaliacao = true))
 //   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
 //   Policy "Professors can view assigned avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (auth.uid() = avaliador_id)
-//     WITH CHECK: (auth.uid() = avaliador_id)
+//     USING: (avaliador_id = auth.uid())
+//     WITH CHECK: (avaliador_id = auth.uid())
 // Table: bulk_messages
 //   Policy "Coordinators can insert bulk messages" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
