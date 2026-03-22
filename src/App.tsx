@@ -13,6 +13,7 @@ import EditEvaluation from './pages/EditEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
 import Communications from './pages/Communications'
+import VideoScheduling from './pages/VideoScheduling'
 import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 import CoordinatorDashboard from './pages/CoordinatorDashboard'
@@ -83,6 +84,16 @@ const AppRoutes = () => (
           <PrivateRoute>
             <RoleGuard allowedRoles={['coordenador']}>
               <Communications />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/videos"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['coordenador']}>
+              <VideoScheduling />
             </RoleGuard>
           </PrivateRoute>
         }
