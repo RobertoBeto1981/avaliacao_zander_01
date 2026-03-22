@@ -175,10 +175,10 @@ export default function ProfessorDashboard() {
       <div className="flex gap-4 mb-6">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filtrar por Status" />
+            <SelectValue placeholder="Filtrar por Treino" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="all">Todos os Treinos</SelectItem>
             <SelectItem value="pendente">Pendente</SelectItem>
             <SelectItem value="em_progresso">Em Progresso</SelectItem>
             <SelectItem value="concluido">Concluído</SelectItem>
@@ -208,7 +208,7 @@ export default function ProfessorDashboard() {
               <TableHead className="whitespace-nowrap">Data da Avaliação</TableHead>
               <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
               <TableHead className="whitespace-nowrap">Período de Treino</TableHead>
-              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="whitespace-nowrap">Treino</TableHead>
               <TableHead className="whitespace-nowrap">Prazo</TableHead>
               <TableHead className="whitespace-nowrap">Acompanhamento</TableHead>
               <TableHead className="whitespace-nowrap text-right">Links</TableHead>

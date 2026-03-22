@@ -27,7 +27,7 @@ export function DashboardTable({ data }: { data: any[] }) {
               <TableHead>Data da Avaliação</TableHead>
               <TableHead>Professor Resp.</TableHead>
               <TableHead>Período</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Treino</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

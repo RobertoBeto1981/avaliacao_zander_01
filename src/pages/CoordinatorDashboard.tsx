@@ -189,7 +189,7 @@ export default function CoordinatorDashboard() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Treino</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Todos" />

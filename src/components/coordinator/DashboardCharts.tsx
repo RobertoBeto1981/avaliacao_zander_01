@@ -94,7 +94,7 @@ export function DashboardCharts({ data }: { data: any[] }) {
       <Card className="lg:col-span-1 border-border/50 shadow-sm">
         <CardHeader className="flex flex-row items-center gap-2 pb-2">
           <PieChartIcon className="w-5 h-5 text-primary" />
-          <CardTitle className="text-lg">Proporção de Status</CardTitle>
+          <CardTitle className="text-lg">Proporção de Treino</CardTitle>
         </CardHeader>
         <CardContent>
           {pieData.length === 0 ? (
