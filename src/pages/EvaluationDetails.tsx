@@ -11,6 +11,7 @@ import {
   HeartPulse,
   Link as LinkIcon,
   MessageSquareQuote,
+  Edit,
 } from 'lucide-react'
 import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
@@ -114,18 +115,31 @@ export default function EvaluationDetails() {
   const r = data.respostas || {}
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl">
-      <div className="flex justify-between items-center mb-6 no-print">
+    <div className="container mx-auto py-8 max-w-5xl animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 no-print">
         <Button variant="outline" asChild>
           <Link to="/">
             <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
-        {userRole !== 'professor' && (
-          <Button onClick={() => window.print()} className="font-bold">
-            <Printer className="mr-2 h-4 w-4" /> Exportar em PDF
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {(userRole === 'coordenador' || userRole === 'avaliador' || userRole === 'professor') && (
+            <Button
+              variant="outline"
+              asChild
+              className="font-bold border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
+            >
+              <Link to={`/evaluation/edit/${id}`}>
+                <Edit className="mr-2 h-4 w-4" /> Editar
+              </Link>
+            </Button>
+          )}
+          {userRole !== 'professor' && (
+            <Button onClick={() => window.print()} className="font-bold">
+              <Printer className="mr-2 h-4 w-4" /> Exportar em PDF
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="border-border/50 print:border-none print:shadow-none bg-white text-black">

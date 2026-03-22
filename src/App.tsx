@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
+import EditEvaluation from './pages/EditEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
 import Communications from './pages/Communications'
@@ -92,6 +93,16 @@ const AppRoutes = () => (
           <PrivateRoute>
             <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
               <NewEvaluation />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/evaluation/edit/:id"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['avaliador', 'coordenador', 'professor']}>
+              <EditEvaluation />
             </RoleGuard>
           </PrivateRoute>
         }

@@ -13,6 +13,7 @@ import {
   Plus,
   MessageCircle,
   Loader2,
+  Edit,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { sendWhatsAppLinks } from '@/services/whatsapp'
@@ -377,6 +378,22 @@ export default function ProfessorDashboard() {
                         <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
                         Anotações
                       </Button>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-blue-600 border-blue-200 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
+                            asChild
+                          >
+                            <Link to={`/evaluation/edit/${ev.id}`}>
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar Avaliação</TooltipContent>
+                      </Tooltip>
 
                       {!ev.is_pre_avaliacao && isCoordenador && (
                         <Tooltip>

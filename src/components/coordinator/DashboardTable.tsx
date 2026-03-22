@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -9,7 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { ListFilter, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ListFilter, AlertCircle, Edit } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function DashboardTable({ data }: { data: any[] }) {
@@ -28,12 +30,13 @@ export function DashboardTable({ data }: { data: any[] }) {
               <TableHead>Professor Resp.</TableHead>
               <TableHead>Período</TableHead>
               <TableHead>Treino</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum registro encontrado com os filtros atuais.
                 </TableCell>
               </TableRow>
@@ -96,6 +99,18 @@ export function DashboardTable({ data }: { data: any[] }) {
                             ? 'Concluído'
                             : 'Pendente'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                        asChild
+                      >
+                        <Link to={`/evaluation/edit/${ev.id}`} title="Editar">
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 )

@@ -1,0 +1,185 @@
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate, useParams } from 'react-router-dom'
+import { format } from 'date-fns'
+import { Form } from '@/components/ui/form'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { evaluationSchema, EvaluationFormValues } from '@/schemas/evaluation'
+import { getEvaluationById, updateEvaluationFull } from '@/services/evaluations'
+import { IdentificationFields } from './eval-sections/Identification'
+import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
+import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
+import { HealthFields } from './eval-sections/Health'
+import { TrainingFields } from './eval-sections/Training'
+import { LinksFields } from './eval-sections/Links'
+import { Loader2 } from 'lucide-react'
+
+export default function EditEvaluation() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
+
+  const form = useForm<EvaluationFormValues>({
+    resolver: zodResolver(evaluationSchema),
+  })
+
+  useEffect(() => {
+    if (!id) return
+    const loadData = async () => {
+      try {
+        const data = await getEvaluationById(id)
+        if (!data) throw new Error('Avaliação não encontrada')
+
+        const respostas = data.respostas || {}
+        const links = data.links_avaliacao?.[0] || {}
+
+        const parseDate = (d?: string) => (d ? new Date(d + 'T12:00:00') : new Date())
+
+        form.reset({
+          evo_id: data.evo_id || '',
+          nome_cliente: data.nome_cliente || '',
+          telefone_cliente: data.telefone_cliente || '',
+          data_avaliacao: parseDate(data.data_avaliacao),
+          data_reavaliacao: parseDate(data.data_reavaliacao),
+          periodo_treino: data.periodo_treino || '',
+          objectives: data.objectives || [],
+
+          main_objective: respostas.main_objective || '',
+          target_date: respostas.target_date ? new Date(respostas.target_date + 'T12:00:00') : null,
+          training_frequency: respostas.training_frequency || '',
+          activity_level: respostas.activity_level || '',
+          practice_time: respostas.practice_time || '',
+          modalities: respostas.modalities || '',
+          nutritional_status: respostas.nutritional_status || {},
+          meals_per_day: respostas.meals_per_day || '',
+          sleep_hours: respostas.sleep_hours || '',
+          supplements: respostas.supplements || { choice: false },
+          medications: respostas.medications || { choice: false },
+          allergies: respostas.allergies || { choice: false },
+          intolerances: respostas.intolerances || { choices: [] },
+          smoking: respostas.smoking || { choice: false },
+          alcohol: respostas.alcohol || '',
+          health_exams: respostas.health_exams || {},
+          diabetes: respostas.diabetes || false,
+          hypertension: respostas.hypertension || false,
+          respiratory_pathology: respostas.respiratory_pathology || false,
+          cardio_pathology: respostas.cardio_pathology || { choice: false },
+          surgeries: respostas.surgeries || { choice: false },
+          pains: respostas.pains || { choice: false },
+          available_days: respostas.available_days || [],
+          session_duration: respostas.session_duration || '',
+          enjoys_training: respostas.enjoys_training || [],
+          dislikes_looking_at: respostas.dislikes_looking_at || [],
+          dislikes_training: respostas.dislikes_training || [],
+          favorite_exercises: respostas.favorite_exercises || '',
+          hated_exercises: respostas.hated_exercises || '',
+          discovery_source: respostas.discovery_source || '',
+          health_insurance: respostas.health_insurance || {},
+          emergency_contact: respostas.emergency_contact || '',
+          final_observations: respostas.final_observations || '',
+
+          client_links: {
+            symptoms: links.mapeamento_sintomas_url || '',
+            pain: links.mapeamento_dor_url || '',
+            bia: links.bia_url || '',
+            myscore: links.my_score_url || '',
+          },
+        })
+      } catch (err: any) {
+        toast({ variant: 'destructive', title: 'Erro', description: err.message })
+        navigate(-1)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [id, form, navigate, toast])
+
+  const onSubmit = async (data: EvaluationFormValues) => {
+    try {
+      const {
+        evo_id,
+        nome_cliente,
+        telefone_cliente,
+        data_avaliacao,
+        data_reavaliacao,
+        periodo_treino,
+        objectives,
+        client_links,
+        ...rest
+      } = data
+
+      const avaliacao = {
+        evo_id,
+        nome_cliente,
+        telefone_cliente,
+        data_avaliacao: format(data_avaliacao, 'yyyy-MM-dd'),
+        data_reavaliacao: format(data_reavaliacao, 'yyyy-MM-dd'),
+        periodo_treino,
+        objectives,
+        respostas: rest,
+      }
+
+      const links = {
+        mapeamento_sintomas_url: client_links?.symptoms,
+        mapeamento_dor_url: client_links?.pain,
+        bia_url: client_links?.bia,
+        my_score_url: client_links?.myscore,
+      }
+
+      await updateEvaluationFull(id!, avaliacao, links)
+
+      toast({ title: 'Sucesso!', description: 'Avaliação atualizada com sucesso.' })
+      navigate(`/evaluation/${id}`)
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message })
+    }
+  }
+
+  const handleCancel = () => {
+    navigate(-1)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto py-8 max-w-4xl animate-fade-in">
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Editar Avaliação</h1>
+        <Button variant="outline" onClick={handleCancel}>
+          Cancelar
+        </Button>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+          <IdentificationFields />
+          <TrainingHistoryFields />
+          <CurrentLifestyleFields />
+          <HealthFields />
+          <TrainingFields />
+          <LinksFields />
+
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full max-w-sm font-bold text-lg hover:scale-[1.02] transition-transform duration-200"
+            >
+              Salvar Alterações
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  )
+}

@@ -67,6 +67,43 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   return result
 }
 
+export const updateEvaluationFull = async (id: string, avaliacao: any, links: any) => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .update(avaliacao)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  if (links && Object.values(links).some((v) => v)) {
+    const { data: existingLinks } = await supabase
+      .from('links_avaliacao')
+      .select('id')
+      .eq('avaliacao_id', id)
+      .limit(1)
+      .maybeSingle()
+
+    if (existingLinks) {
+      const { error: linksError } = await supabase
+        .from('links_avaliacao')
+        .update(links)
+        .eq('id', existingLinks.id)
+      if (linksError) throw linksError
+    } else {
+      const { error: linksError } = await supabase.from('links_avaliacao').insert({
+        ...links,
+        avaliacao_id: id,
+      })
+      if (linksError) throw linksError
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+  return data
+}
+
 export const createPreAvaliacao = async (data: {
   evo_id: string
   nome_cliente: string
