@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
-export const FInput = ({ name, label, placeholder, type = 'text', ...props }: any) => {
+export const FInput = ({ name, label, placeholder, type = 'text', disabled, ...props }: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -25,6 +25,7 @@ export const FInput = ({ name, label, placeholder, type = 'text', ...props }: an
             <Input
               placeholder={placeholder}
               type={type}
+              disabled={disabled}
               {...field}
               value={field.value || ''}
               {...props}
@@ -37,7 +38,7 @@ export const FInput = ({ name, label, placeholder, type = 'text', ...props }: an
   )
 }
 
-export const FPhoneInput = ({ name, label, placeholder, ...props }: any) => {
+export const FPhoneInput = ({ name, label, placeholder, disabled, ...props }: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -68,6 +69,7 @@ export const FPhoneInput = ({ name, label, placeholder, ...props }: any) => {
                 value={field.value || ''}
                 onChange={handleChange}
                 maxLength={19}
+                disabled={disabled}
                 {...props}
               />
             </FormControl>
@@ -79,7 +81,7 @@ export const FPhoneInput = ({ name, label, placeholder, ...props }: any) => {
   )
 }
 
-export const FTextarea = ({ name, label, placeholder, ...props }: any) => {
+export const FTextarea = ({ name, label, placeholder, disabled, ...props }: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -89,7 +91,13 @@ export const FTextarea = ({ name, label, placeholder, ...props }: any) => {
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Textarea placeholder={placeholder} {...field} value={field.value || ''} {...props} />
+            <Textarea
+              placeholder={placeholder}
+              disabled={disabled}
+              {...field}
+              value={field.value || ''}
+              {...props}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -98,7 +106,7 @@ export const FTextarea = ({ name, label, placeholder, ...props }: any) => {
   )
 }
 
-export const FSelect = ({ name, label, options, placeholder = 'Selecione...' }: any) => {
+export const FSelect = ({ name, label, options, placeholder = 'Selecione...', disabled }: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -111,6 +119,7 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...' }: 
             onValueChange={field.onChange}
             defaultValue={field.value || ''}
             value={field.value || ''}
+            disabled={disabled}
           >
             <FormControl>
               <SelectTrigger>
@@ -132,7 +141,7 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...' }: 
   )
 }
 
-export const FSwitch = ({ name, label, className }: any) => {
+export const FSwitch = ({ name, label, className, disabled }: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -147,7 +156,7 @@ export const FSwitch = ({ name, label, className }: any) => {
         >
           <FormLabel className="text-base font-medium">{label}</FormLabel>
           <FormControl>
-            <Switch checked={field.value} onCheckedChange={field.onChange} />
+            <Switch checked={field.value} onCheckedChange={field.onChange} disabled={disabled} />
           </FormControl>
         </FormItem>
       )}

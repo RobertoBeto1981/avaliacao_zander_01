@@ -64,6 +64,7 @@ export const evaluationSchema = z.object({
     .optional(),
   emergency_contact: z.string().optional(),
   final_observations: z.string().optional(),
+  professor_observations: z.string().optional(),
 
   client_links: z
     .object({

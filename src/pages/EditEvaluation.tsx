@@ -14,13 +14,18 @@ import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
 import { LinksFields } from './eval-sections/Links'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Info } from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function EditEvaluation() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const { profile } = useAuth()
+
+  const isProfessor = profile?.role === 'professor'
+  const isAvaliador = profile?.role === 'avaliador'
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -90,6 +95,7 @@ export default function EditEvaluation() {
           health_insurance: respostas.health_insurance || {},
           emergency_contact: respostas.emergency_contact || '',
           final_observations: respostas.final_observations || '',
+          professor_observations: respostas.professor_observations || '',
 
           client_links: {
             symptoms: links.mapeamento_sintomas_url || '',
@@ -176,27 +182,52 @@ export default function EditEvaluation() {
 
   return (
     <div className="container mx-auto py-8 max-w-4xl animate-fade-in">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Editar Avaliação</h1>
-        <Button variant="outline" onClick={handleCancel}>
+        <Button variant="outline" onClick={handleCancel} className="w-full sm:w-auto">
           Cancelar
         </Button>
       </div>
 
+      {isProfessor && (
+        <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 flex items-start gap-3 shadow-sm">
+          <Info className="w-5 h-5 shrink-0 mt-0.5" />
+          <p className="text-sm">
+            <strong>Modo Professor:</strong> A avaliação original está em modo de leitura para você.
+            Somente o campo de <strong>"Observações do Professor"</strong> no final da página está
+            disponível para edição e prescrição.
+          </p>
+        </div>
+      )}
+
+      {isAvaliador && (
+        <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-200 flex items-start gap-3 shadow-sm">
+          <Info className="w-5 h-5 shrink-0 mt-0.5" />
+          <p className="text-sm">
+            <strong>Modo Avaliador:</strong> Você tem acesso de edição aos dados da avaliação. As{' '}
+            <strong>"Observações do Professor"</strong> são restritas e não podem ser editadas por
+            você.
+          </p>
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-          <IdentificationFields />
-          <TrainingHistoryFields />
-          <CurrentLifestyleFields />
-          <HealthFields />
-          <TrainingFields />
-          <LinksFields />
+          <fieldset disabled={isProfessor} className="space-y-8">
+            <IdentificationFields />
+            <TrainingHistoryFields />
+            <CurrentLifestyleFields />
+            <HealthFields />
+            <TrainingFields />
+          </fieldset>
 
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">
+          <LinksFields isProfessor={isProfessor} isAvaliador={isAvaliador} />
+
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
             <Button
               type="submit"
               size="lg"
-              className="w-full max-w-sm font-bold text-lg hover:scale-[1.02] transition-transform duration-200"
+              className="w-full max-w-sm font-bold text-lg hover:scale-[1.02] transition-transform duration-200 shadow-md"
             >
               Salvar Alterações
             </Button>
