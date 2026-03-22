@@ -119,7 +119,7 @@ export function HealthFields() {
     setIsLearning(true)
     try {
       const result = await learnMedicamento(medName)
-      if (result) {
+      if (result && result.action) {
         const newMed = await addMedicamento(medName, result.action, result.verified)
         appendMedToList(newMed.nome, newMed.acao_principal)
         toast({
@@ -129,10 +129,11 @@ export function HealthFields() {
         setMedSearchOpen(false)
         setMedQuery('')
       } else {
+        // Exibe fallback caso a API não retorne dados (ex: erro 404 tratado ou termo não encontrado)
         setManualAddOpen(true)
       }
     } catch (e) {
-      console.error(e)
+      console.error('Erro ao adicionar medicamento:', e)
       setManualAddOpen(true)
     } finally {
       setIsLearning(false)

@@ -824,6 +824,8 @@ export const Constants = {
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 //   Policy "Everyone can view pre-evaluations" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (is_pre_avaliacao = true)
+//   Policy "Fisio and Nutri can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = ANY (ARRAY['fisioterapeuta'::user_role, 'nutricionista'::user_role])))))
 //   Policy "Professors can insert pre-evaluations" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (is_pre_avaliacao = true))
 //   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
@@ -845,6 +847,8 @@ export const Constants = {
 // Table: links_avaliacao
 //   Policy "Coordinators can view all links" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//   Policy "Fisio and Nutri can view all links" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = ANY (ARRAY['fisioterapeuta'::user_role, 'nutricionista'::user_role])))))
 //   Policy "Professors can view all links" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
 //   Policy "Users can manage links of their avaliacoes" (ALL, PERMISSIVE) roles={authenticated}

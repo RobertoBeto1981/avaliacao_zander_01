@@ -102,37 +102,59 @@ export const searchMedicamentos = async (query: string) => {
   return data || []
 }
 
+// Utilitário para fazer requisições de forma segura sem disparar erros de rede globais no ambiente de preview
+// Evita "travamentos" ou telas de erro bloqueantes quando APIs retornam 404 (comum no OpenFDA)
+const safeFetchJSON = (url: string): Promise<any> => {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', url, true)
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText))
+        } catch (e) {
+          resolve(null)
+        }
+      } else {
+        // Ignora silenciosamente erros 404 e resolve nulo para ir ao fallback
+        resolve(null)
+      }
+    }
+    xhr.onerror = () => resolve(null)
+    xhr.send()
+  })
+}
+
 export const learnMedicamento = async (
   nome: string,
 ): Promise<{ action: string; verified: boolean } | null> => {
   try {
     // 1. Tentar OpenFDA (Base Oficial Internacional)
     try {
-      const fdaRes = await fetch(
-        `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(nome)}"+openfda.generic_name:"${encodeURIComponent(nome)}"&limit=1`,
+      const fdaData = await safeFetchJSON(
+        `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(
+          nome,
+        )}"+openfda.generic_name:"${encodeURIComponent(nome)}"&limit=1`,
       )
-      if (fdaRes.ok) {
-        const fdaData = await fdaRes.json()
-        if (fdaData.results && fdaData.results.length > 0) {
-          const result = fdaData.results[0]
 
-          // Prioriza as classes farmacêuticas (geralmente são descrições curtas e precisas)
-          let rawAction =
-            result.openfda?.pharm_class_epc?.[0] || result.openfda?.pharm_class_moa?.[0]
+      if (fdaData && fdaData.results && fdaData.results.length > 0) {
+        const result = fdaData.results[0]
 
-          // Fallback para indicação se não tiver a classe
-          if (!rawAction) {
-            rawAction = result.indications_and_usage?.[0] || result.purpose?.[0]
-          }
+        // Prioriza as classes farmacêuticas (geralmente são descrições curtas e precisas)
+        let rawAction = result.openfda?.pharm_class_epc?.[0] || result.openfda?.pharm_class_moa?.[0]
 
-          if (rawAction) {
-            // Traduz a indicação do inglês para o português
-            let acao = await translateToPT(rawAction)
-            // Extrai apenas a ação principal de forma concisa
-            acao = extractShortAction(acao)
+        // Fallback para indicação se não tiver a classe
+        if (!rawAction) {
+          rawAction = result.indications_and_usage?.[0] || result.purpose?.[0]
+        }
 
-            if (acao) return { action: acao, verified: true }
-          }
+        if (rawAction) {
+          // Traduz a indicação do inglês para o português
+          let acao = await translateToPT(rawAction)
+          // Extrai apenas a ação principal de forma concisa
+          acao = extractShortAction(acao)
+
+          if (acao) return { action: acao, verified: true }
         }
       }
     } catch (err) {
@@ -140,30 +162,33 @@ export const learnMedicamento = async (
     }
 
     // 2. Tentar Wikipedia PT como fallback (Resultados já em Português)
-    const searchRes = await fetch(
-      `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&utf8=&format=json&origin=*`,
-    )
+    try {
+      const searchData = await safeFetchJSON(
+        `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+          nome,
+        )}&utf8=&format=json&origin=*`,
+      )
 
-    if (searchRes.ok) {
-      const searchData = await searchRes.json()
-      if (searchData.query?.search && searchData.query.search.length > 0) {
+      if (searchData && searchData.query?.search && searchData.query.search.length > 0) {
         const title = searchData.query.search[0].title
-        const res = await fetch(
+        const wikiData = await safeFetchJSON(
           `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
         )
 
-        if (res.ok) {
-          const data = await res.json()
-          // Ignora páginas de desambiguação
-          if (data.extract && !data.title?.toLowerCase().includes('desambiguação')) {
-            const acao = extractShortAction(data.extract)
-            if (acao) return { action: acao, verified: true }
-          }
+        if (
+          wikiData &&
+          wikiData.extract &&
+          !wikiData.title?.toLowerCase().includes('desambiguação')
+        ) {
+          const acao = extractShortAction(wikiData.extract)
+          if (acao) return { action: acao, verified: true }
         }
       }
+    } catch (err) {
+      console.error('Erro ao buscar na Wikipedia', err)
     }
   } catch (err) {
-    console.error('Erro ao aprender medicamento', err)
+    console.error('Erro geral ao aprender medicamento', err)
   }
   return null
 }
