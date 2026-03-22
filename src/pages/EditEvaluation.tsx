@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, isValid } from 'date-fns'
 import { Form } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
@@ -36,7 +36,17 @@ export default function EditEvaluation() {
         const respostas = data.respostas || {}
         const links = data.links_avaliacao?.[0] || {}
 
-        const parseDate = (d?: string) => (d ? new Date(d + 'T12:00:00') : new Date())
+        const parseDate = (d?: string) => {
+          if (!d) return new Date()
+          const parsed = d.includes('T') ? new Date(d) : new Date(d + 'T12:00:00')
+          return isValid(parsed) ? parsed : new Date()
+        }
+
+        const parseOptionalDate = (d?: string) => {
+          if (!d) return null
+          const parsed = d.includes('T') ? new Date(d) : new Date(d + 'T12:00:00')
+          return isValid(parsed) ? parsed : null
+        }
 
         form.reset({
           evo_id: data.evo_id || '',
@@ -48,7 +58,7 @@ export default function EditEvaluation() {
           objectives: data.objectives || [],
 
           main_objective: respostas.main_objective || '',
-          target_date: respostas.target_date ? new Date(respostas.target_date + 'T12:00:00') : null,
+          target_date: parseOptionalDate(respostas.target_date),
           training_frequency: respostas.training_frequency || '',
           activity_level: respostas.activity_level || '',
           practice_time: respostas.practice_time || '',
@@ -112,15 +122,28 @@ export default function EditEvaluation() {
         ...rest
       } = data
 
+      const respostasToSave: any = { ...rest }
+      if (respostasToSave.target_date && isValid(respostasToSave.target_date)) {
+        respostasToSave.target_date = format(respostasToSave.target_date, 'yyyy-MM-dd')
+      } else {
+        respostasToSave.target_date = null
+      }
+
       const avaliacao = {
         evo_id,
         nome_cliente,
         telefone_cliente,
-        data_avaliacao: format(data_avaliacao, 'yyyy-MM-dd'),
-        data_reavaliacao: format(data_reavaliacao, 'yyyy-MM-dd'),
+        data_avaliacao:
+          data_avaliacao && isValid(data_avaliacao)
+            ? format(data_avaliacao, 'yyyy-MM-dd')
+            : new Date().toISOString().split('T')[0],
+        data_reavaliacao:
+          data_reavaliacao && isValid(data_reavaliacao)
+            ? format(data_reavaliacao, 'yyyy-MM-dd')
+            : new Date().toISOString().split('T')[0],
         periodo_treino,
         objectives,
-        respostas: rest,
+        respostas: respostasToSave,
       }
 
       const links = {

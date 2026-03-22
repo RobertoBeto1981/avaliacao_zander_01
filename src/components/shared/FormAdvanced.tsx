@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CalendarIcon } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
@@ -30,7 +30,11 @@ export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) =>
                   )}
                 >
                   {field.value ? (
-                    format(field.value, 'PPP', { locale: ptBR })
+                    isValid(field.value) ? (
+                      format(field.value, 'PPP', { locale: ptBR })
+                    ) : (
+                      <span>Data inválida</span>
+                    )
                   ) : (
                     <span>Escolha uma data</span>
                   )}
@@ -41,7 +45,7 @@ export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) =>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={field.value}
+                selected={isValid(field.value) ? field.value : undefined}
                 onSelect={field.onChange}
                 disabled={disabled}
                 initialFocus
