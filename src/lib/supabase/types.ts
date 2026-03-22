@@ -490,6 +490,44 @@ export type Database = {
         }
         Relationships: []
       }
+      videos_agendados: {
+        Row: {
+          avaliacao_id: string
+          created_at: string
+          data_envio: string | null
+          dias_apos_avaliacao: number
+          id: string
+          status: string
+          url_google_drive: string
+        }
+        Insert: {
+          avaliacao_id: string
+          created_at?: string
+          data_envio?: string | null
+          dias_apos_avaliacao: number
+          id?: string
+          status?: string
+          url_google_drive: string
+        }
+        Update: {
+          avaliacao_id?: string
+          created_at?: string
+          data_envio?: string | null
+          dias_apos_avaliacao?: number
+          id?: string
+          status?: string
+          url_google_drive?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'videos_agendados_avaliacao_id_fkey'
+            columns: ['avaliacao_id']
+            isOneToOne: false
+            referencedRelation: 'avaliacoes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -766,6 +804,14 @@ export const Constants = {
 //   telefone: text (nullable)
 //   periodo: text (nullable)
 //   foto_url: text (nullable)
+// Table: videos_agendados
+//   id: uuid (not null, default: gen_random_uuid())
+//   avaliacao_id: uuid (not null)
+//   dias_apos_avaliacao: integer (not null)
+//   url_google_drive: text (not null)
+//   status: text (not null, default: 'pendente'::text)
+//   data_envio: timestamp with time zone (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 
 // --- CONSTRAINTS ---
 // Table: avaliacao_acompanhamentos
@@ -800,6 +846,11 @@ export const Constants = {
 // Table: users
 //   FOREIGN KEY users_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
+// Table: videos_agendados
+//   FOREIGN KEY videos_agendados_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
+//   CHECK videos_agendados_dias_apos_avaliacao_check: CHECK ((dias_apos_avaliacao = ANY (ARRAY[1, 7, 30, 60, 90])))
+//   PRIMARY KEY videos_agendados_pkey: PRIMARY KEY (id)
+//   CHECK videos_agendados_status_check: CHECK ((status = ANY (ARRAY['pendente'::text, 'enviado'::text])))
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: avaliacao_acompanhamentos
@@ -874,6 +925,10 @@ export const Constants = {
 //   Policy "Users can update themselves" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = id)
 //     WITH CHECK: (auth.uid() = id)
+// Table: videos_agendados
+//   Policy "Coordinators can manage scheduled videos" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION auto_assign_professor()

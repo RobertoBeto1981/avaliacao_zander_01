@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { evaluationSchema, EvaluationFormValues } from '@/schemas/evaluation'
 import { createEvaluation } from '@/services/evaluations'
+import { triggerPostSaveAutomation } from '@/services/automation'
 import { IdentificationFields } from './eval-sections/Identification'
 import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
 import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
@@ -116,6 +117,10 @@ export default function NewEvaluation() {
       localStorage.removeItem('evaluationDraft')
 
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
+
+      // Disparar automações de WhatsApp e fila de vídeos
+      triggerPostSaveAutomation(res.id).catch(console.error)
+
       navigate(`/evaluation/${res.id}`)
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message })
