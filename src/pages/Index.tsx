@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export default function Index() {
   const { session, profile, loading } = useAuth()
@@ -92,13 +93,41 @@ export default function Index() {
             </TableHeader>
             <TableBody>
               {filtered.map((ev) => (
-                <TableRow key={ev.id} className="hover:bg-muted/20">
-                  <TableCell className="font-medium">{ev.nome_cliente}</TableCell>
+                <TableRow
+                  key={ev.id}
+                  className={cn(
+                    'hover:bg-muted/20',
+                    ev.is_pre_avaliacao && 'bg-blue-50/20 dark:bg-blue-900/10',
+                  )}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col gap-1">
+                      <span>{ev.nome_cliente}</span>
+                      {ev.is_pre_avaliacao && (
+                        <Badge
+                          variant="secondary"
+                          className="w-fit text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none"
+                        >
+                          Pré-Avaliação
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
                   <TableCell>{ev.professor?.nome || '-'}</TableCell>
-                  <TableCell>{format(new Date(ev.data_avaliacao), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>
+                    {ev.is_pre_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                    )}
+                  </TableCell>
                   <TableCell className="text-accent font-semibold">
-                    {format(new Date(ev.data_reavaliacao), 'dd/MM/yyyy')}
+                    {ev.is_pre_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
