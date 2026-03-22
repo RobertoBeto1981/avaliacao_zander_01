@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 interface AuthContextType {
   user: User | null
   session: Session | null
+  profile: any | null
   signUp: (email: string, password: string, metaData?: any) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -22,22 +23,50 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+
+    const fetchProfile = async (userId: string) => {
+      const { data } = await supabase.from('users').select('*').eq('id', userId).single()
+      if (mounted) {
+        setProfile(data)
+        setLoading(false)
+      }
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      setLoading(false)
+      if (session?.user) {
+        setLoading(true)
+        fetchProfile(session.user.id)
+      } else {
+        setProfile(null)
+        setLoading(false)
+      }
     })
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      }
     })
-    return () => subscription.unsubscribe()
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string, metaData?: any) => {
@@ -63,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, profile, signUp, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   )

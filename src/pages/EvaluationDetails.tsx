@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
 
 const InfoField = ({
   label,
@@ -78,23 +77,11 @@ const Section = ({ title, icon: Icon, children }: any) => (
 
 export default function EvaluationDetails() {
   const { id } = useParams()
-  const { user } = useAuth()
+  const { profile } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [userRole, setUserRole] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) setUserRole(data.role)
-        })
-    }
-  }, [user])
+  const userRole = profile?.role
 
   useEffect(() => {
     if (id) {

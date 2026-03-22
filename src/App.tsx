@@ -22,6 +22,21 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   return session ? children : <Navigate to="/login" />
 }
 
+const RoleGuard = ({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: string[]
+  children: JSX.Element
+}) => {
+  const { profile, loading } = useAuth()
+  if (loading) return null
+  if (!profile || !allowedRoles.includes(profile.role)) {
+    return <Navigate to="/" replace />
+  }
+  return children
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -45,7 +60,9 @@ const AppRoutes = () => (
         path="/professor"
         element={
           <PrivateRoute>
-            <ProfessorDashboard />
+            <RoleGuard allowedRoles={['professor', 'coordenador']}>
+              <ProfessorDashboard />
+            </RoleGuard>
           </PrivateRoute>
         }
       />
@@ -53,7 +70,9 @@ const AppRoutes = () => (
         path="/coordinator"
         element={
           <PrivateRoute>
-            <CoordinatorDashboard />
+            <RoleGuard allowedRoles={['coordenador']}>
+              <CoordinatorDashboard />
+            </RoleGuard>
           </PrivateRoute>
         }
       />
@@ -61,7 +80,9 @@ const AppRoutes = () => (
         path="/communications"
         element={
           <PrivateRoute>
-            <Communications />
+            <RoleGuard allowedRoles={['coordenador']}>
+              <Communications />
+            </RoleGuard>
           </PrivateRoute>
         }
       />
@@ -69,7 +90,9 @@ const AppRoutes = () => (
         path="/evaluation/new"
         element={
           <PrivateRoute>
-            <NewEvaluation />
+            <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
+              <NewEvaluation />
+            </RoleGuard>
           </PrivateRoute>
         }
       />

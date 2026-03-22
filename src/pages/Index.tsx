@@ -18,7 +18,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 
 export default function Index() {
-  const { session, loading } = useAuth()
+  const { session, profile, loading } = useAuth()
   const navigate = useNavigate()
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [search, setSearch] = useState('')
@@ -44,15 +44,19 @@ export default function Index() {
   if (loading || loadingData)
     return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
 
+  const canCreateEvaluation = profile && ['avaliador', 'coordenador'].includes(profile.role)
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">Avaliações Físicas</h1>
-        <Button asChild size="lg" className="font-bold">
-          <Link to="/evaluation/new">
-            <FilePlus2 className="mr-2" /> Nova Avaliação
-          </Link>
-        </Button>
+        {canCreateEvaluation && (
+          <Button asChild size="lg" className="font-bold">
+            <Link to="/evaluation/new">
+              <FilePlus2 className="mr-2" /> Nova Avaliação
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 mb-6 max-w-sm">
@@ -69,7 +73,7 @@ export default function Index() {
           <CardContent className="flex flex-col items-center justify-center p-16 text-center text-muted-foreground">
             <User className="w-16 h-16 mb-4 opacity-20" />
             <h3 className="text-xl font-medium mb-2">Nenhuma avaliação encontrada</h3>
-            <p>Clique em "Nova Avaliação" para começar.</p>
+            {canCreateEvaluation && <p>Clique em "Nova Avaliação" para começar.</p>}
           </CardContent>
         </Card>
       ) : (

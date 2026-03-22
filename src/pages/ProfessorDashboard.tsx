@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -55,6 +56,10 @@ export default function ProfessorDashboard() {
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [sendingWa, setSendingWa] = useState<string | null>(null)
   const { toast } = useToast()
+  const { profile } = useAuth()
+
+  const isCoordenador = profile?.role === 'coordenador'
+  const isProfessor = profile?.role === 'professor'
 
   const loadData = async () => {
     try {
@@ -144,10 +149,12 @@ export default function ProfessorDashboard() {
     <div className="container mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">Painel do Professor</h1>
-        <Button onClick={() => setIsNewStudentOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Aluno
-        </Button>
+        {isProfessor && (
+          <Button onClick={() => setIsNewStudentOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Aluno
+          </Button>
+        )}
       </div>
 
       {lateEvals.length > 0 && (
@@ -371,7 +378,7 @@ export default function ProfessorDashboard() {
                         Anotações
                       </Button>
 
-                      {!ev.is_pre_avaliacao && (
+                      {!ev.is_pre_avaliacao && isCoordenador && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -479,14 +486,16 @@ export default function ProfessorDashboard() {
         nomeCliente={historyEval?.nome || ''}
       />
 
-      <NovoAlunoDialog
-        open={isNewStudentOpen}
-        onOpenChange={setIsNewStudentOpen}
-        onSuccess={() => {
-          setIsNewStudentOpen(false)
-          loadData()
-        }}
-      />
+      {isProfessor && (
+        <NovoAlunoDialog
+          open={isNewStudentOpen}
+          onOpenChange={setIsNewStudentOpen}
+          onSuccess={() => {
+            setIsNewStudentOpen(false)
+            loadData()
+          }}
+        />
+      )}
     </div>
   )
 }

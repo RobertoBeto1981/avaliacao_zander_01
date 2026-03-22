@@ -1,7 +1,5 @@
 import { Outlet, useLocation, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   Dumbbell,
@@ -25,42 +23,9 @@ import {
 import NotificationsMenu from './NotificationsMenu'
 
 export default function Layout() {
-  const { user, signOut } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const location = useLocation()
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
-  const [profile, setProfile] = useState<any>(null)
-  const [profileLoading, setProfileLoading] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-
-    if (user) {
-      setProfileLoading(true)
-      supabase
-        .from('users')
-        .select('role, nome, foto_url')
-        .eq('id', user.id)
-        .maybeSingle()
-        .then(({ data, error }) => {
-          if (mounted) {
-            if (!error && data) {
-              setProfile(data)
-            } else {
-              if (error) console.error('Failed to fetch user profile:', error)
-              setProfile(null)
-            }
-            setProfileLoading(false)
-          }
-        })
-    } else {
-      setProfile(null)
-      setProfileLoading(false)
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [user])
 
   return (
     <main className="flex flex-col min-h-screen bg-background">
@@ -163,7 +128,7 @@ export default function Layout() {
         </header>
       )}
 
-      {!isAuthPage && user && !profileLoading && !profile && (
+      {!isAuthPage && user && !loading && !profile && (
         <div className="container mt-6 no-print animate-fade-in-down">
           <Alert
             variant="destructive"
