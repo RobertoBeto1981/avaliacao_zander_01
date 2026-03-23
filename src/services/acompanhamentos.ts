@@ -43,3 +43,18 @@ export const toggleAcompanhamento = async (id: string, concluido: boolean) => {
 
   if (error) throw new Error(error.message)
 }
+
+export const getPendingAcompanhamentos = async () => {
+  const { data, error } = await supabase
+    .from('avaliacao_acompanhamentos')
+    .select(`
+      *,
+      autor:autor_id (nome, role),
+      avaliacao:avaliacao_id (id, nome_cliente, evo_id)
+    `)
+    .eq('concluido', false)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return data
+}
