@@ -1,476 +1,270 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { format } from 'date-fns'
-import {
-  Printer,
-  ChevronLeft,
-  Dumbbell,
-  User,
-  Activity,
-  CalendarDays,
-  HeartPulse,
-  Link as LinkIcon,
-  MessageSquareQuote,
-  Edit,
-  Repeat,
-} from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getEvaluationById } from '@/services/evaluations'
-import { getReavaliacoesByAvaliacao } from '@/services/reavaliacoes'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { Loader2, ArrowLeft, MessageCircle, FileText } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-
-const InfoField = ({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: React.ReactNode
-  className?: string
-}) => (
-  <div
-    className={cn(
-      'flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5 print:pb-1',
-      className,
-    )}
-  >
-    <span className="text-[10px] print:text-[8px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5 print:mb-0">
-      {label}
-    </span>
-    <span className="text-sm print:text-[11px] font-medium text-foreground print:text-black leading-tight">
-      {value || '-'}
-    </span>
-  </div>
-)
-
-const LinkField = ({ label, url }: { label: string; url?: string | null }) => {
-  if (!url) return null
-  return (
-    <div className="flex flex-col border-b border-border/40 print:border-gray-200 pb-1.5 print:pb-1 col-span-1 md:col-span-2 lg:col-span-3 print:col-span-3">
-      <span className="text-[10px] print:text-[8px] font-bold uppercase tracking-wider text-muted-foreground print:text-gray-500 mb-0.5 print:mb-0">
-        {label}
-      </span>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="text-sm print:text-[10px] font-medium text-blue-600 hover:underline print:text-blue-800 break-all leading-tight"
-      >
-        {url}
-      </a>
-    </div>
-  )
-}
-
-const Section = ({ title, icon: Icon, children }: any) => (
-  <section className="mb-8 print:mb-4 print-break-inside-avoid">
-    <div className="flex items-center gap-2 mb-4 print:mb-2 border-b-2 border-primary/20 pb-2 print:pb-1 print:border-gray-300">
-      <Icon className="w-5 h-5 print:w-4 print:h-4 text-primary print:text-gray-600" />
-      <h3 className="text-lg print:text-sm font-bold uppercase text-primary print:text-black tracking-tight">
-        {title}
-      </h3>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 gap-x-6 gap-y-4 print:gap-x-4 print:gap-y-2">
-      {children}
-    </div>
-  </section>
-)
+import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function EvaluationDetails() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { profile } = useAuth()
+  const { toast } = useToast()
   const [data, setData] = useState<any>(null)
-  const [reavs, setReavs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const userRole = profile?.role
+  const canSendWhatsApp = profile?.role === 'coordenador' || profile?.role === 'avaliador'
 
   useEffect(() => {
-    if (id) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(id)) {
-        setData(null)
-        setLoading(false)
-        return
-      }
+    if (!id) return
+    getEvaluationById(id)
+      .then(setData)
+      .catch((err) => {
+        toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+        navigate(-1)
+      })
+      .finally(() => setLoading(false))
+  }, [id, toast, navigate])
 
-      Promise.all([getEvaluationById(id), getReavaliacoesByAvaliacao(id)])
-        .then(([res, reavRes]) => {
-          setData(res)
-          setReavs(reavRes)
-          setLoading(false)
-        })
-        .catch((err) => {
-          console.error(err)
-          setData(null)
-          setLoading(false)
-        })
+  const handleSendWhatsApp = () => {
+    if (!data?.telefone_cliente) {
+      toast({
+        title: 'Telefone indisponível',
+        description: 'O cliente não possui telefone cadastrado.',
+        variant: 'destructive',
+      })
+      return
     }
-  }, [id])
+    let phone = data.telefone_cliente.replace(/\D/g, '')
+    if (!phone.startsWith('55')) phone = '55' + phone
 
-  const safeDate = (d?: string) => (d ? format(new Date(d), 'dd/MM/yyyy') : '-')
-  const safeArray = (arr: any) => (Array.isArray(arr) && arr.length > 0 ? arr.join(', ') : '-')
+    const pdfUrl = data.links_avaliacao?.[0]?.relatorio_pdf_url
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
-  if (!data) return <div className="p-8 text-center text-destructive">Avaliação não encontrada</div>
+    let text = `Olá ${data.nome_cliente.split(' ')[0]}, segue o seu relatório de avaliação física!`
+    if (pdfUrl) {
+      text += `\n\nAcesse seu PDF aqui: ${pdfUrl}`
+    } else {
+      text += ` (Por favor, anexe o PDF gerado na conversa)`
+    }
 
-  const r = data.respostas || {}
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+  }
+
+  const handleGeneratePDF = () => {
+    toast({ title: 'PDF', description: 'Gerando relatório PDF da avaliação...' })
+    setTimeout(() => {
+      toast({ title: 'Sucesso', description: 'Relatório PDF gerado com sucesso (Simulação).' })
+    }, 1500)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!data) return null
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 no-print">
-        <Button variant="outline" asChild>
-          <Link to="/">
-            <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <div className="flex gap-2">
-          {(userRole === 'coordenador' || userRole === 'avaliador') && !data.is_pre_avaliacao && (
+    <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Detalhes da Avaliação
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {data.nome_cliente} -{' '}
+              {format(new Date(data.data_avaliacao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleGeneratePDF}>
+            <FileText className="w-4 h-4 mr-2" />
+            Gerar PDF
+          </Button>
+          {canSendWhatsApp && (
             <Button
-              variant="outline"
-              asChild
-              className="font-bold border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSendWhatsApp}
             >
-              <Link to={`/evaluation/${id}/reevaluate`}>
-                <Repeat className="mr-2 h-4 w-4" /> Nova Reavaliação
-              </Link>
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Enviar por WhatsApp
             </Button>
           )}
-          {(userRole === 'coordenador' || userRole === 'avaliador' || userRole === 'professor') && (
-            <Button
-              variant="outline"
-              asChild
-              className="font-bold border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
-            >
-              <Link to={`/evaluation/edit/${id}`}>
-                <Edit className="mr-2 h-4 w-4" /> Editar
-              </Link>
-            </Button>
-          )}
-          {userRole !== 'professor' && (
-            <Button onClick={() => window.print()} className="font-bold">
-              <Printer className="mr-2 h-4 w-4" /> Exportar em PDF
+          {canSendWhatsApp && (
+            <Button onClick={() => navigate(`/evaluation/${id}/reevaluate`)} variant="secondary">
+              Nova Reavaliação
             </Button>
           )}
         </div>
       </div>
 
-      <Card className="border-border/50 print:border-none print:shadow-none bg-white text-black">
-        <CardContent className="p-8 md:p-10 print:p-0">
-          <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-primary pb-6 mb-8 print:pb-3 print:mb-4 gap-4 print:gap-2">
-            <div className="flex items-center gap-4 print:gap-3">
-              <div className="bg-primary p-3 rounded-xl print:bg-transparent print:border-2 print:border-primary print:p-1.5">
-                <Dumbbell className="w-10 h-10 print:w-6 print:h-6 text-white print:text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl print:text-xl font-black uppercase tracking-tighter text-[#1d1d1b]">
-                  {data.nome_cliente}
-                </h1>
-                <div className="flex items-center gap-3 mt-1 print:mt-0">
-                  <p className="text-lg print:text-xs text-muted-foreground print:text-gray-600 font-medium">
-                    Ficha de Avaliação Física
-                  </p>
-                  {data.evo_id && (
-                    <div className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-md text-sm print:text-[10px] font-bold">
-                      ID EVO: {data.evo_id}
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-xl">Identificação</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div>
+              <p className="text-sm text-muted-foreground">ID EVO</p>
+              <p className="font-medium text-foreground">{data.evo_id || 'Não informado'}</p>
             </div>
-            <div className="text-right text-sm print:text-xs bg-muted/30 p-3 rounded-lg print:bg-transparent print:p-0">
-              <p className="text-muted-foreground print:text-gray-500 uppercase text-[10px] print:text-[8px] font-bold tracking-wider">
-                Emitido em
-              </p>
-              <p className="font-bold text-foreground print:text-black">
-                {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            <div>
+              <p className="text-sm text-muted-foreground">Telefone</p>
+              <p className="font-medium text-foreground">
+                {data.telefone_cliente || 'Não informado'}
               </p>
             </div>
-          </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Status</p>
+              <span className="inline-flex mt-1 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
+                {data.status === 'pendente'
+                  ? 'Pendente'
+                  : data.status === 'em_progresso'
+                    ? 'Em Progresso'
+                    : 'Concluído'}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Objetivos</p>
+              <p className="font-medium text-foreground">
+                {data.objectives?.join(', ') || 'Nenhum selecionado'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-2 print:space-y-0">
-            {reavs.length > 0 && (
-              <Section title="Histórico de Reavaliações" icon={Repeat}>
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 no-print">
-                  {reavs.map((reav) => (
-                    <div
-                      key={reav.id}
-                      className="flex flex-col justify-between p-4 border rounded-lg bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30 hover:shadow-sm transition-shadow"
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-xl">Links do Cliente</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {data.links_avaliacao && data.links_avaliacao.length > 0 ? (
+              <>
+                {data.links_avaliacao[0].mapeamento_sintomas_url && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Mapeamento de Sintomas
+                    </p>
+                    <a
+                      href={data.links_avaliacao[0].mapeamento_sintomas_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline text-sm break-all"
                     >
-                      <div className="mb-3">
-                        <p className="font-bold text-sm text-green-800 dark:text-green-300">
-                          Reavaliação em{' '}
-                          {format(new Date(reav.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {reav.evolucao?.length || 0} destaques de evolução mapeados.
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-green-700 hover:text-green-800 hover:bg-green-100 border-green-300"
-                        asChild
-                      >
-                        <Link to={`/reevaluation/${reav.id}`}>Acessar Relatório</Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 hidden print:block text-sm text-gray-600">
-                  <p>
-                    O paciente possui {reavs.length} reavaliações cadastradas no sistema que não
-                    constam neste relatório principal.
-                  </p>
-                </div>
-              </Section>
+                      {data.links_avaliacao[0].mapeamento_sintomas_url}
+                    </a>
+                  </div>
+                )}
+                {data.links_avaliacao[0].mapeamento_dor_url && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Mapeamento da Dor
+                    </p>
+                    <a
+                      href={data.links_avaliacao[0].mapeamento_dor_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline text-sm break-all"
+                    >
+                      {data.links_avaliacao[0].mapeamento_dor_url}
+                    </a>
+                  </div>
+                )}
+                {data.links_avaliacao[0].bia_url && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">BIA</p>
+                    <a
+                      href={data.links_avaliacao[0].bia_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline text-sm break-all"
+                    >
+                      {data.links_avaliacao[0].bia_url}
+                    </a>
+                  </div>
+                )}
+                {data.links_avaliacao[0].my_score_url && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">My Score</p>
+                    <a
+                      href={data.links_avaliacao[0].my_score_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline text-sm break-all"
+                    >
+                      {data.links_avaliacao[0].my_score_url}
+                    </a>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm">Nenhum link cadastrado.</p>
             )}
+          </CardContent>
+        </Card>
+      </div>
 
-            <Section title="Identificação do Cliente" icon={User}>
-              <InfoField
-                label="Nome Completo"
-                value={data.nome_cliente}
-                className="md:col-span-2 print:col-span-2"
-              />
-              <InfoField label="ID EVO" value={data.evo_id} />
-              <InfoField label="Telefone" value={data.telefone_cliente} />
-              <InfoField label="Data Avaliação" value={safeDate(data.data_avaliacao)} />
-              <InfoField label="Data Reavaliação" value={safeDate(data.data_reavaliacao)} />
-              <InfoField label="Período de Treino" value={data.periodo_treino} />
-              <InfoField label="Avaliador Responsável" value={data.avaliador?.nome} />
-              <InfoField label="Professor Designado" value={data.professor?.nome} />
-              <InfoField
-                label="Objetivos Iniciais"
-                value={safeArray(data.objectives)}
-                className="md:col-span-2 lg:col-span-3 print:col-span-3 bg-primary/5 print:bg-transparent p-2 rounded print:p-0"
-              />
-            </Section>
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-xl">Respostas da Anamnese</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {Object.entries(data.respostas || {}).map(([key, value]) => {
+              if (!value || (typeof value === 'object' && Object.keys(value).length === 0))
+                return null
 
-            <Section title="Histórico de Treinamento" icon={Activity}>
-              <InfoField label="Principal Objetivo" value={r.main_objective} />
-              <InfoField label="Frequência Semanal" value={r.training_frequency} />
-              <InfoField label="Nível Atual" value={r.activity_level} />
-              <InfoField label="Tempo de Prática" value={r.practice_time} />
-              <InfoField label="Data Alvo" value={safeDate(r.target_date)} />
-              <InfoField
-                label="Modalidades Praticadas"
-                value={r.modalities}
-                className="md:col-span-2 lg:col-span-3 print:col-span-3"
-              />
-            </Section>
-
-            <Section title="Estilo de Vida Atual" icon={CalendarDays}>
-              <InfoField label="Refeições/dia" value={r.meals_per_day} />
-              <InfoField label="Horas de Sono" value={r.sleep_hours} />
-              <InfoField label="Consumo de Álcool" value={r.alcohol} />
-
-              <InfoField label="Acomp. Nutricional" value={r.nutritional_status?.choice} />
-              {r.nutritional_status?.reason && (
-                <InfoField
-                  label="Motivo S/ Acompanhamento"
-                  value={r.nutritional_status?.reason}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField label="Uso de Suplementos" value={r.supplements?.choice ? 'Sim' : 'Não'} />
-              {r.supplements?.choice && (
-                <InfoField
-                  label="Quais suplementos"
-                  value={r.supplements?.list}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField label="Tabagista" value={r.smoking?.choice ? 'Sim' : 'Não'} />
-              {r.smoking?.choice && (
-                <InfoField
-                  label="Quantidade/dia"
-                  value={r.smoking?.amount}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField
-                label="Intolerâncias Alimentares"
-                value={safeArray(r.intolerances?.choices)}
-                className="md:col-span-3 print:col-span-3"
-              />
-              {r.intolerances?.list && (
-                <InfoField
-                  label="Outras Intolerâncias"
-                  value={r.intolerances?.list}
-                  className="md:col-span-3 print:col-span-3"
-                />
-              )}
-            </Section>
-
-            <Section title="Histórico Médico e Saúde" icon={HeartPulse}>
-              <InfoField label="Diabetes" value={r.diabetes ? 'Sim' : 'Não'} />
-              <InfoField label="Hipertensão" value={r.hypertension ? 'Sim' : 'Não'} />
-              <InfoField
-                label="Patologia Respiratória"
-                value={r.respiratory_pathology ? 'Sim' : 'Não'}
-              />
-
-              <InfoField label="Exames Alterados" value={r.health_exams?.choice} />
-              {r.health_exams?.notes && (
-                <InfoField
-                  label="Obs. Exames"
-                  value={r.health_exams?.notes}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField
-                label="Patologia Cardiovascular"
-                value={r.cardio_pathology?.choice ? 'Sim' : 'Não'}
-              />
-              {r.cardio_pathology?.choice && (
-                <InfoField
-                  label="Qual"
-                  value={r.cardio_pathology?.list}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField
-                label="Uso de Remédios Contínuos"
-                value={r.medications?.choice ? 'Sim' : 'Não'}
-                className="bg-orange-50 print:bg-transparent"
-              />
-              {r.medications?.choice && (
-                <InfoField
-                  label="Lista de Medicamentos / Ações"
-                  value={r.medications?.list}
-                  className="md:col-span-2 print:col-span-2 bg-orange-50 print:bg-transparent"
-                />
-              )}
-
-              <InfoField label="Alergias" value={r.allergies?.choice ? 'Sim' : 'Não'} />
-              {r.allergies?.choice && (
-                <InfoField
-                  label="Quais alergias"
-                  value={r.allergies?.list}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField label="Cirurgias Prévias" value={r.surgeries?.choice ? 'Sim' : 'Não'} />
-              {r.surgeries?.choice && (
-                <InfoField
-                  label="Quais cirurgias"
-                  value={r.surgeries?.list}
-                  className="md:col-span-2 print:col-span-2"
-                />
-              )}
-
-              <InfoField
-                label="Dores Musculares/Articulares"
-                value={r.pains?.choice ? 'Sim' : 'Não'}
-              />
-              {r.pains?.choice && (
-                <InfoField
-                  label="Observação da Dor"
-                  value={r.pains?.observation}
-                  className="md:col-span-2 print:col-span-2 text-red-600 print:text-red-800"
-                />
-              )}
-
-              <InfoField
-                label="Plano de Saúde"
-                value={
-                  r.health_insurance?.choice === 'OUTRO'
-                    ? r.health_insurance?.other
-                    : r.health_insurance?.choice
+              let displayValue = String(value)
+              if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
+              if (Array.isArray(value)) displayValue = value.join(', ')
+              if (typeof value === 'object' && !Array.isArray(value)) {
+                const obj = value as any
+                if (obj.choice !== undefined) {
+                  displayValue = `${obj.choice === true ? 'Sim' : obj.choice === false ? 'Não' : obj.choice}`
+                  if (
+                    obj.list ||
+                    obj.reason ||
+                    obj.amount ||
+                    obj.other ||
+                    obj.observation ||
+                    obj.notes
+                  ) {
+                    displayValue += ` - ${obj.list || obj.reason || obj.amount || obj.other || obj.observation || obj.notes}`
+                  }
+                } else if (obj.choices) {
+                  displayValue = obj.choices.join(', ')
+                  if (obj.list) displayValue += ` - ${obj.list}`
+                } else {
+                  displayValue = JSON.stringify(value)
                 }
-              />
-              <InfoField
-                label="Contato de Emergência"
-                value={r.emergency_contact}
-                className="md:col-span-2 print:col-span-2"
-              />
-            </Section>
+              }
 
-            <Section title="Preferências de Treino" icon={Dumbbell}>
-              <InfoField
-                label="Dias Disponíveis"
-                value={safeArray(r.available_days)}
-                className="md:col-span-2 print:col-span-2"
-              />
-              <InfoField label="Tempo por Sessão" value={r.session_duration} />
-              <InfoField
-                label="Como soube da academia?"
-                value={r.discovery_source}
-                className="md:col-span-3 print:col-span-3"
-              />
-              <InfoField
-                label="Gosta de Treinar"
-                value={safeArray(r.enjoys_training)}
-                className="md:col-span-3 print:col-span-3"
-              />
-              <InfoField
-                label="Gostaria de Melhorar"
-                value={safeArray(r.dislikes_looking_at)}
-                className="md:col-span-3 print:col-span-3"
-              />
-              <InfoField
-                label="NÃO GOSTA de Treinar"
-                value={safeArray(r.dislikes_training)}
-                className="md:col-span-3 print:col-span-3"
-              />
-              <InfoField
-                label="Exercícios Favoritos"
-                value={r.favorite_exercises}
-                className="md:col-span-3 print:col-span-3"
-              />
-              <InfoField
-                label="Exercícios que não gosta"
-                value={r.hated_exercises}
-                className="md:col-span-3 print:col-span-3"
-              />
-            </Section>
-
-            {r.final_observations && (
-              <Section title="Observações Finais" icon={MessageSquareQuote}>
-                <InfoField
-                  label="Anotações do Avaliador"
-                  value={r.final_observations}
-                  className="md:col-span-3 print:col-span-3 whitespace-pre-wrap"
-                />
-              </Section>
-            )}
-
-            {data.links_avaliacao && data.links_avaliacao.length > 0 && (
-              <Section title="Anexos e Links" icon={LinkIcon}>
-                <LinkField label="Anamnese Completa" url={data.links_avaliacao[0].anamnese_url} />
-                <LinkField
-                  label="Mapeamento de Sintomas"
-                  url={data.links_avaliacao[0].mapeamento_sintomas_url}
-                />
-                <LinkField
-                  label="Mapeamento da Dor"
-                  url={data.links_avaliacao[0].mapeamento_dor_url}
-                />
-                <LinkField label="Bioimpedância (BIA)" url={data.links_avaliacao[0].bia_url} />
-                <LinkField label="My Score" url={data.links_avaliacao[0].my_score_url} />
-                <LinkField
-                  label="Relatório PDF (Externo)"
-                  url={data.links_avaliacao[0].relatorio_pdf_url}
-                />
-              </Section>
-            )}
+              return (
+                <div
+                  key={key}
+                  className="p-4 bg-muted/30 border border-border/50 rounded-lg shadow-sm"
+                >
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    {key.replace(/_/g, ' ')}
+                  </p>
+                  <p className="font-medium text-sm text-foreground">{displayValue}</p>
+                </div>
+              )
+            })}
           </div>
-
-          {userRole !== 'professor' && (
-            <div className="mt-12 pt-8 border-t border-dashed border-gray-300 text-center no-print">
-              <p className="text-sm text-muted-foreground mb-4">
-                Fim do relatório gerado. Utilize o botão acima para exportar.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

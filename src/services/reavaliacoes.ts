@@ -153,7 +153,9 @@ export const getReavaliacoesByAvaliacao = async (avaliacaoId: string) => {
 export const getReavaliacaoById = async (id: string) => {
   const { data, error } = await supabase
     .from('reavaliacoes')
-    .select('*, avaliacao:avaliacao_original_id (nome_cliente, evo_id, professor_id, avaliador_id)')
+    .select(
+      '*, avaliacao:avaliacao_original_id (nome_cliente, telefone_cliente, evo_id, professor_id, avaliador_id)',
+    )
     .eq('id', id)
     .single()
   if (error) throw error
