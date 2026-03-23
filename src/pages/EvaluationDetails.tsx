@@ -30,6 +30,16 @@ export default function EvaluationDetails() {
       .finally(() => setLoading(false))
   }, [id, toast, navigate])
 
+  const getFileName = () => {
+    if (!data) return 'AVALIACAO'
+    const evoId = data.evo_id || 'SEM-ID'
+    const nome = data.nome_cliente?.replace(/\s+/g, '_').toUpperCase() || 'ALUNO'
+    const dataFormatada = data.data_avaliacao
+      ? format(new Date(data.data_avaliacao), 'dd-MM-yyyy')
+      : ''
+    return `AVALIACAO_${evoId}_${nome}_${dataFormatada}`
+  }
+
   const handleSendWhatsApp = () => {
     if (!data?.telefone_cliente) {
       toast({
@@ -43,12 +53,13 @@ export default function EvaluationDetails() {
     if (!phone.startsWith('55')) phone = '55' + phone
 
     const pdfUrl = data.links_avaliacao?.[0]?.relatorio_pdf_url
+    const fileName = getFileName()
 
     let text = `Olá ${data.nome_cliente.split(' ')[0]}, segue o seu relatório de avaliação física!`
     if (pdfUrl) {
       text += `\n\nAcesse seu PDF aqui: ${pdfUrl}`
     } else {
-      text += ` (Por favor, anexe o PDF gerado na conversa)`
+      text += `\n\n(Por favor, anexe o arquivo gerado: ${fileName}.pdf)`
     }
 
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
@@ -56,7 +67,8 @@ export default function EvaluationDetails() {
   }
 
   const handleGeneratePDF = () => {
-    toast({ title: 'PDF', description: 'Gerando relatório PDF da avaliação...' })
+    const fileName = getFileName()
+    toast({ title: 'PDF', description: `Gerando arquivo: ${fileName}.pdf...` })
     setTimeout(() => {
       toast({ title: 'Sucesso', description: 'Relatório PDF gerado com sucesso (Simulação).' })
     }, 1500)
