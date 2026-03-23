@@ -490,33 +490,66 @@ export type Database = {
         }
         Relationships: []
       }
+      video_automations_config: {
+        Row: {
+          created_at: string
+          dias_trigger: number
+          id: string
+          is_active: boolean | null
+          message_template: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          dias_trigger: number
+          id?: string
+          is_active?: boolean | null
+          message_template?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          dias_trigger?: number
+          id?: string
+          is_active?: boolean | null
+          message_template?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       videos_agendados: {
         Row: {
           avaliacao_id: string
           created_at: string
           data_envio: string | null
           dias_apos_avaliacao: number
+          error_reason: string | null
           id: string
           status: string
-          url_google_drive: string
+          url_google_drive: string | null
         }
         Insert: {
           avaliacao_id: string
           created_at?: string
           data_envio?: string | null
           dias_apos_avaliacao: number
+          error_reason?: string | null
           id?: string
           status?: string
-          url_google_drive: string
+          url_google_drive?: string | null
         }
         Update: {
           avaliacao_id?: string
           created_at?: string
           data_envio?: string | null
           dias_apos_avaliacao?: number
+          error_reason?: string | null
           id?: string
           status?: string
-          url_google_drive?: string
+          url_google_drive?: string | null
         }
         Relationships: [
           {
@@ -804,14 +837,23 @@ export const Constants = {
 //   telefone: text (nullable)
 //   periodo: text (nullable)
 //   foto_url: text (nullable)
+// Table: video_automations_config
+//   id: uuid (not null, default: gen_random_uuid())
+//   dias_trigger: integer (not null)
+//   video_url: text (nullable)
+//   message_template: text (nullable, default: 'Olá {{nome}}, tudo bem? Conforme o seu planejamento, aqui está o seu vídeo de hoje: {{link_video}}'::text)
+//   is_active: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: videos_agendados
 //   id: uuid (not null, default: gen_random_uuid())
 //   avaliacao_id: uuid (not null)
 //   dias_apos_avaliacao: integer (not null)
-//   url_google_drive: text (not null)
+//   url_google_drive: text (nullable)
 //   status: text (not null, default: 'pendente'::text)
 //   data_envio: timestamp with time zone (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+//   error_reason: text (nullable)
 
 // --- CONSTRAINTS ---
 // Table: avaliacao_acompanhamentos
@@ -846,6 +888,9 @@ export const Constants = {
 // Table: users
 //   FOREIGN KEY users_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
+// Table: video_automations_config
+//   UNIQUE video_automations_config_dias_trigger_key: UNIQUE (dias_trigger)
+//   PRIMARY KEY video_automations_config_pkey: PRIMARY KEY (id)
 // Table: videos_agendados
 //   FOREIGN KEY videos_agendados_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
 //   CHECK videos_agendados_dias_apos_avaliacao_check: CHECK ((dias_apos_avaliacao = ANY (ARRAY[1, 7, 30, 60, 90])))
@@ -925,6 +970,10 @@ export const Constants = {
 //   Policy "Users can update themselves" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = id)
 //     WITH CHECK: (auth.uid() = id)
+// Table: video_automations_config
+//   Policy "Coordinators can manage video configs" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 // Table: videos_agendados
 //   Policy "Coordinators can manage scheduled videos" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
@@ -1136,3 +1185,5 @@ export const Constants = {
 //   CREATE INDEX idx_avaliacoes_evo_id ON public.avaliacoes USING btree (evo_id)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
+// Table: video_automations_config
+//   CREATE UNIQUE INDEX video_automations_config_dias_trigger_key ON public.video_automations_config USING btree (dias_trigger)

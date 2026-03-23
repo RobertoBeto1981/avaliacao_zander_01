@@ -21,7 +21,7 @@ export function ConfigCard({
   const [videoUrl, setVideoUrl] = useState(initialConfig?.video_url || '')
   const [messageTemplate, setMessageTemplate] = useState(
     initialConfig?.message_template ||
-      'Olá {{nome}}, tudo bem? Aqui está o seu vídeo de acompanhamento: {{link_video}}',
+      'Olá {{nome}}, tudo bem? Aqui está o seu vídeo de acompanhamento!',
   )
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -133,8 +133,10 @@ export function ConfigCard({
             placeholder="Escreva a mensagem..."
           />
           <p className="text-xs text-muted-foreground">
-            Variáveis disponíveis: <code className="bg-muted px-1 rounded">{'{{nome}}'}</code>,{' '}
-            <code className="bg-muted px-1 rounded">{'{{link_video}}'}</code>
+            Variáveis disponíveis: <code className="bg-muted px-1 rounded">{'{{nome}}'}</code>. O
+            vídeo enviado aparecerá automaticamente junto com esta mensagem. Se usar um link
+            externo, você pode incluir{' '}
+            <code className="bg-muted px-1 rounded">{'{{link_video}}'}</code>.
           </p>
         </div>
 

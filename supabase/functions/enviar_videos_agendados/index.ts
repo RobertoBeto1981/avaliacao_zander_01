@@ -78,11 +78,40 @@ Deno.serve(async (req: Request) => {
           if (!phone.startsWith('55')) phone = '55' + phone
 
           const firstName = ev.nome_cliente.trim().split(' ')[0]
-          const template =
-            config.message_template || 'Olá {{nome}}, aqui está seu vídeo: {{link_video}}'
-          const message = template
-            .replace(/\{\{nome\}\}/g, firstName)
-            .replace(/\{\{link_video\}\}/g, config.video_url || '')
+          const template = config.message_template || 'Olá {{nome}}, aqui está seu vídeo de hoje!'
+
+          let captionMessage = template.replace(/\{\{nome\}\}/g, firstName)
+
+          const isExternalLink =
+            config.video_url &&
+            (config.video_url.includes('youtube.com') ||
+              config.video_url.includes('youtu.be') ||
+              config.video_url.includes('drive.google.com') ||
+              config.video_url.includes('vimeo'))
+
+          let messagePayload: any = {
+            messaging_product: 'whatsapp',
+            to: phone,
+          }
+
+          if (config.video_url && !isExternalLink) {
+            // Send as Video Attachment via WhatsApp API
+            captionMessage = captionMessage.replace(/\{\{link_video\}\}/g, '').trim()
+            messagePayload.type = 'video'
+            messagePayload.video = {
+              link: config.video_url,
+              caption: captionMessage,
+            }
+          } else {
+            // Send as Text Message with Link
+            if (!captionMessage.includes('{{link_video}}') && config.video_url) {
+              captionMessage += `\n${config.video_url}`
+            } else {
+              captionMessage = captionMessage.replace(/\{\{link_video\}\}/g, config.video_url || '')
+            }
+            messagePayload.type = 'text'
+            messagePayload.text = { body: captionMessage }
+          }
 
           if (waToken && waPhoneId) {
             const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
@@ -91,12 +120,7 @@ Deno.serve(async (req: Request) => {
                 Authorization: `Bearer ${waToken}`,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: phone,
-                type: 'text',
-                text: { body: message },
-              }),
+              body: JSON.stringify(messagePayload),
             })
 
             if (!waRes.ok) {
@@ -107,7 +131,10 @@ Deno.serve(async (req: Request) => {
               success = true
             }
           } else {
-            console.log(`[SIMULAÇÃO WA] Vídeo Automático -> ${phone}:\n${message}`)
+            console.log(
+              `[SIMULAÇÃO WA] Vídeo Automático -> ${phone}:\nPayload:`,
+              JSON.stringify(messagePayload, null, 2),
+            )
             success = true
           }
         }
