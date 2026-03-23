@@ -22,6 +22,10 @@ const getNestedValue = (obj: any, path: string) => {
 export const PrevEvalBadge = ({ name }: { name: string }) => {
   const prevData = useContext(PrevEvalContext)
   if (!prevData) return null
+
+  // Não exibe o indicativo para campos de identificação pré-preenchidos
+  if (['evo_id', 'nome_cliente', 'telefone_cliente'].includes(name)) return null
+
   let val = getNestedValue(prevData, name)
   if (val === undefined || val === null || val === '') return null
 
@@ -33,7 +37,7 @@ export const PrevEvalBadge = ({ name }: { name: string }) => {
 
   return (
     <span
-      className="text-[10px] text-amber-700 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded ml-2 font-medium line-clamp-1 max-w-[200px]"
+      className="text-[10px] text-red-700 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-1.5 py-0.5 rounded ml-2 font-medium line-clamp-1 max-w-[200px]"
       title={String(val)}
     >
       Ant: {String(val)}

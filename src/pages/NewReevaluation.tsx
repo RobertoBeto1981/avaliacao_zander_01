@@ -56,57 +56,52 @@ export default function NewReevaluation() {
         }
         setPrevData(flatPrev)
 
-        const parseOptionalDate = (d?: string) => {
-          if (!d) return null
-          const parsed = d.includes('T') ? new Date(d) : new Date(d + 'T12:00:00')
-          return isValid(parsed) ? parsed : null
-        }
-
         form.reset({
           evo_id: data.evo_id || '',
           nome_cliente: data.nome_cliente || '',
           telefone_cliente: data.telefone_cliente || '',
           data_avaliacao: new Date(), // Hoje
           data_reavaliacao: new Date(new Date().setDate(new Date().getDate() + 90)), // +90 dias
-          periodo_treino: data.periodo_treino || '',
-          objectives: data.objectives || [],
 
-          main_objective: respostas.main_objective || '',
-          target_date: parseOptionalDate(respostas.target_date),
-          training_frequency: respostas.training_frequency || '',
-          activity_level: respostas.activity_level || '',
-          practice_time: respostas.practice_time || '',
-          modalities: respostas.modalities || '',
-          nutritional_status: respostas.nutritional_status || {},
-          meals_per_day: respostas.meals_per_day || '',
-          sleep_hours: respostas.sleep_hours || '',
-          supplements: respostas.supplements || { choice: false },
-          medications: respostas.medications || { choice: false },
-          allergies: respostas.allergies || { choice: false },
-          intolerances: respostas.intolerances || { choices: [] },
-          smoking: respostas.smoking || { choice: false },
-          alcohol: respostas.alcohol || '',
-          health_exams: respostas.health_exams || {},
-          diabetes: respostas.diabetes || false,
-          hypertension: respostas.hypertension || false,
-          respiratory_pathology: respostas.respiratory_pathology || false,
-          cardio_pathology: respostas.cardio_pathology || { choice: false },
-          surgeries: respostas.surgeries || { choice: false },
-          pains: respostas.pains || { choice: false },
-          available_days: respostas.available_days || [],
-          session_duration: respostas.session_duration || '',
-          enjoys_training: respostas.enjoys_training || [],
-          dislikes_looking_at: respostas.dislikes_looking_at || [],
-          dislikes_training: respostas.dislikes_training || [],
-          favorite_exercises: respostas.favorite_exercises || '',
-          hated_exercises: respostas.hated_exercises || '',
-          discovery_source: respostas.discovery_source || '',
-          health_insurance: respostas.health_insurance || {},
-          emergency_contact: respostas.emergency_contact || '',
-          final_observations: respostas.final_observations || '',
-          professor_observations: respostas.professor_observations || '',
+          // Demais campos não são preenchidos na reavaliação para obrigar o avaliador a perguntar
+          periodo_treino: '',
+          objectives: [],
+          main_objective: '',
+          target_date: null,
+          training_frequency: '',
+          activity_level: '',
+          practice_time: '',
+          modalities: '',
+          nutritional_status: {},
+          meals_per_day: '',
+          sleep_hours: '',
+          supplements: { choice: false },
+          medications: { choice: false },
+          allergies: { choice: false },
+          intolerances: { choices: [] },
+          smoking: { choice: false },
+          alcohol: '',
+          health_exams: {},
+          diabetes: false,
+          hypertension: false,
+          respiratory_pathology: false,
+          cardio_pathology: { choice: false },
+          surgeries: { choice: false },
+          pains: { choice: false },
+          available_days: [],
+          session_duration: '',
+          enjoys_training: [],
+          dislikes_looking_at: [],
+          dislikes_training: [],
+          favorite_exercises: '',
+          hated_exercises: '',
+          discovery_source: '',
+          health_insurance: {},
+          emergency_contact: '',
+          final_observations: '',
+          professor_observations: '',
 
-          client_links: flatPrev.client_links,
+          client_links: {},
         })
       } catch (err: any) {
         toast({ variant: 'destructive', title: 'Erro', description: err.message })
@@ -170,7 +165,8 @@ export default function NewReevaluation() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Nova Reavaliação</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Os dados anteriores estão preenchidos. Altere apenas o que mudou.
+              Preencha os dados atuais do aluno. Os indicativos em vermelho mostram a resposta
+              anterior.
             </p>
           </div>
         </div>
@@ -182,8 +178,9 @@ export default function NewReevaluation() {
       <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-200 flex items-start gap-3 shadow-sm">
         <Info className="w-5 h-5 shrink-0 mt-0.5" />
         <p className="text-sm">
-          Atenção: Os campos exibem o selo <strong>Ant: valor</strong> para mostrar a resposta exata
-          da última avaliação do aluno, auxiliando na comparação direta.
+          Atenção: Os campos de anamnese estão em branco para que você pergunte novamente ao
+          cliente. O selo <strong>Ant: valor</strong> exibe a resposta exata da última avaliação
+          para auxiliar na comparação.
         </p>
       </div>
 
