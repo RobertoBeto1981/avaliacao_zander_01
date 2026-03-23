@@ -9,121 +9,133 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    // Usa a Service Role Key para contornar o RLS em uma tarefa de background
     const supabaseKey =
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const supabaseClient = createClient(supabaseUrl, supabaseKey)
+    // 1. Fetch active video configurations
+    const { data: configs, error: cfgError } = await supabase
+      .from('video_automations_config')
+      .select('*')
+      .eq('is_active', true)
 
-    // 1. Busca todos os vídeos pendentes junto com os dados da avaliação
-    const { data: pendentes, error } = await supabaseClient
-      .from('videos_agendados')
-      .select(`
-        id,
-        dias_apos_avaliacao,
-        url_google_drive,
-        status,
-        avaliacoes!inner (
-          id,
-          nome_cliente,
-          telefone_cliente,
-          data_avaliacao
-        )
-      `)
-      .eq('status', 'pendente')
-
-    if (error) {
-      throw new Error(`Erro ao buscar vídeos: ${error.message}`)
+    if (cfgError) throw new Error(`Erro ao buscar configurações: ${cfgError.message}`)
+    if (!configs || configs.length === 0) {
+      return new Response(JSON.stringify({ message: 'Nenhuma automação de vídeo ativa.' }), {
+        headers: corsHeaders,
+      })
     }
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = today.toISOString().split('T')[0]
-
-    // 2. Filtra os vídeos onde data_avaliacao + dias_apos_avaliacao <= hoje
-    const videosToProcess = (pendentes || []).filter((video) => {
-      const dataAvaliacao = new Date(video.avaliacoes.data_avaliacao)
-      const targetDate = new Date(dataAvaliacao)
-      targetDate.setDate(targetDate.getDate() + video.dias_apos_avaliacao)
-      const targetDateStr = targetDate.toISOString().split('T')[0]
-      return targetDateStr <= todayStr
-    })
 
     const waToken = Deno.env.get('WHATSAPP_TOKEN')
     const waPhoneId = Deno.env.get('WHATSAPP_PHONE_ID')
     const results = []
 
-    for (const video of videosToProcess) {
-      const cliente = video.avaliacoes
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-      if (!cliente.telefone_cliente) {
-        results.push({ id: video.id, status: 'error', reason: 'Sem telefone' })
+    // 2. Loop through each active trigger configuration
+    for (const config of configs) {
+      // Calculate target evaluation date (today - trigger_days)
+      const targetDate = new Date(today)
+      targetDate.setDate(targetDate.getDate() - config.dias_trigger)
+      const targetDateStr = targetDate.toISOString().split('T')[0]
+
+      // 3. Find valid evaluations created exactly on targetDate
+      const { data: avaliacoes, error: evError } = await supabase
+        .from('avaliacoes')
+        .select('id, nome_cliente, telefone_cliente')
+        .eq('data_avaliacao', targetDateStr)
+        .eq('is_pre_avaliacao', false)
+
+      if (evError) {
+        console.error(`Erro buscando avaliações para data ${targetDateStr}:`, evError)
         continue
       }
 
-      let phone = cliente.telefone_cliente.replace(/\D/g, '')
-      if (!phone.startsWith('55')) {
-        phone = '55' + phone
-      }
+      if (!avaliacoes || avaliacoes.length === 0) continue
 
-      const firstName = cliente.nome_cliente.trim().split(' ')[0]
+      // 4. Process each matched evaluation
+      for (const ev of avaliacoes) {
+        // Check if already sent or logged
+        const { data: log } = await supabase
+          .from('videos_agendados')
+          .select('id')
+          .eq('avaliacao_id', ev.id)
+          .eq('dias_apos_avaliacao', config.dias_trigger)
+          .maybeSingle()
 
-      // 3. Prepara a mensagem adaptada para vídeos
-      const message = `Olá *${firstName}*, tudo bem?\n\nConforme o seu planejamento de acompanhamento, aqui está o seu vídeo de hoje:\n\n🎥 ${video.url_google_drive}\n\nAssista e, qualquer dúvida, estamos à disposição!`
+        if (log) continue // Already processed
 
-      let success = false
+        let success = false
+        let errorReason = null
 
-      if (waToken && waPhoneId) {
-        const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${waToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'text',
-            text: { body: message },
-          }),
+        if (!ev.telefone_cliente) {
+          errorReason = 'Sem telefone cadastrado'
+        } else if (!config.video_url) {
+          errorReason = 'Configuração sem URL de vídeo'
+        } else {
+          let phone = ev.telefone_cliente.replace(/\D/g, '')
+          if (!phone.startsWith('55')) phone = '55' + phone
+
+          const firstName = ev.nome_cliente.trim().split(' ')[0]
+          const template =
+            config.message_template || 'Olá {{nome}}, aqui está seu vídeo: {{link_video}}'
+          const message = template
+            .replace(/\{\{nome\}\}/g, firstName)
+            .replace(/\{\{link_video\}\}/g, config.video_url || '')
+
+          if (waToken && waPhoneId) {
+            const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${waToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: phone,
+                type: 'text',
+                text: { body: message },
+              }),
+            })
+
+            if (!waRes.ok) {
+              const waData = await waRes.json()
+              console.error(`[WhatsApp Error] Eval ${ev.id}:`, waData)
+              errorReason = waData.error?.message || 'Falha na API WA'
+            } else {
+              success = true
+            }
+          } else {
+            console.log(`[SIMULAÇÃO WA] Vídeo Automático -> ${phone}:\n${message}`)
+            success = true
+          }
+        }
+
+        // 5. Insert audit log into videos_agendados
+        await supabase.from('videos_agendados').insert({
+          avaliacao_id: ev.id,
+          dias_apos_avaliacao: config.dias_trigger,
+          url_google_drive: config.video_url || null,
+          status: success ? 'enviado' : 'erro',
+          data_envio: success ? new Date().toISOString() : null,
+          error_reason: errorReason,
         })
 
-        if (!waRes.ok) {
-          const waData = await waRes.json()
-          console.error(`[WhatsApp Error] Vídeo ${video.id}:`, waData)
-          results.push({ id: video.id, status: 'error', reason: 'Falha na API WA' })
-          continue // pula o update para enviado em caso de falha na API
-        }
-        success = true
-      } else {
-        console.log(`[SIMULAÇÃO WA] Vídeo ${video.id} -> ${phone}:\n${message}`)
-        success = true
-      }
-
-      // 4. Atualiza o status para 'enviado' e registra a data_envio
-      if (success) {
-        const { error: updateError } = await supabaseClient
-          .from('videos_agendados')
-          .update({
-            status: 'enviado',
-            data_envio: new Date().toISOString(),
-          })
-          .eq('id', video.id)
-
-        if (updateError) {
-          console.error(`Erro ao atualizar vídeo ${video.id}:`, updateError)
-          results.push({ id: video.id, status: 'error', reason: 'Falha no DB update' })
-        } else {
-          results.push({ id: video.id, status: 'success' })
-        }
+        results.push({
+          avaliacao_id: ev.id,
+          dias: config.dias_trigger,
+          status: success ? 'enviado' : 'erro',
+          reason: errorReason,
+        })
       }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Rotina de envio de vídeos executada com sucesso',
-        processed: videosToProcess.length,
+        message: 'Rotina de vídeos automáticos executada',
+        processed: results.length,
         results,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
