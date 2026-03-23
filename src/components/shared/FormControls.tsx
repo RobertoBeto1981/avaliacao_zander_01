@@ -23,8 +23,13 @@ export const PrevEvalBadge = ({ name }: { name: string }) => {
   const prevData = useContext(PrevEvalContext)
   if (!prevData) return null
 
-  // Não exibe o indicativo para campos de identificação pré-preenchidos
-  if (['evo_id', 'nome_cliente', 'telefone_cliente'].includes(name)) return null
+  // Não exibe o indicativo para campos de identificação pré-preenchidos ou links
+  if (
+    ['evo_id', 'nome_cliente', 'telefone_cliente'].includes(name) ||
+    name.startsWith('client_links.')
+  ) {
+    return null
+  }
 
   let val = getNestedValue(prevData, name)
   if (val === undefined || val === null || val === '') return null
