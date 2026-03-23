@@ -460,6 +460,41 @@ export type Database = {
           },
         ]
       }
+      reavaliacoes: {
+        Row: {
+          avaliacao_original_id: string
+          created_at: string
+          data_reavaliacao: string
+          evolucao: Json | null
+          id: string
+          respostas_novas: Json
+        }
+        Insert: {
+          avaliacao_original_id: string
+          created_at?: string
+          data_reavaliacao: string
+          evolucao?: Json | null
+          id?: string
+          respostas_novas: Json
+        }
+        Update: {
+          avaliacao_original_id?: string
+          created_at?: string
+          data_reavaliacao?: string
+          evolucao?: Json | null
+          id?: string
+          respostas_novas?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reavaliacoes_avaliacao_original_id_fkey'
+            columns: ['avaliacao_original_id']
+            isOneToOne: false
+            referencedRelation: 'avaliacoes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       users: {
         Row: {
           email: string
@@ -829,6 +864,13 @@ export const Constants = {
 //   is_archived: boolean (not null, default: false)
 //   priority: text (not null, default: 'normal'::text)
 //   bulk_message_id: uuid (nullable)
+// Table: reavaliacoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   avaliacao_original_id: uuid (not null)
+//   data_reavaliacao: date (not null)
+//   respostas_novas: jsonb (not null)
+//   evolucao: jsonb (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: users
 //   id: uuid (not null)
 //   email: text (not null)
@@ -885,6 +927,9 @@ export const Constants = {
 //   FOREIGN KEY notifications_bulk_message_id_fkey: FOREIGN KEY (bulk_message_id) REFERENCES bulk_messages(id) ON DELETE CASCADE
 //   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+// Table: reavaliacoes
+//   FOREIGN KEY reavaliacoes_avaliacao_original_id_fkey: FOREIGN KEY (avaliacao_original_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
+//   PRIMARY KEY reavaliacoes_pkey: PRIMARY KEY (id)
 // Table: users
 //   FOREIGN KEY users_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY users_pkey: PRIMARY KEY (id)
@@ -962,6 +1007,11 @@ export const Constants = {
 //     USING: (user_id = auth.uid())
 //   Policy "Users can view their own notifications" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (user_id = auth.uid())
+// Table: reavaliacoes
+//   Policy "Allow insert for authenticated" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: users
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)

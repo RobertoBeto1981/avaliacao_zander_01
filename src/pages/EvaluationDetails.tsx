@@ -12,8 +12,10 @@ import {
   Link as LinkIcon,
   MessageSquareQuote,
   Edit,
+  Repeat,
 } from 'lucide-react'
 import { getEvaluationById } from '@/services/evaluations'
+import { getReavaliacoesByAvaliacao } from '@/services/reavaliacoes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -80,6 +82,7 @@ export default function EvaluationDetails() {
   const { id } = useParams()
   const { profile } = useAuth()
   const [data, setData] = useState<any>(null)
+  const [reavs, setReavs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const userRole = profile?.role
@@ -93,9 +96,10 @@ export default function EvaluationDetails() {
         return
       }
 
-      getEvaluationById(id)
-        .then((res) => {
+      Promise.all([getEvaluationById(id), getReavaliacoesByAvaliacao(id)])
+        .then(([res, reavRes]) => {
           setData(res)
+          setReavs(reavRes)
           setLoading(false)
         })
         .catch((err) => {
@@ -123,6 +127,17 @@ export default function EvaluationDetails() {
           </Link>
         </Button>
         <div className="flex gap-2">
+          {(userRole === 'coordenador' || userRole === 'avaliador') && !data.is_pre_avaliacao && (
+            <Button
+              variant="outline"
+              asChild
+              className="font-bold border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+            >
+              <Link to={`/evaluation/${id}/reevaluate`}>
+                <Repeat className="mr-2 h-4 w-4" /> Nova Reavaliação
+              </Link>
+            </Button>
+          )}
           {(userRole === 'coordenador' || userRole === 'avaliador' || userRole === 'professor') && (
             <Button
               variant="outline"
@@ -176,6 +191,43 @@ export default function EvaluationDetails() {
           </div>
 
           <div className="space-y-2 print:space-y-0">
+            {reavs.length > 0 && (
+              <Section title="Histórico de Reavaliações" icon={Repeat}>
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 no-print">
+                  {reavs.map((reav) => (
+                    <div
+                      key={reav.id}
+                      className="flex flex-col justify-between p-4 border rounded-lg bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30 hover:shadow-sm transition-shadow"
+                    >
+                      <div className="mb-3">
+                        <p className="font-bold text-sm text-green-800 dark:text-green-300">
+                          Reavaliação em{' '}
+                          {format(new Date(reav.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {reav.evolucao?.length || 0} destaques de evolução mapeados.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-green-700 hover:text-green-800 hover:bg-green-100 border-green-300"
+                        asChild
+                      >
+                        <Link to={`/reevaluation/${reav.id}`}>Acessar Relatório</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 hidden print:block text-sm text-gray-600">
+                  <p>
+                    O paciente possui {reavs.length} reavaliações cadastradas no sistema que não
+                    constam neste relatório principal.
+                  </p>
+                </div>
+              </Section>
+            )}
+
             <Section title="Identificação do Cliente" icon={User}>
               <InfoField
                 label="Nome Completo"

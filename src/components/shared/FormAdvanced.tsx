@@ -8,6 +8,7 @@ import { CalendarIcon } from 'lucide-react'
 import { format, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { PrevEvalBadge } from './FormControls'
 
 export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) => {
   const { control } = useFormContext()
@@ -17,7 +18,10 @@ export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) =>
       name={name}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
+          <div className="flex items-center">
+            <FormLabel>{label}</FormLabel>
+            <PrevEvalBadge name={name} />
+          </div>
           <Popover>
             <PopoverTrigger asChild disabled={readOnly}>
               <FormControl>
@@ -67,8 +71,9 @@ export const FMultiSelect = ({ name, label, options }: any) => {
       name={name}
       render={() => (
         <FormItem>
-          <div className="mb-4">
+          <div className="mb-4 flex items-center">
             <FormLabel className="text-base">{label}</FormLabel>
+            <PrevEvalBadge name={name} />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {options.map((opt: string) => (

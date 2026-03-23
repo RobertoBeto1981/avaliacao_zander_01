@@ -11,6 +11,8 @@ import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
 import EditEvaluation from './pages/EditEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
+import NewReevaluation from './pages/NewReevaluation'
+import ReevaluationDetails from './pages/ReevaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
 import Communications from './pages/Communications'
 import VideoScheduling from './pages/VideoScheduling'
@@ -123,6 +125,24 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <EvaluationDetails />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/evaluation/:id/reevaluate"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
+              <NewReevaluation />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/reevaluation/:id"
+        element={
+          <PrivateRoute>
+            <ReevaluationDetails />
           </PrivateRoute>
         }
       />

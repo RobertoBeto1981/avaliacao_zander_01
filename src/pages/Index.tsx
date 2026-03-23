@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User, Eye, AlertCircle } from 'lucide-react'
+import { FilePlus2, Search, User, Eye, AlertCircle, Repeat } from 'lucide-react'
 import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -108,16 +109,28 @@ export default function Index() {
                 >
                   <TableCell className="font-medium">
                     <div className="flex flex-col gap-1.5 items-start">
-                      <span>{ev.nome_cliente}</span>
-                      {ev.is_pre_avaliacao && (
-                        <Badge
-                          variant="destructive"
-                          className="w-fit text-[10px] h-5 px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1.5"
-                        >
-                          <AlertCircle className="w-3 h-3" />
-                          Nova Avaliação Pendente
-                        </Badge>
-                      )}
+                      <span className="line-clamp-1" title={ev.nome_cliente}>
+                        {ev.nome_cliente}
+                      </span>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {ev.evo_id && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 border-blue-200 text-blue-700"
+                          >
+                            EVO: {ev.evo_id}
+                          </Badge>
+                        )}
+                        {ev.is_pre_avaliacao && (
+                          <Badge
+                            variant="destructive"
+                            className="w-fit text-[10px] px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1"
+                          >
+                            <AlertCircle className="w-3 h-3" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
@@ -154,11 +167,36 @@ export default function Index() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild title="Visualizar Avaliação">
-                      <Link to={`/evaluation/${ev.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <div className="flex gap-1.5 justify-end">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/evaluation/${ev.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Visualizar Avaliação</TooltipContent>
+                      </Tooltip>
+
+                      {canCreateEvaluation && !ev.is_pre_avaliacao && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              asChild
+                            >
+                              <Link to={`/evaluation/${ev.id}/reevaluate`}>
+                                <Repeat className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Realizar Reavaliação</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

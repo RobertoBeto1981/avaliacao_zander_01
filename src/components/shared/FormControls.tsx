@@ -11,6 +11,35 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { PrevEvalContext } from '@/contexts/PrevEvalContext'
+import { useContext } from 'react'
+
+const getNestedValue = (obj: any, path: string) => {
+  if (!obj) return undefined
+  return path.split('.').reduce((acc: any, part: string) => acc && acc[part], obj)
+}
+
+export const PrevEvalBadge = ({ name }: { name: string }) => {
+  const prevData = useContext(PrevEvalContext)
+  if (!prevData) return null
+  let val = getNestedValue(prevData, name)
+  if (val === undefined || val === null || val === '') return null
+
+  if (typeof val === 'boolean') val = val ? 'Sim' : 'Não'
+  if (Array.isArray(val)) val = val.join(', ')
+  if (val instanceof Date) {
+    val = val.toISOString().split('T')[0]
+  }
+
+  return (
+    <span
+      className="text-[10px] text-amber-700 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded ml-2 font-medium line-clamp-1 max-w-[200px]"
+      title={String(val)}
+    >
+      Ant: {String(val)}
+    </span>
+  )
+}
 
 export const FInput = ({ name, label, placeholder, type = 'text', disabled, ...props }: any) => {
   const { control } = useFormContext()
@@ -20,7 +49,10 @@ export const FInput = ({ name, label, placeholder, type = 'text', disabled, ...p
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="flex items-center">
+            {label}
+            <PrevEvalBadge name={name} />
+          </FormLabel>
           <FormControl>
             <Input
               placeholder={placeholder}
@@ -61,7 +93,10 @@ export const FPhoneInput = ({ name, label, placeholder, disabled, ...props }: an
 
         return (
           <FormItem>
-            <FormLabel>{label}</FormLabel>
+            <FormLabel className="flex items-center">
+              {label}
+              <PrevEvalBadge name={name} />
+            </FormLabel>
             <FormControl>
               <Input
                 placeholder={placeholder || '+55 (00) 00000-0000'}
@@ -89,7 +124,10 @@ export const FTextarea = ({ name, label, placeholder, disabled, ...props }: any)
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="flex items-center">
+            {label}
+            <PrevEvalBadge name={name} />
+          </FormLabel>
           <FormControl>
             <Textarea
               placeholder={placeholder}
@@ -114,7 +152,10 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...', di
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="flex items-center">
+            {label}
+            <PrevEvalBadge name={name} />
+          </FormLabel>
           <Select
             onValueChange={field.onChange}
             defaultValue={field.value || ''}
@@ -154,7 +195,10 @@ export const FSwitch = ({ name, label, className, disabled }: any) => {
             className,
           )}
         >
-          <FormLabel className="text-base font-medium">{label}</FormLabel>
+          <FormLabel className="text-base font-medium flex items-center">
+            {label}
+            <PrevEvalBadge name={name} />
+          </FormLabel>
           <FormControl>
             <Switch checked={field.value} onCheckedChange={field.onChange} disabled={disabled} />
           </FormControl>
