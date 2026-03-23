@@ -41,7 +41,6 @@ export function HistoryTab() {
               <TableHead>Aluno</TableHead>
               <TableHead>Gatilho</TableHead>
               <TableHead>Data Estimada</TableHead>
-              <TableHead>Link do Vídeo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Enviado Em</TableHead>
             </TableRow>
@@ -49,7 +48,7 @@ export function HistoryTab() {
           <TableBody>
             {scheduledVideos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Nenhum registro de envio encontrado.
                 </TableCell>
               </TableRow>
@@ -69,20 +68,6 @@ export function HistoryTab() {
                     </TableCell>
                     <TableCell>{video.dias_apos_avaliacao} Dias</TableCell>
                     <TableCell>{dataEstimada ? format(dataEstimada, 'dd/MM/yyyy') : '-'}</TableCell>
-                    <TableCell>
-                      {video.url_google_drive ? (
-                        <a
-                          href={video.url_google_drive}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline max-w-[200px] truncate block"
-                        >
-                          Ver Vídeo
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={
