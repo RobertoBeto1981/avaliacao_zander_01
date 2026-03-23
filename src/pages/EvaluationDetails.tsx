@@ -151,11 +151,18 @@ export default function EvaluationDetails() {
               </div>
               <div>
                 <h1 className="text-3xl print:text-xl font-black uppercase tracking-tighter text-[#1d1d1b]">
-                  ZANDER Academia
+                  {data.nome_cliente}
                 </h1>
-                <p className="text-lg print:text-xs text-muted-foreground print:text-gray-600 font-medium">
-                  Ficha de Avaliação Física e Anamnese
-                </p>
+                <div className="flex items-center gap-3 mt-1 print:mt-0">
+                  <p className="text-lg print:text-xs text-muted-foreground print:text-gray-600 font-medium">
+                    Ficha de Avaliação Física
+                  </p>
+                  {data.evo_id && (
+                    <div className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-md text-sm print:text-[10px] font-bold">
+                      ID EVO: {data.evo_id}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="text-right text-sm print:text-xs bg-muted/30 p-3 rounded-lg print:bg-transparent print:p-0">

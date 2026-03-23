@@ -23,7 +23,8 @@ export const getScheduledVideos = async () => {
       avaliacoes (
         id,
         nome_cliente,
-        data_avaliacao
+        data_avaliacao,
+        evo_id
       )
     `)
     .order('created_at', { ascending: false })

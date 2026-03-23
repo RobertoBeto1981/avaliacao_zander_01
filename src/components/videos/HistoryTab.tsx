@@ -64,7 +64,17 @@ export function HistoryTab() {
                 return (
                   <TableRow key={video.id}>
                     <TableCell className="font-medium">
-                      {video.avaliacoes?.nome_cliente || 'Avaliação Removida'}
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span>{video.avaliacoes?.nome_cliente || 'Avaliação Removida'}</span>
+                        {video.avaliacoes?.evo_id && (
+                          <Badge
+                            variant="outline"
+                            className="w-fit text-[10px] px-1.5 py-0.5 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
+                          >
+                            EVO: {video.avaliacoes.evo_id}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{video.dias_apos_avaliacao} Dias</TableCell>
                     <TableCell>{dataEstimada ? format(dataEstimada, 'dd/MM/yyyy') : '-'}</TableCell>

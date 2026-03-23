@@ -56,15 +56,25 @@ export function DashboardTable({ data }: { data: any[] }) {
                     <TableCell className="font-medium">
                       <div className="flex flex-col gap-1.5 items-start">
                         <span>{ev.nome_cliente}</span>
-                        {isPre && (
-                          <Badge
-                            variant="destructive"
-                            className="w-fit text-[10px] h-5 px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1.5"
-                          >
-                            <AlertCircle className="w-3 h-3" />
-                            Nova Avaliação Pendente
-                          </Badge>
-                        )}
+                        <div className="flex gap-1.5 items-center flex-wrap">
+                          {isPre && (
+                            <Badge
+                              variant="destructive"
+                              className="w-fit text-[10px] h-5 px-2 py-0 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1.5"
+                            >
+                              <AlertCircle className="w-3 h-3" />
+                              Nova Avaliação Pendente
+                            </Badge>
+                          )}
+                          {ev.evo_id && (
+                            <Badge
+                              variant="outline"
+                              className="w-fit text-[10px] h-5 px-2 py-0 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400 flex items-center"
+                            >
+                              EVO: {ev.evo_id}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

@@ -21,11 +21,13 @@ import {
 export function AcompanhamentoDialog({
   avaliacaoId,
   nomeCliente,
+  evoId,
   open,
   onOpenChange,
 }: {
   avaliacaoId: string
   nomeCliente: string
+  evoId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -105,7 +107,14 @@ export function AcompanhamentoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] flex flex-col h-[85vh] max-h-[800px]">
         <DialogHeader>
-          <DialogTitle>Acompanhamento - {nomeCliente}</DialogTitle>
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span>Acompanhamento - {nomeCliente}</span>
+            {evoId && (
+              <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs px-2 py-0.5 rounded-md font-semibold w-fit">
+                ID EVO: {evoId}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-2">

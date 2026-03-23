@@ -50,10 +50,16 @@ export default function ProfessorDashboard() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [periodoFilter, setPeriodoFilter] = useState<string>('all')
-  const [acompanhamentoEval, setAcompanhamentoEval] = useState<{ id: string; nome: string } | null>(
-    null,
-  )
-  const [historyEval, setHistoryEval] = useState<{ id: string; nome: string } | null>(null)
+  const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
+    id: string
+    nome: string
+    evo_id?: string
+  } | null>(null)
+  const [historyEval, setHistoryEval] = useState<{
+    id: string
+    nome: string
+    evo_id?: string
+  } | null>(null)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [sendingWa, setSendingWa] = useState<string | null>(null)
   const { toast } = useToast()
@@ -373,7 +379,13 @@ export default function ProfessorDashboard() {
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs px-2 flex-1 font-medium bg-background hover:bg-muted whitespace-nowrap"
-                        onClick={() => setAcompanhamentoEval({ id: ev.id, nome: ev.nome_cliente })}
+                        onClick={() =>
+                          setAcompanhamentoEval({
+                            id: ev.id,
+                            nome: ev.nome_cliente,
+                            evo_id: ev.evo_id,
+                          })
+                        }
                       >
                         <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
                         Anotações
@@ -422,7 +434,13 @@ export default function ProfessorDashboard() {
                             variant="outline"
                             size="sm"
                             className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-muted-foreground"
-                            onClick={() => setHistoryEval({ id: ev.id, nome: ev.nome_cliente })}
+                            onClick={() =>
+                              setHistoryEval({
+                                id: ev.id,
+                                nome: ev.nome_cliente,
+                                evo_id: ev.evo_id,
+                              })
+                            }
                           >
                             <History className="w-4 h-4" />
                           </Button>
@@ -494,6 +512,7 @@ export default function ProfessorDashboard() {
         onOpenChange={(open) => !open && setAcompanhamentoEval(null)}
         avaliacaoId={acompanhamentoEval?.id || ''}
         nomeCliente={acompanhamentoEval?.nome || ''}
+        evoId={acompanhamentoEval?.evo_id}
       />
 
       <HistoryDialog
@@ -501,6 +520,7 @@ export default function ProfessorDashboard() {
         onOpenChange={(open) => !open && setHistoryEval(null)}
         avaliacaoId={historyEval?.id || ''}
         nomeCliente={historyEval?.nome || ''}
+        evoId={historyEval?.evo_id}
       />
 
       {isProfessor && (

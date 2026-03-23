@@ -16,11 +16,13 @@ import { useToast } from '@/hooks/use-toast'
 export function HistoryDialog({
   avaliacaoId,
   nomeCliente,
+  evoId,
   open,
   onOpenChange,
 }: {
   avaliacaoId: string
   nomeCliente: string
+  evoId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -69,9 +71,16 @@ export function HistoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] flex flex-col h-[70vh] max-h-[700px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="w-5 h-5 text-primary" />
-            Histórico - {nomeCliente}
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              <span>Histórico - {nomeCliente}</span>
+            </div>
+            {evoId && (
+              <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs px-2 py-0.5 rounded-md font-semibold w-fit">
+                ID EVO: {evoId}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
