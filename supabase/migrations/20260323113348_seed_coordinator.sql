@@ -1,4 +1,4 @@
-DO $
+DO $$
 DECLARE
   v_user_id uuid;
 BEGIN
@@ -37,4 +37,4 @@ BEGIN
     SET raw_user_meta_data = jsonb_set(COALESCE(raw_user_meta_data, '{}'::jsonb), '{role}', '"coordenador"')
     WHERE email = 'personalbeto@hotmail.com';
   END IF;
-END $;
+END $$;
