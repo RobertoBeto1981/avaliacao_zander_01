@@ -46,7 +46,6 @@ export default function Profile() {
       await updateProfile(user!.id, {
         nome: profile.nome,
         telefone: profile.telefone,
-        role: profile.role,
         periodo: profile.periodo,
       })
       toast({ title: 'Sucesso', description: 'Perfil atualizado com sucesso.' })
@@ -141,21 +140,10 @@ export default function Profile() {
               </div>
               <div className="space-y-2">
                 <Label>Cargo / Papel</Label>
-                <Select
-                  value={profile?.role || ''}
-                  onValueChange={(v) => setProfile({ ...profile, role: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="coordenador">Coordenador</SelectItem>
-                    <SelectItem value="professor">Professor</SelectItem>
-                    <SelectItem value="avaliador">Avaliador</SelectItem>
-                    <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
-                    <SelectItem value="nutricionista">Nutricionista</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input value={profile?.role || ''} disabled className="bg-muted capitalize" />
+                <p className="text-[10px] text-muted-foreground">
+                  A alteração de cargo deve ser solicitada à coordenação.
+                </p>
               </div>
             </div>
 

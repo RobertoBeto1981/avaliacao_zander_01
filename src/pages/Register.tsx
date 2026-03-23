@@ -83,7 +83,6 @@ export default function Register() {
                 <SelectContent>
                   <SelectItem value="professor">Professor</SelectItem>
                   <SelectItem value="avaliador">Avaliador</SelectItem>
-                  <SelectItem value="coordenador">Coordenador</SelectItem>
                   <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
                   <SelectItem value="nutricionista">Nutricionista</SelectItem>
                 </SelectContent>
