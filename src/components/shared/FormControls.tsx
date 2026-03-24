@@ -23,7 +23,6 @@ export const PrevEvalBadge = ({ name }: { name: string }) => {
   const prevData = useContext(PrevEvalContext)
   if (!prevData) return null
 
-  // Não exibe o indicativo para campos de identificação pré-preenchidos ou links
   if (
     ['evo_id', 'nome_cliente', 'telefone_cliente'].includes(name) ||
     name.startsWith('client_links.')
@@ -50,7 +49,15 @@ export const PrevEvalBadge = ({ name }: { name: string }) => {
   )
 }
 
-export const FInput = ({ name, label, placeholder, type = 'text', disabled, ...props }: any) => {
+export const FInput = ({
+  name,
+  label,
+  placeholder,
+  type = 'text',
+  disabled,
+  onChange,
+  ...props
+}: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -69,6 +76,15 @@ export const FInput = ({ name, label, placeholder, type = 'text', disabled, ...p
               disabled={disabled}
               {...field}
               value={field.value || ''}
+              onChange={(e) => {
+                if (onChange) {
+                  onChange(e)
+                } else if (type === 'number') {
+                  field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                } else {
+                  field.onChange(e.target.value)
+                }
+              }}
               {...props}
             />
           </FormControl>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User, Eye, AlertCircle, Repeat, Plus } from 'lucide-react'
-import { getEvaluations } from '@/services/evaluations'
+import { ptBR } from 'date-fns/locale'
+import { FilePlus2, Search, User, Eye, AlertCircle, Repeat, Plus, Edit, Trash2 } from 'lucide-react'
+import { getEvaluations, deleteEvaluation } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,10 +20,12 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Index() {
   const { session, profile, loading } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loadingData, setLoadingData] = useState(true)
@@ -52,12 +55,24 @@ export default function Index() {
   const isCoordenador = profile?.role === 'coordenador'
   const title = 'Início - Todos os Clientes'
 
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta avaliação permanentemente?')) {
+      try {
+        await deleteEvaluation(id)
+        toast({ title: 'Sucesso', description: 'Avaliação excluída com sucesso.' })
+        setEvaluations(evaluations.filter((ev) => ev.id !== id))
+      } catch (e: any) {
+        toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+      }
+    }
+  }
+
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">{title}</h1>
         <div className="flex flex-wrap gap-3">
-          {isCoordenador && (
+          {(canCreateEvaluation || isCoordenador) && (
             <Button
               onClick={() => setIsNewStudentOpen(true)}
               variant="outline"
@@ -104,7 +119,7 @@ export default function Index() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Avaliador</TableHead>
                 <TableHead>Professor Resp.</TableHead>
-                <TableHead>Data da Avaliação</TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead>Reavaliação</TableHead>
                 <TableHead>Treino</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -145,11 +160,9 @@ export default function Index() {
                   <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
                   <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>
-                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : (
-                      format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                    )}
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao
+                      ? format(new Date(ev.created_at), 'dd/MM/yyyy')
+                      : format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
                   </TableCell>
                   <TableCell className="text-primary font-semibold">
                     {ev.is_pre_avaliacao || !ev.data_reavaliacao ? (
@@ -193,6 +206,24 @@ export default function Index() {
                         <TooltipContent>Visualizar Avaliação</TooltipContent>
                       </Tooltip>
 
+                      {(canCreateEvaluation || isCoordenador) && !ev.is_pre_avaliacao && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-primary hover:bg-primary/20"
+                              asChild
+                            >
+                              <Link to={`/evaluation/edit/${ev.id}`}>
+                                <Edit className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar Avaliação</TooltipContent>
+                        </Tooltip>
+                      )}
+
                       {canCreateEvaluation && !ev.is_pre_avaliacao && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -210,6 +241,22 @@ export default function Index() {
                           <TooltipContent>Realizar Reavaliação</TooltipContent>
                         </Tooltip>
                       )}
+
+                      {isCoordenador && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:bg-destructive/20"
+                              onClick={() => handleDelete(ev.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Excluir Avaliação</TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -219,7 +266,7 @@ export default function Index() {
         </Card>
       )}
 
-      {isCoordenador && (
+      {(canCreateEvaluation || isCoordenador) && (
         <NovoAlunoDialog
           open={isNewStudentOpen}
           onOpenChange={setIsNewStudentOpen}

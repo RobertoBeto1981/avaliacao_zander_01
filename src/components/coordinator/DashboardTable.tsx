@@ -89,11 +89,9 @@ export function DashboardTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {isPre || !ev.data_avaliacao ? (
-                        <span className="text-muted-foreground">-</span>
-                      ) : (
-                        format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                      )}
+                      {isPre || !ev.data_avaliacao
+                        ? format(new Date(ev.created_at), 'dd/MM/yyyy')
+                        : format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
                     </TableCell>
                     <TableCell>
                       {ev.professor?.nome || (

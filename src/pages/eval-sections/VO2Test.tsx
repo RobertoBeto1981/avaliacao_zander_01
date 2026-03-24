@@ -86,7 +86,7 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
   const gender = useWatch({ control, name: 'gender' })
   const classification = useWatch({ control, name: 'vo2_test.classification' })
 
-  const beats15s = beats15sStr ? Number(beats15sStr) : 0
+  const beats15s = Number(beats15sStr) || 0
 
   const age = useMemo(() => {
     if (!dataNascimento) return 0
@@ -113,9 +113,8 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     gain.connect(ctx.destination)
 
     osc.type = 'sine'
-    osc.frequency.setValueAtTime(800, ctx.currentTime) // 800Hz beep
+    osc.frequency.setValueAtTime(800, ctx.currentTime)
 
-    // Envelope to prevent clicking and ensure a clean single "ton"
     gain.gain.setValueAtTime(0, ctx.currentTime)
     gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.01)
     gain.gain.setValueAtTime(0.2, ctx.currentTime + 0.04)
@@ -125,7 +124,6 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     osc.stop(ctx.currentTime + 0.06)
   }
 
-  // Timer Effect
   useEffect(() => {
     let timer: any
     if (isRunning) {
@@ -139,12 +137,11 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     return () => clearInterval(timer)
   }, [isRunning, timeLeft])
 
-  // Metronome Effect
   useEffect(() => {
     if (isRunning) {
       const intervalMs = 60000 / selectedBpm
       metronomeIntervalRef.current = setInterval(playBeep, intervalMs)
-      playBeep() // Play first beat immediately
+      playBeep()
     } else {
       if (metronomeIntervalRef.current) {
         clearInterval(metronomeIntervalRef.current)
@@ -155,10 +152,20 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     }
   }, [isRunning, selectedBpm])
 
-  // Calculation Effect
   useEffect(() => {
     if (beats15s > 0 && age > 0) {
-      const vo2Max = (15 * 220 - age) / (6 * beats15s)
+      const hr = beats15s * 4
+      let vo2Max = 0
+
+      // YMCA Step Test Formula
+      if (gender === 'Masculino') {
+        vo2Max = 111.33 - 0.42 * hr
+      } else if (gender === 'Feminino') {
+        vo2Max = 65.81 - 0.1847 * hr
+      } else {
+        vo2Max = 111.33 - 0.42 * hr
+      }
+
       setValue('vo2_test.vo2_max', vo2Max.toFixed(2))
 
       if (gender) {

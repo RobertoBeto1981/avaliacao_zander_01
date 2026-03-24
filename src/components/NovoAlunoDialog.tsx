@@ -5,13 +5,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { createPreAvaliacao } from '@/services/evaluations'
-import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
 
@@ -29,7 +29,6 @@ export function NovoAlunoDialog({
   const [telefone, setTelefone] = useState('')
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const { user, profile } = useAuth()
 
   const handleSave = async () => {
     if (!evoId || !nome) {
@@ -42,16 +41,12 @@ export function NovoAlunoDialog({
     }
     setLoading(true)
     try {
-      const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
-      const isProfessor = userRoles.includes('professor')
-
       await createPreAvaliacao({
         evo_id: evoId,
         nome_cliente: nome,
         telefone_cliente: telefone,
-        professor_id: isProfessor ? user?.id : undefined,
       })
-      toast({ title: 'Sucesso', description: 'Aluno registrado para pré-avaliação.' })
+      toast({ title: 'Sucesso', description: 'Aluno registrado com sucesso.' })
       setEvoId('')
       setNome('')
       setTelefone('')
@@ -68,6 +63,9 @@ export function NovoAlunoDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Novo Aluno (Pré-Avaliação)</DialogTitle>
+          <DialogDescription>
+            Se o ID EVO já existir, as informações serão sincronizadas automaticamente.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">

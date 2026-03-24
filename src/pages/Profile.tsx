@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { Camera, Save } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
@@ -47,7 +48,7 @@ export default function Profile() {
       await updateProfile(user!.id, {
         nome: profile.nome,
         telefone: profile.telefone,
-        periodo: profile.periodo,
+        periodos: profile.periodos,
         pending_role: profile.pending_role,
       })
       toast({ title: 'Sucesso', description: 'Perfil atualizado com sucesso.' })
@@ -75,6 +76,8 @@ export default function Profile() {
   }
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+
+  const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
 
   return (
     <div className="container mx-auto py-8 max-w-2xl animate-fade-in">
@@ -183,22 +186,36 @@ export default function Profile() {
               )}
             </div>
 
-            {(profile?.roles?.includes('professor') || profile?.role === 'professor') && (
-              <div className="space-y-2 animate-fade-in-up">
-                <Label>Período de Trabalho (Professor)</Label>
-                <Select
-                  value={profile?.periodo || ''}
-                  onValueChange={(v) => setProfile({ ...profile, periodo: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Manhã">Manhã</SelectItem>
-                    <SelectItem value="Tarde">Tarde</SelectItem>
-                    <SelectItem value="Noite">Noite</SelectItem>
-                  </SelectContent>
-                </Select>
+            {isProfessor && (
+              <div className="space-y-3 animate-fade-in-up">
+                <Label>Períodos de Trabalho (Professor)</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                  {['Manhã', 'Tarde', 'Noite'].map((p) => (
+                    <div key={p} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`perfil-per-${p}`}
+                        checked={profile?.periodos?.includes(p)}
+                        onCheckedChange={(checked) => {
+                          const current = profile?.periodos || []
+                          if (checked) {
+                            setProfile({ ...profile, periodos: [...current, p] })
+                          } else {
+                            setProfile({
+                              ...profile,
+                              periodos: current.filter((x: string) => x !== p),
+                            })
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`perfil-per-${p}`}
+                        className="cursor-pointer font-normal text-sm leading-none"
+                      >
+                        {p}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

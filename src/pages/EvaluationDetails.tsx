@@ -36,7 +36,7 @@ export default function EvaluationDetails() {
     const nome = data.nome_cliente?.replace(/\s+/g, '_').toUpperCase() || 'ALUNO'
     const dataFormatada = data.data_avaliacao
       ? format(new Date(data.data_avaliacao), 'dd-MM-yyyy')
-      : ''
+      : format(new Date(data.created_at), 'dd-MM-yyyy')
     return `${evoId}_${nome}_${dataFormatada}`
   }
 
@@ -105,7 +105,9 @@ export default function EvaluationDetails() {
             </h1>
             <p className="text-muted-foreground mt-1">
               {data.nome_cliente} -{' '}
-              {format(new Date(data.data_avaliacao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {format(new Date(data.data_avaliacao || data.created_at), "dd 'de' MMMM 'de' yyyy", {
+                locale: ptBR,
+              })}
             </p>
           </div>
         </div>
@@ -123,7 +125,7 @@ export default function EvaluationDetails() {
               Enviar por WhatsApp
             </Button>
           )}
-          {canSendWhatsApp && (
+          {canSendWhatsApp && !data.is_pre_avaliacao && (
             <Button onClick={() => navigate(`/evaluation/${id}/reevaluate`)} variant="secondary">
               Nova Reavaliação
             </Button>

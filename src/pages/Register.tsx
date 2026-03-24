@@ -16,6 +16,7 @@ export default function Register() {
   const [telefone, setTelefone] = useState('')
   const [password, setPassword] = useState('')
   const [roles, setRoles] = useState<string[]>(['professor'])
+  const [periodos, setPeriodos] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const { toast } = useToast()
@@ -32,13 +33,23 @@ export default function Register() {
       return
     }
 
+    if (roles.includes('professor') && periodos.length === 0) {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione ao menos um período de trabalho como professor.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const { error } = await signUp(email, password, {
         nome,
         telefone,
         roles,
-        role: roles[0], // fallback for legacy dependency
+        role: roles[0],
+        periodos,
       })
       if (error) throw error
       toast({
@@ -122,7 +133,36 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {roles.includes('professor') && (
+              <div className="space-y-3 animate-fade-in">
+                <Label>Períodos de Trabalho (Professor)</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                  {['Manhã', 'Tarde', 'Noite'].map((p) => (
+                    <div key={p} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`per-${p}`}
+                        checked={periodos.includes(p)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setPeriodos([...periodos, p])
+                          } else {
+                            setPeriodos(periodos.filter((x) => x !== p))
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`per-${p}`}
+                        className="cursor-pointer font-normal text-sm leading-none"
+                      >
+                        {p}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2 pt-2">
               <Label>Senha</Label>
               <Input
                 type="password"

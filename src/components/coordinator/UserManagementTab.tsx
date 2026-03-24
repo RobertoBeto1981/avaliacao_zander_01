@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate: () => void }) {
   const { toast } = useToast()
@@ -77,7 +78,7 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
         nome: editingUser.nome,
         role: editingUser.role,
         telefone: editingUser.telefone,
-        periodo: editingUser.periodo,
+        periodos: editingUser.periodos,
       })
       toast({ title: 'Atualizado', description: 'Dados do usuário atualizados.' })
       setEditingUser(null)
@@ -171,9 +172,13 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                     <TableCell className="font-medium">{u.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell className="capitalize">
-                      <Badge variant="outline" className="font-medium">
-                        {u.role}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {(u.roles || [u.role]).map((r: string) => (
+                          <Badge key={r} variant="outline" className="font-medium">
+                            {r}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>{u.telefone || '-'}</TableCell>
                     <TableCell className="text-right">
@@ -222,7 +227,7 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                 />
               </div>
               <div className="space-y-2">
-                <Label>Cargo / Permissão</Label>
+                <Label>Cargo / Permissão Principal</Label>
                 <Select
                   value={editingUser.role}
                   onValueChange={(v) => setEditingUser({ ...editingUser, role: v })}
@@ -239,24 +244,40 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                   </SelectContent>
                 </Select>
               </div>
-              {editingUser.role === 'professor' && (
-                <div className="space-y-2 animate-fade-in">
-                  <Label>Período de Trabalho</Label>
-                  <Select
-                    value={editingUser.periodo || ''}
-                    onValueChange={(v) => setEditingUser({ ...editingUser, periodo: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Manhã">Manhã</SelectItem>
-                      <SelectItem value="Tarde">Tarde</SelectItem>
-                      <SelectItem value="Noite">Noite</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+              {(editingUser.roles?.includes('professor') || editingUser.role === 'professor') && (
+                <div className="space-y-3 animate-fade-in-up">
+                  <Label>Períodos de Trabalho (Professor)</Label>
+                  <div className="grid grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                    {['Manhã', 'Tarde', 'Noite'].map((p) => (
+                      <div key={p} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-per-${p}`}
+                          checked={editingUser.periodos?.includes(p)}
+                          onCheckedChange={(checked) => {
+                            const current = editingUser.periodos || []
+                            if (checked) {
+                              setEditingUser({ ...editingUser, periodos: [...current, p] })
+                            } else {
+                              setEditingUser({
+                                ...editingUser,
+                                periodos: current.filter((x: string) => x !== p),
+                              })
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`edit-per-${p}`}
+                          className="cursor-pointer font-normal text-sm leading-none"
+                        >
+                          {p}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+
               <div className="space-y-2">
                 <Label>Telefone</Label>
                 <Input

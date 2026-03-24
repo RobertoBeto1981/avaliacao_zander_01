@@ -11,7 +11,6 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   let result
   let targetId = existingId
 
-  // Se não foi passado um ID mas temos o evo_id, tentamos buscar uma pré-avaliação existente
   if (!targetId && avaliacao.evo_id) {
     const { data: existingPre } = await supabase
       .from('avaliacoes')
@@ -117,8 +116,37 @@ export const createPreAvaliacao = async (data: {
   evo_id: string
   nome_cliente: string
   telefone_cliente?: string
-  professor_id?: string
 }) => {
+  if (data.evo_id) {
+    const { data: existing } = await supabase
+      .from('avaliacoes')
+      .select('*')
+      .eq('evo_id', data.evo_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (existing) {
+      const payload: any = {
+        nome_cliente: data.nome_cliente,
+      }
+      if (data.telefone_cliente) {
+        payload.telefone_cliente = data.telefone_cliente
+      }
+
+      const { data: result, error } = await supabase
+        .from('avaliacoes')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+      return result
+    }
+  }
+
   const payload: any = {
     evo_id: data.evo_id,
     nome_cliente: data.nome_cliente,
@@ -128,10 +156,6 @@ export const createPreAvaliacao = async (data: {
     data_reavaliacao: null,
     status: 'pendente',
     avaliador_id: null,
-  }
-
-  if (data.professor_id) {
-    payload.professor_id = data.professor_id
   }
 
   const { data: result, error } = await supabase

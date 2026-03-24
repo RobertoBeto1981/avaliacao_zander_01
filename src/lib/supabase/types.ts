@@ -104,7 +104,7 @@ export type Database = {
       }
       avaliacoes: {
         Row: {
-          avaliador_id: string
+          avaliador_id: string | null
           created_at: string
           data_avaliacao: string | null
           data_reavaliacao: string | null
@@ -120,7 +120,7 @@ export type Database = {
           telefone_cliente: string | null
         }
         Insert: {
-          avaliador_id?: string
+          avaliador_id?: string | null
           created_at?: string
           data_avaliacao?: string | null
           data_reavaliacao?: string | null
@@ -136,7 +136,7 @@ export type Database = {
           telefone_cliente?: string | null
         }
         Update: {
-          avaliador_id?: string
+          avaliador_id?: string | null
           created_at?: string
           data_avaliacao?: string | null
           data_reavaliacao?: string | null
@@ -504,6 +504,7 @@ export type Database = {
           pending_role: Database['public']['Enums']['user_role'] | null
           periodo: string | null
           role: Database['public']['Enums']['user_role']
+          roles: string[] | null
           telefone: string | null
         }
         Insert: {
@@ -514,6 +515,7 @@ export type Database = {
           pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
           role: Database['public']['Enums']['user_role']
+          roles?: string[] | null
           telefone?: string | null
         }
         Update: {
@@ -524,6 +526,7 @@ export type Database = {
           pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
           role?: Database['public']['Enums']['user_role']
+          roles?: string[] | null
           telefone?: string | null
         }
         Relationships: []
@@ -781,7 +784,7 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 // Table: avaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
-//   avaliador_id: uuid (not null, default: auth.uid())
+//   avaliador_id: uuid (nullable)
 //   nome_cliente: text (not null)
 //   telefone_cliente: text (nullable)
 //   data_avaliacao: date (nullable)
@@ -887,6 +890,7 @@ export const Constants = {
 //   periodo: text (nullable)
 //   foto_url: text (nullable)
 //   pending_role: user_role (nullable)
+//   roles: _text (nullable, default: '{}'::text[])
 // Table: video_automations_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   dias_trigger: integer (not null)
@@ -967,35 +971,35 @@ export const Constants = {
 //   Policy "Authenticated users can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "Avaliadores can insert avaliacoes" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('avaliador'::text = ANY (users.roles)))))
 //   Policy "Avaliadores can update avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('avaliador'::text = ANY (users.roles)))))
 //   Policy "Coordinators have full access to avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 //   Policy "Professors can insert pre-evaluations" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (is_pre_avaliacao = true))
+//     WITH CHECK: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('professor'::text = ANY (users.roles))))) AND (is_pre_avaliacao = true))
 //   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
+//     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('professor'::text = ANY (users.roles))))) AND (professor_id = auth.uid()))
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (avaliador_id = auth.uid())
 //     WITH CHECK: (avaliador_id = auth.uid())
 // Table: bulk_messages
 //   Policy "Coordinators can insert bulk messages" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 //   Policy "Coordinators can view all bulk messages" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 // Table: evaluations
 //   Policy "Users can manage their own evaluations" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //     WITH CHECK: (auth.uid() = user_id)
 // Table: links_avaliacao
 //   Policy "Coordinators can view all links" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 //   Policy "Fisio and Nutri can view all links" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = ANY (ARRAY['fisioterapeuta'::user_role, 'nutricionista'::user_role])))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.roles && ARRAY['fisioterapeuta'::text, 'nutricionista'::text]))))
 //   Policy "Professors can view all links" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('professor'::text = ANY (users.roles)))))
 //   Policy "Users can manage links of their avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM avaliacoes   WHERE ((avaliacoes.id = links_avaliacao.avaliacao_id) AND (avaliacoes.avaliador_id = auth.uid()))))
@@ -1018,12 +1022,11 @@ export const Constants = {
 //     USING: true
 // Table: users
 //   Policy "Coordinators can delete users" (DELETE, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND ('coordenador'::text = ANY (users_1.roles)))))
 //   Policy "Coordinators can insert users" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND ('coordenador'::text = ANY (users_1.roles)))))
 //   Policy "Coordinators can update users" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND ('coordenador'::text = ANY (users_1.roles)))))
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)
 //   Policy "Users can read all users" (SELECT, PERMISSIVE) roles={authenticated}
@@ -1033,12 +1036,10 @@ export const Constants = {
 //     WITH CHECK: (auth.uid() = id)
 // Table: video_automations_config
 //   Policy "Coordinators can manage video configs" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 // Table: videos_agendados
 //   Policy "Coordinators can manage scheduled videos" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION auto_assign_professor()
@@ -1050,25 +1051,22 @@ export const Constants = {
 //   DECLARE
 //     selected_prof_id UUID;
 //   BEGIN
-//     -- Evaluation defaults to 'pendente' once saved by the evaluator
 //     NEW.status := 'pendente';
 //
 //     IF NEW.professor_id IS NULL THEN
-//       -- Find matching period with least workload
 //       SELECT u.id INTO selected_prof_id
 //       FROM public.users u
 //       LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//       WHERE u.role = 'professor' AND u.periodo = NEW.periodo_treino
+//       WHERE 'professor' = ANY(u.roles) AND u.periodo = NEW.periodo_treino
 //       GROUP BY u.id
 //       ORDER BY COUNT(a.id) ASC
 //       LIMIT 1;
 //
-//       -- Fallback to any professor if no exact period match
 //       IF selected_prof_id IS NULL THEN
 //         SELECT u.id INTO selected_prof_id
 //         FROM public.users u
 //         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//         WHERE u.role = 'professor'
+//         WHERE 'professor' = ANY(u.roles)
 //         GROUP BY u.id
 //         ORDER BY COUNT(a.id) ASC
 //         LIMIT 1;
@@ -1088,13 +1086,9 @@ export const Constants = {
 //    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
-//     -- Verifica se quem chama é realmente um coordenador ativo
-//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
+//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND 'coordenador' = ANY(roles)) THEN
 //       RAISE EXCEPTION 'Apenas coordenadores podem excluir usuários do sistema.';
 //     END IF;
-//
-//     -- Deleta o usuário diretamente na tabela auth.users.
-//     -- Por conta do ON DELETE CASCADE, a linha na public.users também sumirá.
 //     DELETE FROM auth.users WHERE id = target_user_id;
 //   END;
 //   $function$
@@ -1105,19 +1099,35 @@ export const Constants = {
 //    LANGUAGE plpgsql
 //    SECURITY DEFINER
 //   AS $function$
+//   DECLARE
+//     v_roles text[];
 //   BEGIN
 //     IF NEW.raw_user_meta_data->>'nome' IS NOT NULL THEN
-//       INSERT INTO public.users (id, email, nome, telefone, role, periodo)
+//
+//       -- Trata o array de roles do metadado JSON
+//       IF NEW.raw_user_meta_data->'roles' IS NOT NULL AND jsonb_array_length(NEW.raw_user_meta_data->'roles') > 0 THEN
+//         SELECT array_agg(x::text) INTO v_roles FROM jsonb_array_elements_text(NEW.raw_user_meta_data->'roles') x;
+//       ELSIF NEW.raw_user_meta_data->>'role' IS NOT NULL THEN
+//         v_roles := ARRAY[NEW.raw_user_meta_data->>'role'];
+//       ELSE
+//         v_roles := ARRAY['professor'];
+//       END IF;
+//
+//       INSERT INTO public.users (id, email, nome, telefone, role, roles, periodo)
 //       VALUES (
 //         NEW.id,
 //         NEW.email,
 //         NEW.raw_user_meta_data->>'nome',
 //         NEW.raw_user_meta_data->>'telefone',
-//         (NEW.raw_user_meta_data->>'role')::public.user_role,
+//         (v_roles[1])::public.user_role,
+//         v_roles,
 //         NEW.raw_user_meta_data->>'periodo'
 //       )
 //       ON CONFLICT (id) DO UPDATE SET
-//         periodo = EXCLUDED.periodo;
+//         periodo = EXCLUDED.periodo,
+//         roles = EXCLUDED.roles,
+//         nome = EXCLUDED.nome,
+//         telefone = EXCLUDED.telefone;
 //     END IF;
 //     RETURN NEW;
 //   END;
@@ -1251,26 +1261,22 @@ export const Constants = {
 //   BEGIN
 //     v_sender_id := auth.uid();
 //
-//     -- Verify caller is coordinator
-//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND role = 'coordenador') THEN
+//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND 'coordenador' = ANY(roles)) THEN
 //       RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
 //     END IF;
 //
-//     -- Insert into bulk_messages (convert array to comma-separated string for display)
 //     INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority)
 //     VALUES (v_sender_id, array_to_string(p_target_roles, ', '), p_title, p_message, p_priority)
 //     RETURNING id INTO v_bulk_id;
 //
 //     IF 'todos' = ANY(p_target_roles) THEN
-//       -- Insert for everyone except the sender
 //       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
 //       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id;
 //     ELSE
-//       -- Insert for specific roles
 //       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
 //       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
 //       FROM public.users
-//       WHERE role::text = ANY(p_target_roles) AND id != v_sender_id;
+//       WHERE roles && p_target_roles AND id != v_sender_id;
 //     END IF;
 //   END;
 //   $function$

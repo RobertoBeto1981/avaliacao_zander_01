@@ -1,5 +1,32 @@
 import { supabase } from '@/lib/supabase/client'
 
+const COMMON_MEDS: Record<string, string> = {
+  glifage: 'Controle de diabetes',
+  losartana: 'Controle de pressão alta',
+  omeprazol: 'Protetor gástrico',
+  dorflex: 'Relaxante muscular',
+  rivotril: 'Ansiolítico / Sedativo',
+  simvastatina: 'Controle de colesterol',
+  pantoprazol: 'Protetor gástrico',
+  atenolol: 'Controle de pressão alta',
+  metformina: 'Controle de diabetes',
+  roacutan: 'Tratamento de acne severa',
+  dipirona: 'Analgésico e antitérmico',
+  paracetamol: 'Analgésico e antitérmico',
+  ibuprofeno: 'Anti-inflamatório e analgésico',
+  azitromicina: 'Antibiótico',
+  amoxicilina: 'Antibiótico',
+  levotiroxina: 'Reposição hormonal da tireoide',
+  puran: 'Reposição hormonal da tireoide',
+  escitalopram: 'Antidepressivo',
+  sertralina: 'Antidepressivo',
+  fluoxetina: 'Antidepressivo',
+  xarelto: 'Anticoagulante',
+  ozempic: 'Controle de diabetes e peso',
+  venvanse: 'Tratamento de TDAH',
+  ritalina: 'Tratamento de TDAH',
+}
+
 const translateToPT = async (text: string): Promise<string> => {
   try {
     const res = await fetch(
@@ -20,21 +47,17 @@ const translateToPT = async (text: string): Promise<string> => {
 const extractShortAction = (text: string): string => {
   if (!text) return ''
 
-  // Limpeza inicial: remove referências e parênteses
   let cleanText = text.replace(/\[.*?\]/g, ' ').trim()
   cleanText = cleanText.replace(/\(.*?\)/g, ' ')
-  // Remove quebras de linha e excesso de espaços
   cleanText = cleanText.replace(/\n/g, ' ')
   cleanText = cleanText.replace(/\s+/g, ' ').trim()
 
-  // Se já for bem curto e objetivo
   if (cleanText.length <= 40 && !cleanText.includes('.')) {
     return cleanText.charAt(0).toUpperCase() + cleanText.slice(1)
   }
 
   const lower = cleanText.toLowerCase()
 
-  // Marcadores ordenados do mais específico/longo para o mais genérico
   const markers = [
     'indicado para o tratamento de ',
     'indicada para o tratamento de ',
@@ -110,11 +133,9 @@ const extractShortAction = (text: string): string => {
     if (idx !== -1) {
       let extracted = cleanText.substring(idx + marker.length)
 
-      // Corta no primeiro sinal de pontuação para evitar parágrafos longos
       extracted = extracted.split(/[,.;:]/)[0].trim()
 
       const cleanExtracted = extracted.toLowerCase()
-      // Pula caso a extração resulte apenas em palavras muito vagas
       if (
         !extracted ||
         cleanExtracted === 'medicamento' ||
@@ -124,7 +145,6 @@ const extractShortAction = (text: string): string => {
         continue
       }
 
-      // Se ainda ficou longo, tenta cortar em conectivos
       if (extracted.length > 50) {
         const conectivos = [' e ', ' que ', ' o qual ', ' a qual ', ' para ']
         for (const con of conectivos) {
@@ -136,12 +156,10 @@ const extractShortAction = (text: string): string => {
         }
       }
 
-      // Limite forçado para garantir que não será um "resumo"
       if (extracted.length > 60) {
         extracted = extracted.substring(0, 57).trim() + '...'
       }
 
-      // Recoloca o prefixo da classe se o marcador o absorveu
       if (marker === 'é um antidepressivo ') extracted = 'Antidepressivo ' + extracted
       else if (marker === 'é um anti-inflamatório ') extracted = 'Anti-inflamatório ' + extracted
       else if (marker === 'é um antibiótico ') extracted = 'Antibiótico ' + extracted
@@ -151,7 +169,6 @@ const extractShortAction = (text: string): string => {
     }
   }
 
-  // Fallback agressivo: Pega a primeira frase
   let sentence = cleanText.split('.')[0]
 
   if (sentence.length > 60) {
@@ -168,7 +185,6 @@ const extractShortAction = (text: string): string => {
     }
   }
 
-  // Limite forçado final
   if (sentence.length > 60) {
     sentence = sentence.substring(0, 57).trim() + '...'
   }
@@ -177,7 +193,6 @@ const extractShortAction = (text: string): string => {
 }
 
 export const searchMedicamentos = async (query: string) => {
-  // Remove vírgulas para não quebrar a sintaxe do Supabase
   const safeQuery = query.replace(/,/g, '')
 
   const { data, error } = await supabase
@@ -194,7 +209,6 @@ export const searchMedicamentos = async (query: string) => {
   return data || []
 }
 
-// Fetch protegido para evitar bloqueios de 404 em APIs externas
 const safeFetchJSON = (url: string): Promise<any> => {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
@@ -219,7 +233,11 @@ export const learnMedicamento = async (
   nome: string,
 ): Promise<{ action: string; verified: boolean } | null> => {
   try {
-    // 1. Tentar OpenFDA
+    const lowerName = nome.toLowerCase().trim()
+    if (COMMON_MEDS[lowerName]) {
+      return { action: COMMON_MEDS[lowerName], verified: true }
+    }
+
     try {
       const fdaData = await safeFetchJSON(
         `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(
@@ -246,7 +264,6 @@ export const learnMedicamento = async (
       console.error('Erro ao buscar no OpenFDA', err)
     }
 
-    // 2. Tentar Wikipedia PT como fallback
     try {
       const searchData = await safeFetchJSON(
         `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
