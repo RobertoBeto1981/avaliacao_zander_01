@@ -117,20 +117,25 @@ export const createPreAvaliacao = async (data: {
   evo_id: string
   nome_cliente: string
   telefone_cliente?: string
-  professor_id: string
+  professor_id?: string
 }) => {
+  const payload: any = {
+    evo_id: data.evo_id,
+    nome_cliente: data.nome_cliente,
+    telefone_cliente: data.telefone_cliente,
+    is_pre_avaliacao: true,
+    data_avaliacao: null,
+    data_reavaliacao: null,
+    status: 'pendente',
+  }
+
+  if (data.professor_id) {
+    payload.professor_id = data.professor_id
+  }
+
   const { data: result, error } = await supabase
     .from('avaliacoes')
-    .insert({
-      evo_id: data.evo_id,
-      nome_cliente: data.nome_cliente,
-      telefone_cliente: data.telefone_cliente,
-      professor_id: data.professor_id,
-      is_pre_avaliacao: true,
-      data_avaliacao: new Date().toISOString().split('T')[0],
-      data_reavaliacao: new Date().toISOString().split('T')[0],
-      status: 'pendente',
-    })
+    .insert(payload)
     .select()
     .single()
 

@@ -1017,7 +1017,11 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: users
-//   Policy "Coordinators can manage users" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "Coordinators can delete users" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//   Policy "Coordinators can insert users" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//   Policy "Coordinators can update users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}

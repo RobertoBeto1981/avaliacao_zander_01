@@ -56,7 +56,7 @@ export default function Layout() {
                       Dashboard
                     </Link>
                   )}
-                  {profile && ['professor', 'coordenador'].includes(profile.role) && (
+                  {profile && profile.role === 'professor' && (
                     <Link
                       to="/professor"
                       className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/professor' ? 'text-primary' : 'text-muted-foreground'}`}
@@ -65,7 +65,7 @@ export default function Layout() {
                       Painel do Professor
                     </Link>
                   )}
-                  {profile && ['avaliador', 'coordenador'].includes(profile.role) && (
+                  {profile && profile.role === 'avaliador' && (
                     <Link
                       to="/avaliador"
                       className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/avaliador' ? 'text-primary' : 'text-muted-foreground'}`}
@@ -74,7 +74,7 @@ export default function Layout() {
                       Painel do Avaliador
                     </Link>
                   )}
-                  {profile && ['fisioterapeuta', 'coordenador'].includes(profile.role) && (
+                  {profile && profile.role === 'fisioterapeuta' && (
                     <Link
                       to="/fisioterapeuta"
                       className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/fisioterapeuta' ? 'text-primary' : 'text-muted-foreground'}`}
@@ -83,7 +83,7 @@ export default function Layout() {
                       Painel do Fisioterapeuta
                     </Link>
                   )}
-                  {profile && ['nutricionista', 'coordenador'].includes(profile.role) && (
+                  {profile && profile.role === 'nutricionista' && (
                     <Link
                       to="/nutricionista"
                       className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/nutricionista' ? 'text-primary' : 'text-muted-foreground'}`}

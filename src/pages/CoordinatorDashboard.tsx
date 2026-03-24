@@ -79,7 +79,7 @@ export default function CoordinatorDashboard() {
 
       let matchDate = true
       if (dateFrom || dateTo) {
-        if (ev.is_pre_avaliacao) {
+        if (ev.is_pre_avaliacao || !ev.data_avaliacao) {
           matchDate = false
         } else {
           const evDate = new Date(ev.data_avaliacao + 'T00:00:00')
@@ -91,7 +91,7 @@ export default function CoordinatorDashboard() {
 
       let matchReav = true
       if (reavFilter !== 'all') {
-        if (ev.is_pre_avaliacao) {
+        if (ev.is_pre_avaliacao || !ev.data_reavaliacao) {
           matchReav = false
         } else {
           const today = startOfDay(new Date())

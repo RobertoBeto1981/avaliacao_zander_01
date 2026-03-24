@@ -154,7 +154,7 @@ export default function ProfessorDashboard() {
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
     return evaluations.filter((ev) => {
-      if (ev.status === 'concluido' || ev.is_pre_avaliacao) return false
+      if (ev.status === 'concluido' || ev.is_pre_avaliacao || !ev.data_avaliacao) return false
       const deadline = calculateDeadline(ev.data_avaliacao, 3)
       return isAfter(today, deadline)
     })
@@ -234,10 +234,17 @@ export default function ProfessorDashboard() {
           <TableBody>
             {filtered.map((ev) => {
               const today = startOfDay(new Date())
-              const evalDate = new Date(ev.data_avaliacao + 'T00:00:00')
-              const deadline = calculateDeadline(ev.data_avaliacao, 3)
+              const evalDate = ev.data_avaliacao
+                ? new Date(ev.data_avaliacao + 'T00:00:00')
+                : new Date()
+              const deadline = ev.data_avaliacao
+                ? calculateDeadline(ev.data_avaliacao, 3)
+                : new Date()
               const isLate =
-                !ev.is_pre_avaliacao && isAfter(today, deadline) && ev.status !== 'concluido'
+                !ev.is_pre_avaliacao &&
+                ev.data_avaliacao &&
+                isAfter(today, deadline) &&
+                ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
               const daysSinceEval = differenceInDays(today, evalDate)
@@ -245,7 +252,7 @@ export default function ProfessorDashboard() {
               let reevalDotClass = ''
               let isPulsing = false
 
-              if (!ev.is_pre_avaliacao) {
+              if (!ev.is_pre_avaliacao && ev.data_reavaliacao) {
                 if (daysSinceEval <= 29) {
                   reevalColorClass = 'text-primary'
                   reevalDotClass = 'bg-primary'
@@ -316,14 +323,14 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao ? (
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       format(evalDate, 'dd/MM/yyyy')
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao ? (
+                    {ev.is_pre_avaliacao || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div
@@ -335,9 +342,7 @@ export default function ProfessorDashboard() {
                       >
                         <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
                         <span>
-                          {ev.data_reavaliacao
-                            ? format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                            : '-'}
+                          {format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
                         </span>
                       </div>
                     )}
@@ -369,7 +374,7 @@ export default function ProfessorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao ? (
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div className="flex items-center gap-2 font-medium">

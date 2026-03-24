@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User, Eye, AlertCircle, Repeat } from 'lucide-react'
+import { FilePlus2, Search, User, Eye, AlertCircle, Repeat, Plus } from 'lucide-react'
 import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 
 export default function Index() {
   const { session, profile, loading } = useAuth()
@@ -25,6 +26,7 @@ export default function Index() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loadingData, setLoadingData] = useState(true)
+  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !session) navigate('/login')
@@ -47,19 +49,32 @@ export default function Index() {
   )
 
   const canCreateEvaluation = profile && ['avaliador', 'coordenador'].includes(profile.role)
+  const isCoordenador = profile?.role === 'coordenador'
   const title = 'Início - Todos os Clientes'
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">{title}</h1>
-        {canCreateEvaluation && (
-          <Button asChild size="lg" className="font-bold">
-            <Link to="/evaluation/new">
-              <FilePlus2 className="mr-2" /> Nova Avaliação
-            </Link>
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-3">
+          {isCoordenador && (
+            <Button
+              onClick={() => setIsNewStudentOpen(true)}
+              variant="outline"
+              size="lg"
+              className="font-bold"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Novo Cliente
+            </Button>
+          )}
+          {canCreateEvaluation && (
+            <Button asChild size="lg" className="font-bold">
+              <Link to="/evaluation/new">
+                <FilePlus2 className="mr-2 h-4 w-4" /> Nova Avaliação
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-6 max-w-sm">
@@ -76,7 +91,9 @@ export default function Index() {
           <CardContent className="flex flex-col items-center justify-center p-16 text-center text-muted-foreground">
             <User className="w-16 h-16 mb-4 opacity-20" />
             <h3 className="text-xl font-medium mb-2">Nenhum cliente encontrado</h3>
-            {canCreateEvaluation && <p>Clique em "Nova Avaliação" para começar.</p>}
+            {(canCreateEvaluation || isCoordenador) && (
+              <p>Clique em "Novo Cliente" ou "Nova Avaliação" para começar.</p>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -128,14 +145,14 @@ export default function Index() {
                   <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
                   <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>
-                    {ev.is_pre_avaliacao ? (
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
                     )}
                   </TableCell>
                   <TableCell className="text-primary font-semibold">
-                    {ev.is_pre_avaliacao ? (
+                    {ev.is_pre_avaliacao || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
@@ -200,6 +217,21 @@ export default function Index() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {isCoordenador && (
+        <NovoAlunoDialog
+          open={isNewStudentOpen}
+          onOpenChange={setIsNewStudentOpen}
+          onSuccess={() => {
+            setIsNewStudentOpen(false)
+            setLoadingData(true)
+            getEvaluations().then((data) => {
+              setEvaluations(data)
+              setLoadingData(false)
+            })
+          }}
+        />
       )}
     </div>
   )

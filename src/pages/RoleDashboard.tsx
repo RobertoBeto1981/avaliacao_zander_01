@@ -127,7 +127,7 @@ export default function RoleDashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {ev.is_pre_avaliacao
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao
                       ? '-'
                       : format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
                   </TableCell>

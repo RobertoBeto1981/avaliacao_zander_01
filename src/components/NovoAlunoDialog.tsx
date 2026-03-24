@@ -28,7 +28,7 @@ export function NovoAlunoDialog({
   const [telefone, setTelefone] = useState('')
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
 
   const handleSave = async () => {
     if (!evoId || !nome) {
@@ -45,7 +45,7 @@ export function NovoAlunoDialog({
         evo_id: evoId,
         nome_cliente: nome,
         telefone_cliente: telefone,
-        professor_id: user?.id || '',
+        professor_id: profile?.role === 'professor' ? user?.id : undefined,
       })
       toast({ title: 'Sucesso', description: 'Aluno registrado para pré-avaliação.' })
       setEvoId('')

@@ -89,7 +89,7 @@ export function DashboardTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {isPre ? (
+                      {isPre || !ev.data_avaliacao ? (
                         <span className="text-muted-foreground">-</span>
                       ) : (
                         format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
