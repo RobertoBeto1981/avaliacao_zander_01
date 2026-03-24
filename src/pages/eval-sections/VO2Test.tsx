@@ -111,23 +111,29 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
+
     osc.type = 'sine'
     osc.frequency.setValueAtTime(800, ctx.currentTime) // 800Hz beep
-    gain.gain.setValueAtTime(0.1, ctx.currentTime) // Volume
-    osc.start()
-    osc.stop(ctx.currentTime + 0.05) // Short 50ms beep
+
+    // Envelope to prevent clicking and ensure a clean single "ton"
+    gain.gain.setValueAtTime(0, ctx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.01)
+    gain.gain.setValueAtTime(0.2, ctx.currentTime + 0.04)
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05)
+
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.06)
   }
 
   // Timer Effect
   useEffect(() => {
     let timer: any
-    if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000)
-    } else if (isRunning && timeLeft === 0) {
-      setIsRunning(false)
-      setIsFinished(true)
-      if (metronomeIntervalRef.current) {
-        clearInterval(metronomeIntervalRef.current)
+    if (isRunning) {
+      if (timeLeft <= 0) {
+        setIsRunning(false)
+        setIsFinished(true)
+      } else {
+        timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000)
       }
     }
     return () => clearInterval(timer)
@@ -135,7 +141,7 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
 
   // Metronome Effect
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
+    if (isRunning) {
       const intervalMs = 60000 / selectedBpm
       metronomeIntervalRef.current = setInterval(playBeep, intervalMs)
       playBeep() // Play first beat immediately
@@ -147,7 +153,7 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
     return () => {
       if (metronomeIntervalRef.current) clearInterval(metronomeIntervalRef.current)
     }
-  }, [isRunning, selectedBpm, timeLeft])
+  }, [isRunning, selectedBpm])
 
   // Calculation Effect
   useEffect(() => {
