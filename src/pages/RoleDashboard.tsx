@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { format } from 'date-fns'
-import { FilePlus2, Search, User, Eye, AlertCircle, Repeat } from 'lucide-react'
+import { FilePlus2, Search, User, Eye, AlertCircle, MessageSquare } from 'lucide-react'
 import { getEvaluations } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -18,26 +18,33 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 
-export default function Index() {
-  const { session, profile, loading } = useAuth()
-  const navigate = useNavigate()
+export default function RoleDashboard() {
+  const { profile, loading } = useAuth()
+  const location = useLocation()
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loadingData, setLoadingData] = useState(true)
+  const [acompanhamentoEval, setAcompanhamentoEval] = useState<any>(null)
+
+  const roleName = location.pathname.replace('/', '')
+  const title = `Painel do ${roleName.charAt(0).toUpperCase() + roleName.slice(1)}`
 
   useEffect(() => {
-    if (!loading && !session) navigate('/login')
-  }, [session, loading, navigate])
-
-  useEffect(() => {
-    if (session) {
+    if (profile) {
       getEvaluations().then((data) => {
-        setEvaluations(data)
+        const myData =
+          profile.role === 'coordenador'
+            ? data
+            : data.filter(
+                (ev: any) => ev.avaliador_id === profile.id || ev.professor_id === profile.id,
+              )
+        setEvaluations(myData)
         setLoadingData(false)
       })
     }
-  }, [session])
+  }, [profile])
 
   if (loading || loadingData)
     return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
@@ -46,8 +53,7 @@ export default function Index() {
     e.nome_cliente.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const canCreateEvaluation = profile && ['avaliador', 'coordenador'].includes(profile.role)
-  const title = 'Início - Todos os Clientes'
+  const canCreateEvaluation = roleName === 'avaliador'
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
@@ -76,7 +82,7 @@ export default function Index() {
           <CardContent className="flex flex-col items-center justify-center p-16 text-center text-muted-foreground">
             <User className="w-16 h-16 mb-4 opacity-20" />
             <h3 className="text-xl font-medium mb-2">Nenhum cliente encontrado</h3>
-            {canCreateEvaluation && <p>Clique em "Nova Avaliação" para começar.</p>}
+            <p>Seus clientes cadastrados ou atribuídos aparecerão aqui.</p>
           </CardContent>
         </Card>
       ) : (
@@ -85,11 +91,9 @@ export default function Index() {
             <TableHeader className="bg-muted/30">
               <TableRow>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Avaliador</TableHead>
-                <TableHead>Professor Resp.</TableHead>
                 <TableHead>Data da Avaliação</TableHead>
-                <TableHead>Reavaliação</TableHead>
-                <TableHead>Treino</TableHead>
+                <TableHead>Professor Resp.</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -101,9 +105,7 @@ export default function Index() {
                 >
                   <TableCell className="font-medium">
                     <div className="flex flex-col gap-1.5 items-start">
-                      <span className="line-clamp-1" title={ev.nome_cliente}>
-                        {ev.nome_cliente}
-                      </span>
+                      <span className="line-clamp-1">{ev.nome_cliente}</span>
                       <div className="flex gap-1.5 flex-wrap">
                         {ev.evo_id && (
                           <Badge
@@ -118,29 +120,18 @@ export default function Index() {
                             variant="destructive"
                             className="w-fit text-[10px] px-2 py-0 border-none flex items-center gap-1"
                           >
-                            <AlertCircle className="w-3 h-3" />
-                            Pendente
+                            <AlertCircle className="w-3 h-3" /> Pendente
                           </Badge>
                         )}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
-                  <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>
-                    {ev.is_pre_avaliacao ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : (
-                      format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                    )}
+                    {ev.is_pre_avaliacao
+                      ? '-'
+                      : format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
                   </TableCell>
-                  <TableCell className="text-primary font-semibold">
-                    {ev.is_pre_avaliacao ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : (
-                      format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')
-                    )}
-                  </TableCell>
+                  <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -160,12 +151,27 @@ export default function Index() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1.5 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() =>
+                          setAcompanhamentoEval({
+                            id: ev.id,
+                            nome: ev.nome_cliente,
+                            evo_id: ev.evo_id,
+                          })
+                        }
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                        Anotações
+                      </Button>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-primary hover:bg-primary/20"
+                            className="h-8 w-8 text-primary hover:bg-primary/20"
                             asChild
                           >
                             <Link to={`/evaluation/${ev.id}`}>
@@ -175,24 +181,6 @@ export default function Index() {
                         </TooltipTrigger>
                         <TooltipContent>Visualizar Avaliação</TooltipContent>
                       </Tooltip>
-
-                      {canCreateEvaluation && !ev.is_pre_avaliacao && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-primary hover:bg-primary/20"
-                              asChild
-                            >
-                              <Link to={`/evaluation/${ev.id}/reevaluate`}>
-                                <Repeat className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Realizar Reavaliação</TooltipContent>
-                        </Tooltip>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -201,6 +189,14 @@ export default function Index() {
           </Table>
         </Card>
       )}
+
+      <AcompanhamentoDialog
+        open={!!acompanhamentoEval}
+        onOpenChange={(open) => !open && setAcompanhamentoEval(null)}
+        avaliacaoId={acompanhamentoEval?.id || ''}
+        nomeCliente={acompanhamentoEval?.nome || ''}
+        evoId={acompanhamentoEval?.evo_id}
+      />
     </div>
   )
 }

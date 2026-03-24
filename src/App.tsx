@@ -14,6 +14,7 @@ import EvaluationDetails from './pages/EvaluationDetails'
 import NewReevaluation from './pages/NewReevaluation'
 import ReevaluationDetails from './pages/ReevaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
+import RoleDashboard from './pages/RoleDashboard'
 import Communications from './pages/Communications'
 import VideoScheduling from './pages/VideoScheduling'
 import Profile from './pages/Profile'
@@ -66,6 +67,36 @@ const AppRoutes = () => (
           <PrivateRoute>
             <RoleGuard allowedRoles={['professor', 'coordenador']}>
               <ProfessorDashboard />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/avaliador"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
+              <RoleDashboard />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/fisioterapeuta"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['fisioterapeuta', 'coordenador']}>
+              <RoleDashboard />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/nutricionista"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['nutricionista', 'coordenador']}>
+              <RoleDashboard />
             </RoleGuard>
           </PrivateRoute>
         }

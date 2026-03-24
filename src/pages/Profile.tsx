@@ -47,6 +47,7 @@ export default function Profile() {
         nome: profile.nome,
         telefone: profile.telefone,
         periodo: profile.periodo,
+        pending_role: profile.pending_role,
       })
       toast({ title: 'Sucesso', description: 'Perfil atualizado com sucesso.' })
     } catch (err: any) {
@@ -86,7 +87,7 @@ export default function Profile() {
             <div className="relative group">
               <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
                 <AvatarImage src={profile?.foto_url} className="object-cover" />
-                <AvatarFallback className="text-3xl">
+                <AvatarFallback className="text-3xl bg-primary/20 text-primary">
                   {profile?.nome?.substring(0, 2)?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -139,12 +140,33 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Cargo / Papel</Label>
+                <Label>Cargo / Papel Atual</Label>
                 <Input value={profile?.role || ''} disabled className="bg-muted capitalize" />
-                <p className="text-[10px] text-muted-foreground">
-                  A alteração de cargo deve ser solicitada à coordenação.
-                </p>
               </div>
+            </div>
+
+            <div className="space-y-2 pt-4 border-t border-border">
+              <Label>Solicitar Mudança de Cargo</Label>
+              <Select
+                value={profile?.pending_role || ''}
+                onValueChange={(v) => setProfile({ ...profile, pending_role: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um novo cargo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="professor">Professor</SelectItem>
+                  <SelectItem value="avaliador">Avaliador</SelectItem>
+                  <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
+                  <SelectItem value="nutricionista">Nutricionista</SelectItem>
+                </SelectContent>
+              </Select>
+              {profile?.pending_role && (
+                <p className="text-[11px] text-primary/80 font-medium mt-1">
+                  Sua solicitação para mudar para {profile.pending_role} está pendente de aprovação
+                  pela coordenação.
+                </p>
+              )}
             </div>
 
             {profile?.role === 'professor' && (

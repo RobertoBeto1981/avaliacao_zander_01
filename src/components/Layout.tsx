@@ -65,23 +65,50 @@ export default function Layout() {
                       Painel do Professor
                     </Link>
                   )}
-                  {profile && profile.role === 'coordenador' && (
+                  {profile && ['avaliador', 'coordenador'].includes(profile.role) && (
                     <Link
-                      to="/communications"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
+                      to="/avaliador"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/avaliador' ? 'text-primary' : 'text-muted-foreground'}`}
                     >
-                      <MessageSquare className="w-4 h-4" />
-                      Comunicados
+                      <LayoutDashboard className="w-4 h-4" />
+                      Painel do Avaliador
+                    </Link>
+                  )}
+                  {profile && ['fisioterapeuta', 'coordenador'].includes(profile.role) && (
+                    <Link
+                      to="/fisioterapeuta"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/fisioterapeuta' ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Painel do Fisioterapeuta
+                    </Link>
+                  )}
+                  {profile && ['nutricionista', 'coordenador'].includes(profile.role) && (
+                    <Link
+                      to="/nutricionista"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/nutricionista' ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Painel do Nutricionista
                     </Link>
                   )}
                   {profile && profile.role === 'coordenador' && (
-                    <Link
-                      to="/videos"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/videos' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <Video className="w-4 h-4" />
-                      Vídeos
-                    </Link>
+                    <>
+                      <Link
+                        to="/communications"
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Comunicados
+                      </Link>
+                      <Link
+                        to="/videos"
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/videos' ? 'text-primary' : 'text-muted-foreground'}`}
+                      >
+                        <Video className="w-4 h-4" />
+                        Vídeos
+                      </Link>
+                    </>
                   )}
                 </nav>
               )}
@@ -94,13 +121,13 @@ export default function Layout() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                        <Avatar className="h-9 w-9">
+                        <Avatar className="h-9 w-9 border border-border">
                           <AvatarImage
                             src={profile.foto_url}
                             alt={profile.nome}
                             className="object-cover"
                           />
-                          <AvatarFallback>
+                          <AvatarFallback className="bg-primary/20 text-primary">
                             {profile.nome?.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

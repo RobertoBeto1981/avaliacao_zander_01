@@ -71,7 +71,15 @@ export default function ProfessorDashboard() {
   const loadData = async () => {
     try {
       const data = await getEvaluations()
-      setEvaluations(data)
+      if (isCoordenador) {
+        setEvaluations(data)
+      } else {
+        setEvaluations(
+          data.filter(
+            (ev: any) => ev.professor_id === profile?.id || ev.avaliador_id === profile?.id,
+          ),
+        )
+      }
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
@@ -80,8 +88,10 @@ export default function ProfessorDashboard() {
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (profile) {
+      loadData()
+    }
+  }, [profile])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -135,7 +145,7 @@ export default function ProfessorDashboard() {
 
   const filtered = useMemo(() => {
     return evaluations.filter((ev) => {
-      const matchStatus = statusFilter === 'all' || ev.status === statusFilter
+      const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
       const matchPeriodo = periodoFilter === 'all' || ev.periodo_treino === periodoFilter
       return matchStatus && matchPeriodo
     })
@@ -153,7 +163,7 @@ export default function ProfessorDashboard() {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">Painel do Professor</h1>
         {isProfessor && (
@@ -207,7 +217,7 @@ export default function ProfessorDashboard() {
         </Select>
       </div>
 
-      <Card className="overflow-hidden border-border/50">
+      <Card className="overflow-hidden border-border/50 shadow-sm">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
@@ -237,17 +247,17 @@ export default function ProfessorDashboard() {
 
               if (!ev.is_pre_avaliacao) {
                 if (daysSinceEval <= 29) {
-                  reevalColorClass = 'text-green-600 dark:text-green-400'
-                  reevalDotClass = 'bg-green-600 dark:bg-green-400'
+                  reevalColorClass = 'text-primary'
+                  reevalDotClass = 'bg-primary'
                 } else if (daysSinceEval <= 59) {
-                  reevalColorClass = 'text-orange-600 dark:text-orange-400'
-                  reevalDotClass = 'bg-orange-600 dark:bg-orange-400'
+                  reevalColorClass = 'text-amber-500'
+                  reevalDotClass = 'bg-amber-500'
                 } else if (daysSinceEval <= 90) {
-                  reevalColorClass = 'text-red-600 dark:text-red-400'
-                  reevalDotClass = 'bg-red-600 dark:bg-red-400'
+                  reevalColorClass = 'text-destructive'
+                  reevalDotClass = 'bg-destructive'
                 } else {
-                  reevalColorClass = 'text-red-600 dark:text-red-400 font-bold'
-                  reevalDotClass = 'bg-red-600 dark:bg-red-400'
+                  reevalColorClass = 'text-destructive font-bold'
+                  reevalDotClass = 'bg-destructive'
                   isPulsing = true
                 }
               }
@@ -278,10 +288,7 @@ export default function ProfessorDashboard() {
               return (
                 <TableRow
                   key={ev.id}
-                  className={cn(
-                    'hover:bg-muted/20',
-                    ev.is_pre_avaliacao && 'bg-blue-50/30 dark:bg-blue-950/10',
-                  )}
+                  className={cn('hover:bg-muted/30', ev.is_pre_avaliacao && 'bg-primary/5')}
                 >
                   <TableCell className="font-medium min-w-[220px]">
                     <div className="flex flex-col gap-1.5">
@@ -292,15 +299,15 @@ export default function ProfessorDashboard() {
                         {ev.is_pre_avaliacao && (
                           <Badge
                             variant="destructive"
-                            className="whitespace-nowrap text-[10px] px-2 py-0.5 border-none leading-tight bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 flex items-center gap-1 w-fit"
+                            className="whitespace-nowrap text-[10px] px-2 py-0.5 border-none leading-tight flex items-center gap-1 w-fit"
                           >
-                            <AlertCircle className="w-3 h-3" /> Nova Avaliação Pendente
+                            <AlertCircle className="w-3 h-3" /> Pendente
                           </Badge>
                         )}
                         {ev.evo_id && (
                           <Badge
                             variant="outline"
-                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400 leading-tight"
+                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-primary/30 text-primary/80 leading-tight"
                           >
                             EVO: {ev.evo_id}
                           </Badge>
@@ -345,11 +352,11 @@ export default function ProfessorDashboard() {
                         className={cn(
                           'w-[140px] h-8 text-xs font-semibold',
                           (!ev.status || ev.status === 'pendente') &&
-                            'border-slate-300 text-slate-600 bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:bg-slate-800/50',
+                            'border-amber-500/30 text-amber-500 bg-amber-500/10',
                           ev.status === 'em_progresso' &&
-                            'border-blue-300 text-blue-700 bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:bg-blue-950/50',
+                            'border-blue-500/30 text-blue-500 bg-blue-500/10',
                           ev.status === 'concluido' &&
-                            'border-green-300 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-400 dark:bg-green-950/50',
+                            'border-primary/30 text-primary bg-primary/10',
                         )}
                       >
                         <SelectValue />
@@ -367,7 +374,7 @@ export default function ProfessorDashboard() {
                     ) : (
                       <div className="flex items-center gap-2 font-medium">
                         <span
-                          className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}
+                          className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
                         />
                         {format(deadline, 'dd/MM/yyyy')}
                       </div>
@@ -378,7 +385,7 @@ export default function ProfessorDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs px-2 flex-1 font-medium bg-background hover:bg-muted whitespace-nowrap"
+                        className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap"
                         onClick={() =>
                           setAcompanhamentoEval({
                             id: ev.id,
@@ -396,7 +403,7 @@ export default function ProfessorDashboard() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-blue-600 border-blue-200 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
+                            className="h-8 w-8 p-0 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
                             asChild
                           >
                             <Link to={`/evaluation/edit/${ev.id}`}>
@@ -413,7 +420,7 @@ export default function ProfessorDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-green-600 border-green-200 hover:text-green-700 hover:border-green-300 hover:bg-green-50 dark:border-green-900/50 dark:hover:bg-green-900/20"
+                              className="h-8 w-8 p-0 shrink-0 text-accent hover:text-accent hover:bg-accent/20 border-accent/20"
                               onClick={() => handleSendWhatsApp(ev)}
                               disabled={sendingWa === ev.id}
                             >
@@ -433,7 +440,7 @@ export default function ProfessorDashboard() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 bg-background hover:bg-muted shrink-0 text-muted-foreground"
+                            className="h-8 w-8 p-0 shrink-0 text-muted-foreground border-border/50"
                             onClick={() =>
                               setHistoryEval({
                                 id: ev.id,
@@ -460,7 +467,7 @@ export default function ProfessorDashboard() {
                                 {item.type === 'internal' ? (
                                   <Link
                                     to={item.url}
-                                    className="p-1.5 hover:bg-accent rounded-md transition-colors text-primary"
+                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
                                   >
                                     <Icon className="w-4 h-4" />
                                   </Link>
@@ -469,7 +476,7 @@ export default function ProfessorDashboard() {
                                     href={item.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="p-1.5 hover:bg-accent rounded-md transition-colors text-primary"
+                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
                                   >
                                     <Icon className="w-4 h-4" />
                                   </a>
