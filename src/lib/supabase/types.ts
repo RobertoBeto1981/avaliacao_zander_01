@@ -604,6 +604,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_completely: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       send_bulk_message: {
         Args: {
           p_message: string
@@ -1013,6 +1017,9 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: users
+//   Policy "Coordinators can manage users" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users users_1   WHERE ((users_1.id = auth.uid()) AND (users_1.role = 'coordenador'::user_role))))
 //   Policy "Users can insert themselves" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)
 //   Policy "Users can read all users" (SELECT, PERMISSIVE) roles={authenticated}
@@ -1067,6 +1074,24 @@ export const Constants = {
 //     END IF;
 //
 //     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION delete_user_completely(uuid)
+//   CREATE OR REPLACE FUNCTION public.delete_user_completely(target_user_id uuid)
+//    RETURNS void
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     -- Verifica se quem chama é realmente um coordenador ativo
+//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
+//       RAISE EXCEPTION 'Apenas coordenadores podem excluir usuários do sistema.';
+//     END IF;
+//
+//     -- Deleta o usuário diretamente na tabela auth.users.
+//     -- Por conta do ON DELETE CASCADE, a linha na public.users também sumirá.
+//     DELETE FROM auth.users WHERE id = target_user_id;
 //   END;
 //   $function$
 //
