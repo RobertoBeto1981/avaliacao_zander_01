@@ -9,6 +9,9 @@ export const evaluationSchema = z.object({
   periodo_treino: z.string().optional(),
   objectives: z.array(z.string()).default([]),
 
+  data_nascimento: z.date().optional().nullable(),
+  gender: z.string().optional(),
+
   main_objective: z.string().optional(),
   target_date: z.date().optional().nullable(),
   training_frequency: z.string().optional(),
@@ -91,6 +94,16 @@ export const evaluationSchema = z.object({
       right_calf: z.string().optional(),
       left_thigh: z.string().optional(),
       left_calf: z.string().optional(),
+    })
+    .optional(),
+
+  vo2_test: z
+    .object({
+      enabled: z.boolean().default(false),
+      bpm: z.number().optional(),
+      beats_15s: z.number().optional(),
+      vo2_max: z.string().optional(),
+      classification: z.string().optional(),
     })
     .optional(),
 

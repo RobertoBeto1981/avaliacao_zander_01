@@ -15,6 +15,7 @@ import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
 import { AnthropometryFields } from './eval-sections/Anthropometry'
+import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
 
 export default function NewEvaluation() {
@@ -44,6 +45,7 @@ export default function NewEvaluation() {
       respiratory_pathology: false,
       hemodynamics: {},
       anthropometry: {},
+      vo2_test: { enabled: false, bpm: 88 },
     },
   })
 
@@ -58,6 +60,7 @@ export default function NewEvaluation() {
         if (parsed.data_avaliacao) parsed.data_avaliacao = new Date(parsed.data_avaliacao)
         if (parsed.data_reavaliacao) parsed.data_reavaliacao = new Date(parsed.data_reavaliacao)
         if (parsed.target_date) parsed.target_date = new Date(parsed.target_date)
+        if (parsed.data_nascimento) parsed.data_nascimento = new Date(parsed.data_nascimento)
 
         form.reset({ ...form.getValues(), ...parsed })
 
@@ -154,6 +157,7 @@ export default function NewEvaluation() {
           <HealthFields />
           <TrainingFields />
           <AnthropometryFields />
+          <VO2TestFields />
           <LinksFields />
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">

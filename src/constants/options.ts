@@ -64,3 +64,4 @@ export const HEALTH_INSURANCES = [
 export const YES_NO_HAD = ['Sim', 'Não', 'Já tive']
 export const YES_NO = ['Sim', 'Não']
 export const INTOLERANCES = ['LACTOSE', 'GLÚTEN', 'OUTRO']
+export const GENDERS = ['Masculino', 'Feminino']

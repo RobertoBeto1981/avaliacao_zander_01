@@ -1,10 +1,10 @@
 import { useFormContext, useWatch } from 'react-hook-form'
-import { useEffect, useState } from 'react'
-import { addDays } from 'date-fns'
+import { useEffect, useState, useMemo } from 'react'
+import { addDays, differenceInYears } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FInput, FSelect, FPhoneInput } from '@/components/shared/FormControls'
 import { FDatePicker, FMultiSelect } from '@/components/shared/FormAdvanced'
-import { PREFERRED_TIMES, OBJECTIVES } from '@/constants/options'
+import { PREFERRED_TIMES, OBJECTIVES, GENDERS } from '@/constants/options'
 import { Button } from '@/components/ui/button'
 import { Search, Loader2 } from 'lucide-react'
 import { getPreAvaliacaoByEvoId } from '@/services/evaluations'
@@ -18,8 +18,14 @@ export function IdentificationFields({
   const { control, setValue } = useFormContext()
   const evalDate = useWatch({ control, name: 'data_avaliacao' })
   const evoId = useWatch({ control, name: 'evo_id' })
+  const dataNascimento = useWatch({ control, name: 'data_nascimento' })
   const [isSearching, setIsSearching] = useState(false)
   const { toast } = useToast()
+
+  const idade = useMemo(() => {
+    if (!dataNascimento) return null
+    return differenceInYears(new Date(), new Date(dataNascimento))
+  }, [dataNascimento])
 
   useEffect(() => {
     if (evalDate) {
@@ -89,6 +95,21 @@ export function IdentificationFields({
             label="Telefone do Cliente"
             placeholder="+55 (44) 99999-9999"
           />
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="flex gap-4 items-start">
+            <div className="flex-1">
+              <FDatePicker name="data_nascimento" label="Data de Nascimento" />
+            </div>
+            {idade !== null && (
+              <div className="pt-[34px]">
+                <span className="text-sm font-medium text-primary bg-primary/10 px-4 py-2.5 rounded-md border border-primary/20">
+                  {idade} anos
+                </span>
+              </div>
+            )}
+          </div>
+          <FSelect name="gender" label="Gênero (Para Cálculos)" options={GENDERS} />
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           <FDatePicker name="data_avaliacao" label="Data da Avaliação" />
