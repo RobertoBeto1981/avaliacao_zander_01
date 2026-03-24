@@ -106,8 +106,8 @@ export type Database = {
         Row: {
           avaliador_id: string
           created_at: string
-          data_avaliacao: string
-          data_reavaliacao: string
+          data_avaliacao: string | null
+          data_reavaliacao: string | null
           evo_id: string | null
           id: string
           is_pre_avaliacao: boolean
@@ -122,8 +122,8 @@ export type Database = {
         Insert: {
           avaliador_id?: string
           created_at?: string
-          data_avaliacao: string
-          data_reavaliacao: string
+          data_avaliacao?: string | null
+          data_reavaliacao?: string | null
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
@@ -138,8 +138,8 @@ export type Database = {
         Update: {
           avaliador_id?: string
           created_at?: string
-          data_avaliacao?: string
-          data_reavaliacao?: string
+          data_avaliacao?: string | null
+          data_reavaliacao?: string | null
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
@@ -784,8 +784,8 @@ export const Constants = {
 //   avaliador_id: uuid (not null, default: auth.uid())
 //   nome_cliente: text (not null)
 //   telefone_cliente: text (nullable)
-//   data_avaliacao: date (not null)
-//   data_reavaliacao: date (not null)
+//   data_avaliacao: date (nullable)
+//   data_reavaliacao: date (nullable)
 //   periodo_treino: text (nullable)
 //   objectives: _text (nullable)
 //   respostas: jsonb (nullable)
