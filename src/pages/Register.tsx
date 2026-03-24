@@ -7,13 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { formatPhone } from '@/lib/utils'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-react'
 
 export default function Register() {
@@ -21,7 +15,7 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('professor')
+  const [roles, setRoles] = useState<string[]>(['professor'])
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const { toast } = useToast()
@@ -29,12 +23,22 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (roles.length === 0) {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione ao menos um cargo/função.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const { error } = await signUp(email, password, {
         nome,
         telefone,
-        role,
+        roles,
+        role: roles[0], // fallback for legacy dependency
       })
       if (error) throw error
       toast({
@@ -85,20 +89,39 @@ export default function Register() {
                 maxLength={19}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Cargo</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="avaliador">Avaliador</SelectItem>
-                  <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
-                  <SelectItem value="nutricionista">Nutricionista</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="space-y-3">
+              <Label>Cargos / Funções</Label>
+              <div className="grid grid-cols-2 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                {[
+                  { id: 'professor', label: 'Professor' },
+                  { id: 'avaliador', label: 'Avaliador' },
+                  { id: 'fisioterapeuta', label: 'Fisioterapeuta' },
+                  { id: 'nutricionista', label: 'Nutricionista' },
+                ].map((r) => (
+                  <div key={r.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={r.id}
+                      checked={roles.includes(r.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setRoles([...roles, r.id])
+                        } else {
+                          setRoles(roles.filter((role) => role !== r.id))
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={r.id}
+                      className="cursor-pointer font-normal text-sm leading-none"
+                    >
+                      {r.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label>Senha</Label>
               <Input

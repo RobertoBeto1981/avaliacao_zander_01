@@ -37,7 +37,11 @@ const RoleGuard = ({
 }) => {
   const { profile, loading } = useAuth()
   if (loading) return null
-  if (!profile || !allowedRoles.includes(profile.role)) {
+
+  const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+  const hasAccess = userRoles.some((r: string) => allowedRoles.includes(r))
+
+  if (!profile || !hasAccess) {
     return <Navigate to="/" replace />
   }
   return children

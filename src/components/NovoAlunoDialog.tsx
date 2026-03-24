@@ -42,11 +42,14 @@ export function NovoAlunoDialog({
     }
     setLoading(true)
     try {
+      const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+      const isProfessor = userRoles.includes('professor')
+
       await createPreAvaliacao({
         evo_id: evoId,
         nome_cliente: nome,
         telefone_cliente: telefone,
-        professor_id: profile?.role === 'professor' ? user?.id : undefined,
+        professor_id: isProfessor ? user?.id : undefined,
       })
       toast({ title: 'Sucesso', description: 'Aluno registrado para pré-avaliação.' })
       setEvoId('')

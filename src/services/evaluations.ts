@@ -127,6 +127,7 @@ export const createPreAvaliacao = async (data: {
     data_avaliacao: null,
     data_reavaliacao: null,
     status: 'pendente',
+    avaliador_id: null,
   }
 
   if (data.professor_id) {

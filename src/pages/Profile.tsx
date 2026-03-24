@@ -145,8 +145,17 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Cargo / Papel Atual</Label>
-                <Input value={profile?.role || ''} disabled className="bg-muted capitalize" />
+                <Label>Cargos / Papéis Atuais</Label>
+                <div className="flex flex-wrap gap-2 mt-2 h-10 items-center px-3 bg-muted rounded-md overflow-x-auto">
+                  {(profile?.roles || (profile?.role ? [profile.role] : [])).map((r: string) => (
+                    <span
+                      key={r}
+                      className="bg-primary/20 text-primary px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider"
+                    >
+                      {r}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -174,9 +183,9 @@ export default function Profile() {
               )}
             </div>
 
-            {profile?.role === 'professor' && (
+            {(profile?.roles?.includes('professor') || profile?.role === 'professor') && (
               <div className="space-y-2 animate-fade-in-up">
-                <Label>Período de Trabalho</Label>
+                <Label>Período de Trabalho (Professor)</Label>
                 <Select
                   value={profile?.periodo || ''}
                   onValueChange={(v) => setProfile({ ...profile, periodo: v })}
