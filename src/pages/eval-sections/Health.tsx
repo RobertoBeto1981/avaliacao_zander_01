@@ -324,6 +324,32 @@ export function HealthFields() {
             </div>
           </div>
 
+          <div className="pt-4 border-t border-border">
+            <div className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Hemodinâmica
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <FInput
+                name="hemodynamics.systolic_bp"
+                label="Pressão Sistólica (mmHg)"
+                type="number"
+                placeholder="Ex: 120"
+              />
+              <FInput
+                name="hemodynamics.diastolic_bp"
+                label="Pressão Diastólica (mmHg)"
+                type="number"
+                placeholder="Ex: 80"
+              />
+              <FInput
+                name="hemodynamics.heart_rate"
+                label="Freq. Cardíaca (bpm)"
+                type="number"
+                placeholder="Ex: 75"
+              />
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
             <FSelect
               name="health_exams.choice"

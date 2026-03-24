@@ -14,6 +14,7 @@ import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
 import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
+import { AnthropometryFields } from './eval-sections/Anthropometry'
 import { LinksFields } from './eval-sections/Links'
 
 export default function NewEvaluation() {
@@ -41,6 +42,8 @@ export default function NewEvaluation() {
       diabetes: false,
       hypertension: false,
       respiratory_pathology: false,
+      hemodynamics: {},
+      anthropometry: {},
     },
   })
 
@@ -150,6 +153,7 @@ export default function NewEvaluation() {
           <CurrentLifestyleFields />
           <HealthFields />
           <TrainingFields />
+          <AnthropometryFields />
           <LinksFields />
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">

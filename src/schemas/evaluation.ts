@@ -36,6 +36,15 @@ export const evaluationSchema = z.object({
     .object({ choice: z.boolean().default(false), amount: z.string().optional() })
     .optional(),
   alcohol: z.string().optional(),
+
+  hemodynamics: z
+    .object({
+      systolic_bp: z.string().optional(),
+      diastolic_bp: z.string().optional(),
+      heart_rate: z.string().optional(),
+    })
+    .optional(),
+
   health_exams: z
     .object({ choice: z.string().optional(), notes: z.string().optional() })
     .optional(),
@@ -62,9 +71,32 @@ export const evaluationSchema = z.object({
   health_insurance: z
     .object({ choice: z.string().optional(), other: z.string().optional() })
     .optional(),
-  emergency_contact: z.string().optional(),
+
+  anthropometry: z
+    .object({
+      weight: z.string().optional(),
+      height: z.string().optional(),
+      shoulders: z.string().optional(),
+      chest: z.string().optional(),
+      waist: z.string().optional(),
+      abdomen: z.string().optional(),
+      hips: z.string().optional(),
+      right_arm_relaxed: z.string().optional(),
+      right_arm_flexed: z.string().optional(),
+      right_forearm: z.string().optional(),
+      left_arm_relaxed: z.string().optional(),
+      left_arm_flexed: z.string().optional(),
+      left_forearm: z.string().optional(),
+      right_thigh: z.string().optional(),
+      right_calf: z.string().optional(),
+      left_thigh: z.string().optional(),
+      left_calf: z.string().optional(),
+    })
+    .optional(),
+
   final_observations: z.string().optional(),
   professor_observations: z.string().optional(),
+  emergency_contact: z.string().optional(),
 
   client_links: z
     .object({
