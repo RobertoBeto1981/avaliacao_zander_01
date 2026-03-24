@@ -99,7 +99,15 @@ export function IdentificationFields({
         <div className="grid md:grid-cols-2 gap-6">
           <div className="flex gap-4 items-start">
             <div className="flex-1">
-              <FDatePicker name="data_nascimento" label="Data de Nascimento" />
+              <FDatePicker
+                name="data_nascimento"
+                label="Data de Nascimento"
+                calendarProps={{
+                  captionLayout: 'dropdown',
+                  startMonth: new Date(1920, 0),
+                  endMonth: new Date(),
+                }}
+              />
             </div>
             {idade !== null && (
               <div className="pt-[34px]">

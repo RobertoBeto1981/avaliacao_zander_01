@@ -10,7 +10,13 @@ import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { PrevEvalBadge } from './FormControls'
 
-export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) => {
+export const FDatePicker = ({
+  name,
+  label,
+  disabled,
+  readOnly = false,
+  calendarProps = {},
+}: any) => {
   const { control } = useFormContext()
   return (
     <FormField
@@ -53,6 +59,7 @@ export const FDatePicker = ({ name, label, disabled, readOnly = false }: any) =>
                 onSelect={field.onChange}
                 disabled={disabled}
                 initialFocus
+                {...calendarProps}
               />
             </PopoverContent>
           </Popover>
