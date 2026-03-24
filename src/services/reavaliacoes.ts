@@ -84,6 +84,39 @@ export function calculateEvolucao(oldData: any, newData: any) {
     })
   }
 
+  // VO2 Max
+  const oldVo2 = oldData.vo2_test?.vo2_max
+  const newVo2 = newData.vo2_test?.vo2_max
+  if (oldVo2 && newVo2 && oldVo2 !== newVo2) {
+    const o = parseFloat(oldVo2)
+    const n = parseFloat(newVo2)
+    evolucao.push({
+      campo: 'VO² Máximo',
+      status: n > o ? 'melhorou' : n < o ? 'piorou' : 'manteve',
+      de: `${oldVo2} ml/kg/min`,
+      para: `${newVo2} ml/kg/min`,
+    })
+  }
+
+  // VO2 Classification
+  const oldClass = oldData.vo2_test?.classification
+  const newClass = newData.vo2_test?.classification
+  if (oldClass && newClass && oldClass !== newClass) {
+    const classLevels = ['Fraco', 'Regular', 'Bom', 'Excelente', 'Superior']
+    const oIdx = classLevels.indexOf(oldClass)
+    const nIdx = classLevels.indexOf(newClass)
+    let status = 'manteve'
+    if (oIdx !== -1 && nIdx !== -1) {
+      status = nIdx > oIdx ? 'melhorou' : nIdx < oIdx ? 'piorou' : 'manteve'
+    }
+    evolucao.push({
+      campo: 'Classificação VO²',
+      status: status,
+      de: oldClass,
+      para: newClass,
+    })
+  }
+
   return evolucao
 }
 

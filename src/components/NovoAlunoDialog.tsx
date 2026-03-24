@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { createPreAvaliacao } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
+import { formatPhone } from '@/lib/utils'
 
 export function NovoAlunoDialog({
   open,
@@ -89,8 +90,9 @@ export function NovoAlunoDialog({
             <Input
               id="telefone"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
-              placeholder="Opcional"
+              onChange={(e) => setTelefone(formatPhone(e.target.value))}
+              placeholder="+55 (00) 00000-0000"
+              maxLength={19}
             />
           </div>
         </div>

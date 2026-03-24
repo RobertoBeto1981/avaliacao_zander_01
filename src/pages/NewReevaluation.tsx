@@ -15,6 +15,8 @@ import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
 import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
+import { AnthropometryFields } from './eval-sections/Anthropometry'
+import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
 import { Loader2, Repeat, Info } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
@@ -62,6 +64,8 @@ export default function NewReevaluation() {
           telefone_cliente: data.telefone_cliente || '',
           data_avaliacao: new Date(), // Hoje
           data_reavaliacao: new Date(new Date().setDate(new Date().getDate() + 90)), // +90 dias
+          data_nascimento: data.data_nascimento ? new Date(data.data_nascimento) : undefined,
+          gender: data.gender || '',
 
           // Demais campos não são preenchidos na reavaliação para obrigar o avaliador a perguntar
           periodo_treino: '',
@@ -101,6 +105,8 @@ export default function NewReevaluation() {
           final_observations: '',
           professor_observations: '',
 
+          anthropometry: {},
+          vo2_test: { enabled: false, bpm: 88 },
           client_links: {},
         })
       } catch (err: any) {
@@ -196,6 +202,8 @@ export default function NewReevaluation() {
               <CurrentLifestyleFields />
               <HealthFields />
               <TrainingFields />
+              <AnthropometryFields />
+              <VO2TestFields />
             </fieldset>
 
             <LinksFields isProfessor={isProfessor} isAvaliador={isAvaliador} />

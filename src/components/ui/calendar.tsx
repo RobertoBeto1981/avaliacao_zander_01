@@ -1,4 +1,3 @@
-/* Calendar Component primitives - A component that displays a calendar - from shadcn/ui (exposes Calendar, CalendarProps) */
 import * as React from 'react'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
@@ -66,7 +65,10 @@ function Calendar({
           'has-focus:border-ring border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] relative rounded-md border',
           defaultClassNames.dropdown_root,
         ),
-        dropdown: cn('absolute inset-0 opacity-0', defaultClassNames.dropdown),
+        dropdown: cn(
+          'absolute inset-0 opacity-0 z-10 text-foreground bg-background appearance-none cursor-pointer [&>option]:text-foreground [&>option]:bg-background',
+          defaultClassNames.dropdown,
+        ),
         caption_label: cn(
           'select-none font-medium capitalize',
           captionLayout === 'label'

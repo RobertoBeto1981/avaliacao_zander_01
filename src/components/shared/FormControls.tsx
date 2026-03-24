@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { PrevEvalContext } from '@/contexts/PrevEvalContext'
 import { useContext } from 'react'
 
@@ -87,17 +87,7 @@ export const FPhoneInput = ({ name, label, placeholder, disabled, ...props }: an
       name={name}
       render={({ field }) => {
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-          let val = e.target.value.replace(/\D/g, '')
-          if (val.startsWith('55')) val = val.substring(2)
-
-          let formatted = '+55 '
-          if (val.length > 0) formatted += '(' + val.substring(0, 2)
-          if (val.length >= 3) formatted += ') ' + val.substring(2, 7)
-          if (val.length >= 8) formatted += '-' + val.substring(7, 11)
-
-          if (val.length === 0) formatted = ''
-
-          field.onChange(formatted)
+          field.onChange(formatPhone(e.target.value))
         }
 
         return (

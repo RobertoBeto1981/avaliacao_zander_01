@@ -37,7 +37,7 @@ export default function EvaluationDetails() {
     const dataFormatada = data.data_avaliacao
       ? format(new Date(data.data_avaliacao), 'dd-MM-yyyy')
       : ''
-    return `AVALIACAO_${evoId}_${nome}_${dataFormatada}`
+    return `${evoId}_${nome}_${dataFormatada}`
   }
 
   const handleSendWhatsApp = () => {
@@ -68,10 +68,13 @@ export default function EvaluationDetails() {
 
   const handleGeneratePDF = () => {
     const fileName = getFileName()
-    toast({ title: 'PDF', description: `Gerando arquivo: ${fileName}.pdf...` })
+    const originalTitle = document.title
+    document.title = fileName
+    window.print()
     setTimeout(() => {
-      toast({ title: 'Sucesso', description: 'Relatório PDF gerado com sucesso (Simulação).' })
-    }, 1500)
+      document.title = originalTitle
+      toast({ title: 'Sucesso', description: 'Relatório preparado para impressão/PDF.' })
+    }, 500)
   }
 
   if (loading) {
@@ -88,7 +91,12 @@ export default function EvaluationDetails() {
     <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0 print:hidden"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -101,7 +109,7 @@ export default function EvaluationDetails() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           <Button variant="outline" onClick={handleGeneratePDF}>
             <FileText className="w-4 h-4 mr-2" />
             Gerar PDF
@@ -259,6 +267,14 @@ export default function EvaluationDetails() {
                 } else if (obj.choices) {
                   displayValue = obj.choices.join(', ')
                   if (obj.list) displayValue += ` - ${obj.list}`
+                } else if (key === 'vo2_test' || obj.vo2_max) {
+                  displayValue = obj.enabled
+                    ? `VO² Máx: ${obj.vo2_max} ml/kg/min (${obj.classification}) | ${obj.bpm} BPM`
+                    : 'Não realizado'
+                } else if (key === 'anthropometry' || obj.weight) {
+                  displayValue = `Peso: ${obj.weight || '-'}kg | Altura: ${obj.height || '-'}m`
+                } else if (key === 'hemodynamics' || obj.systolic_bp) {
+                  displayValue = `PA: ${obj.systolic_bp || '-'}x${obj.diastolic_bp || '-'} mmHg | FC: ${obj.heart_rate || '-'} bpm`
                 } else {
                   displayValue = JSON.stringify(value)
                 }
@@ -267,7 +283,7 @@ export default function EvaluationDetails() {
               return (
                 <div
                   key={key}
-                  className="p-4 bg-muted/30 border border-border/50 rounded-lg shadow-sm"
+                  className="p-4 bg-muted/30 border border-border/50 rounded-lg shadow-sm print:break-inside-avoid"
                 >
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     {key.replace(/_/g, ' ')}

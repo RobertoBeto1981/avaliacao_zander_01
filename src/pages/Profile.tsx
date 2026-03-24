@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Camera, Save } from 'lucide-react'
+import { formatPhone } from '@/lib/utils'
 
 export default function Profile() {
   const { user } = useAuth()
@@ -136,7 +137,11 @@ export default function Profile() {
                 <Label>Telefone</Label>
                 <Input
                   value={profile?.telefone || ''}
-                  onChange={(e) => setProfile({ ...profile, telefone: e.target.value })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, telefone: formatPhone(e.target.value) })
+                  }
+                  placeholder="+55 (00) 00000-0000"
+                  maxLength={19}
                 />
               </div>
               <div className="space-y-2">
