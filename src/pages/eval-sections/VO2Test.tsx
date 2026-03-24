@@ -84,6 +84,7 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
   const beats15sStr = useWatch({ control, name: 'vo2_test.beats_15s' })
   const dataNascimento = useWatch({ control, name: 'data_nascimento' })
   const gender = useWatch({ control, name: 'gender' })
+  const classification = useWatch({ control, name: 'vo2_test.classification' })
 
   const beats15s = beats15sStr ? Number(beats15sStr) : 0
 
@@ -317,16 +318,11 @@ export function VO2TestFields({ disabled = false }: { disabled?: boolean }) {
                 readOnly
                 className={cn(
                   'bg-muted/50 font-bold',
-                  useWatch({ control, name: 'vo2_test.classification' }) === 'Fraco' &&
-                    'text-red-600 dark:text-red-400',
-                  useWatch({ control, name: 'vo2_test.classification' }) === 'Regular' &&
-                    'text-amber-600 dark:text-amber-400',
-                  useWatch({ control, name: 'vo2_test.classification' }) === 'Bom' &&
-                    'text-emerald-600 dark:text-emerald-400',
-                  useWatch({ control, name: 'vo2_test.classification' }) === 'Excelente' &&
-                    'text-blue-600 dark:text-blue-400',
-                  useWatch({ control, name: 'vo2_test.classification' }) === 'Superior' &&
-                    'text-indigo-600 dark:text-indigo-400',
+                  classification === 'Fraco' && 'text-red-600 dark:text-red-400',
+                  classification === 'Regular' && 'text-amber-600 dark:text-amber-400',
+                  classification === 'Bom' && 'text-emerald-600 dark:text-emerald-400',
+                  classification === 'Excelente' && 'text-blue-600 dark:text-blue-400',
+                  classification === 'Superior' && 'text-indigo-600 dark:text-indigo-400',
                 )}
                 placeholder="Calculado auto."
               />
