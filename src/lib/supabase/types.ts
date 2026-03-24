@@ -501,6 +501,7 @@ export type Database = {
           foto_url: string | null
           id: string
           nome: string
+          pending_role: Database['public']['Enums']['user_role'] | null
           periodo: string | null
           role: Database['public']['Enums']['user_role']
           telefone: string | null
@@ -510,6 +511,7 @@ export type Database = {
           foto_url?: string | null
           id: string
           nome: string
+          pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
           role: Database['public']['Enums']['user_role']
           telefone?: string | null
@@ -519,6 +521,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nome?: string
+          pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
           role?: Database['public']['Enums']['user_role']
           telefone?: string | null
@@ -879,6 +882,7 @@ export const Constants = {
 //   telefone: text (nullable)
 //   periodo: text (nullable)
 //   foto_url: text (nullable)
+//   pending_role: user_role (nullable)
 // Table: video_automations_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   dias_trigger: integer (not null)
@@ -954,24 +958,18 @@ export const Constants = {
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: avaliacoes
+//   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "Avaliadores can insert avaliacoes" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
-//   Policy "Avaliadores can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
 //   Policy "Avaliadores can update avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
 //   Policy "Coordinators have full access to avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'coordenador'::user_role))))
-//   Policy "Everyone can view pre-evaluations" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (is_pre_avaliacao = true)
-//   Policy "Fisio and Nutri can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = ANY (ARRAY['fisioterapeuta'::user_role, 'nutricionista'::user_role])))))
 //   Policy "Professors can insert pre-evaluations" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (is_pre_avaliacao = true))
 //   Policy "Professors can update assigned avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
-//   Policy "Professors can view assigned avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'professor'::user_role)))) AND (professor_id = auth.uid()))
 //   Policy "Users can manage their own avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (avaliador_id = auth.uid())
@@ -1183,6 +1181,33 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION prevent_role_update()
+//   CREATE OR REPLACE FUNCTION public.prevent_role_update()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     -- Permite se for o superusuário/sistema (auth.uid nulo)
+//     IF auth.uid() IS NULL THEN
+//       RETURN NEW;
+//     END IF;
+//
+//     -- Permite se quem está alterando for um coordenador
+//     IF EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
+//       RETURN NEW;
+//     END IF;
+//
+//     -- Se não for coordenador e estiver tentando alterar o próprio cargo, reverte a alteração
+//     -- mas permite que outras colunas (nome, telefone, pending_role) sejam atualizadas
+//     IF NEW.role IS DISTINCT FROM OLD.role THEN
+//       NEW.role = OLD.role;
+//     END IF;
+//
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION send_bulk_message(text[], text, text, text)
 //   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_roles text[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text)
 //    RETURNS void
@@ -1227,6 +1252,8 @@ export const Constants = {
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
+// Table: users
+//   trg_prevent_role_update: CREATE TRIGGER trg_prevent_role_update BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION prevent_role_update()
 
 // --- INDEXES ---
 // Table: avaliacao_history
