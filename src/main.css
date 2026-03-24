@@ -4,58 +4,113 @@
 
 @layer base {
   :root {
-    --background: 0 0% 34%; /* #575757 */
-    --foreground: 0 0% 98%;
-    --card: 0 0% 38%; /* slightly lighter for elevation */
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 38%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 80 54% 50%; /* #95c23d */
+    /* Paleta de Conforto Visual - #575757 Predominante */
+    --background: 0 0% 34%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 30%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 30%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Primária: Zander Green (#95c23d) -> HSL(80, 52%, 50%) */
+    --primary: 80 52% 50%;
     --primary-foreground: 0 0% 10%;
-    --secondary: 0 0% 28%; /* darker for contrast */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 30%;
-    --muted-foreground: 0 0% 80%;
-    --accent: 85 100% 64%; /* #abff45 */
+
+    --secondary: 0 0% 25%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 75%;
+
+    --accent: 80 52% 50%;
     --accent-foreground: 0 0% 10%;
-    --destructive: 0 62.8% 50%;
+
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 48%;
-    --input: 0 0% 48%;
-    --ring: 80 54% 50%;
+
+    --border: 0 0% 45%;
+    --input: 0 0% 45%;
+    --ring: 80 52% 50%;
+
     --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 34%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 30%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 30%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 80 52% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 25%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 75%;
+    --accent: 80 52% 50%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 45%;
+    --input: 0 0% 45%;
+    --ring: 80 52% 50%;
   }
 }
 
-@media print {
-  body {
-    background: white;
-    color: black;
-    font-size: 10pt;
-  }
-  .no-print {
-    display: none !important;
-  }
-  @page {
-    size: A4 portrait;
-    margin: 1cm;
-  }
+@layer base {
   * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    @apply border-border;
   }
-  .print-break-inside-avoid {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
-  /* Utilities for clean printing */
-  .print\:shadow-none {
-    box-shadow: none !important;
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
   }
-  .print\:border-none {
-    border: none !important;
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .print\:bg-transparent {
-    background-color: transparent !important;
+  .animate-fade-in-down {
+    animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

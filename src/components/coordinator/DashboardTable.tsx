@@ -11,10 +11,18 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ListFilter, AlertCircle, Edit } from 'lucide-react'
+import { ListFilter, AlertCircle, Edit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function DashboardTable({ data }: { data: any[] }) {
+export function DashboardTable({
+  data,
+  onDelete,
+  hideActions = false,
+}: {
+  data: any[]
+  onDelete?: (id: string) => void
+  hideActions?: boolean
+}) {
   return (
     <Card className="border-border/50 shadow-sm overflow-hidden">
       <CardHeader className="bg-muted/30 border-b border-border/50 flex flex-row items-center gap-2 py-4">
@@ -30,13 +38,16 @@ export function DashboardTable({ data }: { data: any[] }) {
               <TableHead>Professor Resp.</TableHead>
               <TableHead>Período</TableHead>
               <TableHead>Treino</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              {!hideActions && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={hideActions ? 5 : 6}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Nenhum registro encontrado com os filtros atuais.
                 </TableCell>
               </TableRow>
@@ -99,8 +110,7 @@ export function DashboardTable({ data }: { data: any[] }) {
                             'border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:bg-amber-950/30',
                           status === 'em_progresso' &&
                             'border-blue-300 text-blue-700 bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:bg-blue-950/30',
-                          status === 'concluido' &&
-                            'border-emerald-300 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:bg-emerald-950/30',
+                          status === 'concluido' && 'border-primary/50 text-primary bg-primary/10',
                         )}
                       >
                         {status === 'em_progresso'
@@ -110,18 +120,33 @@ export function DashboardTable({ data }: { data: any[] }) {
                             : 'Pendente'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                        asChild
-                      >
-                        <Link to={`/evaluation/edit/${ev.id}`} title="Editar">
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
+                    {!hideActions && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                            asChild
+                          >
+                            <Link to={`/evaluation/edit/${ev.id}`} title="Editar">
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          {onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => onDelete(ev.id)}
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })

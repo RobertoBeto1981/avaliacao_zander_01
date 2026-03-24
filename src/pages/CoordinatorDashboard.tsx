@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react'
-import { getEvaluations } from '@/services/evaluations'
+import { getEvaluations, deleteEvaluation } from '@/services/evaluations'
+import { getUsers } from '@/services/users'
 import { supabase } from '@/lib/supabase/client'
 import { isAfter, startOfDay, differenceInDays } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Clock, Activity, CheckCircle2, Search } from 'lucide-react'
+import { Users, Clock, Activity, CheckCircle2, Search, FilePlus2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,17 +16,12 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
 import { DashboardTable } from '@/components/coordinator/DashboardTable'
+import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
+import { RoleViewTab } from '@/components/coordinator/RoleViewTab'
 import { useToast } from '@/hooks/use-toast'
+import { Link } from 'react-router-dom'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -47,11 +43,8 @@ export default function CoordinatorDashboard() {
       const evals = await getEvaluations()
       setEvaluations(evals)
 
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('*')
-        .not('pending_role', 'is', null)
-      setUsers(usersData || [])
+      const allUsers = await getUsers()
+      setUsers(allUsers || [])
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro ao carregar dados', description: e.message })
     } finally {
@@ -62,15 +55,13 @@ export default function CoordinatorDashboard() {
   useEffect(() => {
     loadData()
 
-    // Real-time subscription to avaliacoes table
+    // Real-time subscription
     const channel = supabase
       .channel('avaliacoes_coordinator')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avaliacoes' }, () => {
-        loadData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-        loadData()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avaliacoes' }, () =>
+        loadData(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadData())
       .subscribe()
 
     return () => {
@@ -127,73 +118,73 @@ export default function CoordinatorDashboard() {
     reavFilter,
   ])
 
-  // Filter options
   const professors = useMemo(
     () => Array.from(new Set(evaluations.map((e) => e.professor?.nome).filter(Boolean))).sort(),
     [evaluations],
   )
-  const periods = useMemo(
-    () => Array.from(new Set(evaluations.map((e) => e.periodo_treino).filter(Boolean))).sort(),
-    [evaluations],
-  )
 
-  // KPI calculations
   const total = filtered.length
   const pendentes = filtered.filter((e) => !e.status || e.status === 'pendente').length
   const emProgresso = filtered.filter((e) => e.status === 'em_progresso').length
   const concluidos = filtered.filter((e) => e.status === 'concluido').length
 
-  const approveRole = async (userId: string, newRole: string) => {
-    try {
-      await supabase.from('users').update({ role: newRole, pending_role: null }).eq('id', userId)
-      toast({ title: 'Sucesso', description: 'Cargo atualizado com sucesso.' })
-      setUsers(users.filter((u) => u.id !== userId))
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Erro', description: e.message })
-    }
-  }
+  const pendingUsersCount = users.filter((u) => u.pending_role).length
 
-  const rejectRole = async (userId: string) => {
+  const handleDeleteEvaluation = async (id: string) => {
+    if (
+      !confirm(
+        'Atenção: Tem certeza que deseja excluir esta avaliação? Esta ação não pode ser desfeita e todo o histórico será perdido.',
+      )
+    )
+      return
     try {
-      await supabase.from('users').update({ pending_role: null }).eq('id', userId)
-      toast({ title: 'Sucesso', description: 'Solicitação rejeitada.' })
-      setUsers(users.filter((u) => u.id !== userId))
+      await deleteEvaluation(id)
+      toast({ title: 'Excluído', description: 'Avaliação removida com sucesso.' })
+      loadData()
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Erro', description: e.message })
+      toast({ variant: 'destructive', description: e.message })
     }
   }
 
   if (loading)
-    return <div className="p-8 text-center text-muted-foreground">Carregando dashboard...</div>
+    return <div className="p-8 text-center text-muted-foreground">Carregando painel central...</div>
 
   return (
-    <div className="container mx-auto py-8 animate-fade-in-up">
+    <div className="container mx-auto py-8 animate-fade-in-up max-w-[1400px]">
       <div className="flex items-center gap-4 mb-8">
-        <div className="bg-primary/10 p-4 rounded-xl text-primary">
+        <div className="bg-primary/20 p-4 rounded-xl text-primary">
           <Activity className="w-8 h-8" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Gerencial</h1>
-          <p className="text-muted-foreground">
-            Visão estratégica em tempo real da equipe e das avaliações
+          <h1 className="text-3xl font-bold tracking-tight">Painel do Coordenador</h1>
+          <p className="text-muted-foreground text-lg">
+            Gestão centralizada de clientes, equipe e acompanhamento geral.
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 w-full max-w-md grid grid-cols-2">
-          <TabsTrigger value="dashboard">Visão Geral</TabsTrigger>
-          <TabsTrigger value="approvals" className="relative">
-            Aprovações de Equipe
-            {users.length > 0 && (
-              <span className="absolute top-1 right-2 flex h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm animate-pulse"></span>
+        <TabsList className="bg-muted/50 p-1 w-full max-w-3xl grid grid-cols-2 md:grid-cols-4 h-auto rounded-lg">
+          <TabsTrigger value="dashboard" className="py-2.5">
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="py-2.5">
+            Gestão de Clientes
+          </TabsTrigger>
+          <TabsTrigger value="team" className="relative py-2.5">
+            Gestão de Equipe
+            {pendingUsersCount > 0 && (
+              <span className="absolute top-2 right-2 flex h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm animate-pulse"></span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="role-view" className="py-2.5">
+            Visão de Cargo
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="m-0 space-y-8">
+        <TabsContent value="dashboard" className="m-0 space-y-8 animate-fade-in">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-border/50 shadow-sm">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total de Avaliações
@@ -204,7 +195,7 @@ export default function CoordinatorDashboard() {
                 <div className="text-3xl font-bold">{total}</div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 shadow-sm">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Treinos Pendentes
@@ -215,7 +206,7 @@ export default function CoordinatorDashboard() {
                 <div className="text-3xl font-bold text-amber-500">{pendentes}</div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 shadow-sm">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Em Progresso
@@ -226,7 +217,7 @@ export default function CoordinatorDashboard() {
                 <div className="text-3xl font-bold text-blue-500">{emProgresso}</div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 shadow-sm">
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Concluídos
@@ -239,10 +230,14 @@ export default function CoordinatorDashboard() {
             </Card>
           </div>
 
-          <Card className="border-border/50 shadow-sm bg-muted/20">
+          <DashboardCharts data={filtered} />
+        </TabsContent>
+
+        <TabsContent value="clients" className="m-0 space-y-4 animate-fade-in">
+          <Card className="border-border/50 shadow-sm bg-muted/10">
             <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
               <div className="space-y-1.5 lg:col-span-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                <Label className="text-xs font-semibold uppercase tracking-wider">
                   Busca por Aluno
                 </Label>
                 <div className="relative">
@@ -251,16 +246,14 @@ export default function CoordinatorDashboard() {
                     placeholder="Nome do cliente..."
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
-                    className="pl-9 h-9"
+                    className="pl-9 h-10"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Professor
-                </Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider">Professor</Label>
                 <Select value={profFilter} onValueChange={setProfFilter}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -274,11 +267,9 @@ export default function CoordinatorDashboard() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Treino
-                </Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider">Treino</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -290,11 +281,11 @@ export default function CoordinatorDashboard() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                <Label className="text-xs font-semibold uppercase tracking-wider">
                   Reavaliação
                 </Label>
                 <Select value={reavFilter} onValueChange={setReavFilter}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
@@ -305,81 +296,45 @@ export default function CoordinatorDashboard() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                <Label className="text-xs font-semibold uppercase tracking-wider">
                   Data Início
                 </Label>
                 <Input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="h-9"
+                  className="h-10"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Data Fim
-                </Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider">Data Fim</Label>
                 <Input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="h-9"
+                  className="h-10"
                 />
               </div>
             </CardContent>
           </Card>
 
-          <DashboardCharts data={filtered} />
-          <DashboardTable data={filtered} />
+          <div className="flex justify-end pt-2 pb-2">
+            <Button asChild size="lg" className="font-bold">
+              <Link to="/evaluation/new">
+                <FilePlus2 className="w-5 h-5 mr-2" /> Nova Avaliação
+              </Link>
+            </Button>
+          </div>
+
+          <DashboardTable data={filtered} onDelete={handleDeleteEvaluation} />
         </TabsContent>
 
-        <TabsContent value="approvals" className="m-0">
-          <Card className="border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>Solicitações de Mudança de Cargo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Colaborador</TableHead>
-                    <TableHead>Cargo Atual</TableHead>
-                    <TableHead>Cargo Solicitado</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        Nenhuma solicitação pendente no momento.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    users.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell className="font-medium">{u.nome}</TableCell>
-                        <TableCell className="capitalize text-muted-foreground">{u.role}</TableCell>
-                        <TableCell className="capitalize font-semibold text-primary">
-                          {u.pending_role}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => rejectRole(u.id)}>
-                              Recusar
-                            </Button>
-                            <Button size="sm" onClick={() => approveRole(u.id, u.pending_role)}>
-                              Aprovar
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+        <TabsContent value="team" className="m-0">
+          <UserManagementTab users={users} onUpdate={loadData} />
+        </TabsContent>
+
+        <TabsContent value="role-view" className="m-0">
+          <RoleViewTab users={users} evaluations={evaluations} />
         </TabsContent>
       </Tabs>
     </div>

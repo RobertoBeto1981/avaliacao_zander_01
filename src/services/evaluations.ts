@@ -198,6 +198,13 @@ export const updateEvaluationStatus = async (id: string, status: string) => {
   return data
 }
 
+export const deleteEvaluation = async (id: string) => {
+  if (!isValidUUID(id)) throw new Error('ID de avaliação inválido')
+  const { error } = await supabase.from('avaliacoes').delete().eq('id', id)
+  if (error) throw error
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+}
+
 export const getClientPastMedications = async (clientName: string) => {
   if (!clientName || clientName.trim().length < 3) return []
 

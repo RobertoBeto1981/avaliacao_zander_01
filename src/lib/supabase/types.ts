@@ -960,6 +960,8 @@ export const Constants = {
 // Table: avaliacoes
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "Authenticated users can read all avaliacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "Avaliadores can insert avaliacoes" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (users.role = 'avaliador'::user_role))))
 //   Policy "Avaliadores can update avaliacoes" (UPDATE, PERMISSIVE) roles={authenticated}

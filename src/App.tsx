@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import AuthSuccess from './pages/AuthSuccess'
 import ForgotPassword from './pages/ForgotPassword'
 import NewEvaluation from './pages/NewEvaluation'
 import EditEvaluation from './pages/EditEvaluation'
@@ -179,6 +180,7 @@ const AppRoutes = () => (
       />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/auth-success" element={<AuthSuccess />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
     </Route>
     <Route path="*" element={<NotFound />} />
