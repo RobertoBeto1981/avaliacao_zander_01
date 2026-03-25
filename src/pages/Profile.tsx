@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
-import { Camera, Save } from 'lucide-react'
+import { Camera, Save, KeyRound } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
 
 export default function Profile() {
   const { user } = useAuth()
@@ -25,6 +26,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -72,6 +76,34 @@ export default function Profile() {
       toast({ variant: 'destructive', title: 'Erro no upload', description: err.message })
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password !== confirmPassword) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'As senhas não coincidem.' })
+      return
+    }
+    if (password.length < 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'A senha deve ter pelo menos 6 caracteres.',
+      })
+      return
+    }
+    setChangingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+      toast({ title: 'Sucesso', description: 'Senha atualizada com sucesso.' })
+      setPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Erro ao alterar senha', description: err.message })
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -229,6 +261,40 @@ export default function Profile() {
               )}
             </Button>
           </form>
+
+          <div className="space-y-4 pt-8 border-t border-border mt-8">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" /> Alterar Senha
+            </h3>
+            <form
+              onSubmit={handlePasswordChange}
+              className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border/50"
+            >
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Nova Senha</Label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo de 6 caracteres"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar Nova Senha</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repita a nova senha"
+                  />
+                </div>
+              </div>
+              <Button type="submit" variant="secondary" disabled={changingPassword || !password}>
+                {changingPassword ? 'Atualizando...' : 'Atualizar Senha'}
+              </Button>
+            </form>
+          </div>
         </CardContent>
       </Card>
     </div>

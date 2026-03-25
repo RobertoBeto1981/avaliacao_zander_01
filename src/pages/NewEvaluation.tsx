@@ -62,7 +62,7 @@ export default function NewEvaluation() {
         if (parsed.target_date) parsed.target_date = new Date(parsed.target_date)
         if (parsed.data_nascimento) parsed.data_nascimento = new Date(parsed.data_nascimento)
 
-        form.reset({ ...form.getValues(), ...parsed })
+        form.reset(parsed)
 
         toast({
           title: 'Rascunho recuperado',
@@ -72,18 +72,31 @@ export default function NewEvaluation() {
         console.error('Failed to parse evaluation draft', e)
       }
     }
+
+    const existingIdDraft = localStorage.getItem('evaluationDraftExistingId')
+    if (existingIdDraft) setExistingId(existingIdDraft)
   }, [form, toast])
 
   // Autosave draft to localStorage whenever form changes
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      // Only save if there's actual data to avoid saving empty initialization
-      if (value && Object.keys(value).length > 0) {
-        localStorage.setItem('evaluationDraft', JSON.stringify(value))
+    const subscription = form.watch(() => {
+      // Usando getValues() para garantir que pegamos todo o estado de forma profunda
+      const currentValues = form.getValues()
+      if (currentValues && Object.keys(currentValues).length > 0) {
+        localStorage.setItem('evaluationDraft', JSON.stringify(currentValues))
       }
     })
     return () => subscription.unsubscribe()
   }, [form])
+
+  const handleSetExistingId = (id: string | null) => {
+    setExistingId(id)
+    if (id) {
+      localStorage.setItem('evaluationDraftExistingId', id)
+    } else {
+      localStorage.removeItem('evaluationDraftExistingId')
+    }
+  }
 
   const onSubmit = async (data: EvaluationFormValues) => {
     try {
@@ -121,6 +134,7 @@ export default function NewEvaluation() {
 
       // Clear draft on successful submission
       localStorage.removeItem('evaluationDraft')
+      localStorage.removeItem('evaluationDraftExistingId')
 
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
 
@@ -136,6 +150,7 @@ export default function NewEvaluation() {
   const handleCancel = () => {
     if (window.confirm('Tem certeza que deseja cancelar? O rascunho atual será perdido.')) {
       localStorage.removeItem('evaluationDraft')
+      localStorage.removeItem('evaluationDraftExistingId')
       navigate('/')
     }
   }
@@ -151,7 +166,7 @@ export default function NewEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-          <IdentificationFields setExistingId={setExistingId} />
+          <IdentificationFields setExistingId={handleSetExistingId} />
           <TrainingHistoryFields />
           <CurrentLifestyleFields />
           <HealthFields />

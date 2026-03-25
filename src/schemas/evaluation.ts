@@ -42,9 +42,9 @@ export const evaluationSchema = z.object({
 
   hemodynamics: z
     .object({
-      systolic_bp: z.string().optional(),
-      diastolic_bp: z.string().optional(),
-      heart_rate: z.string().optional(),
+      systolic_bp: z.union([z.string(), z.number()]).optional(),
+      diastolic_bp: z.union([z.string(), z.number()]).optional(),
+      heart_rate: z.union([z.string(), z.number()]).optional(),
     })
     .optional(),
 
@@ -77,32 +77,32 @@ export const evaluationSchema = z.object({
 
   anthropometry: z
     .object({
-      weight: z.string().optional(),
-      height: z.string().optional(),
-      shoulders: z.string().optional(),
-      chest: z.string().optional(),
-      waist: z.string().optional(),
-      abdomen: z.string().optional(),
-      hips: z.string().optional(),
-      right_arm_relaxed: z.string().optional(),
-      right_arm_flexed: z.string().optional(),
-      right_forearm: z.string().optional(),
-      left_arm_relaxed: z.string().optional(),
-      left_arm_flexed: z.string().optional(),
-      left_forearm: z.string().optional(),
-      right_thigh: z.string().optional(),
-      right_calf: z.string().optional(),
-      left_thigh: z.string().optional(),
-      left_calf: z.string().optional(),
+      weight: z.union([z.string(), z.number()]).optional(),
+      height: z.union([z.string(), z.number()]).optional(),
+      shoulders: z.union([z.string(), z.number()]).optional(),
+      chest: z.union([z.string(), z.number()]).optional(),
+      waist: z.union([z.string(), z.number()]).optional(),
+      abdomen: z.union([z.string(), z.number()]).optional(),
+      hips: z.union([z.string(), z.number()]).optional(),
+      right_arm_relaxed: z.union([z.string(), z.number()]).optional(),
+      right_arm_flexed: z.union([z.string(), z.number()]).optional(),
+      right_forearm: z.union([z.string(), z.number()]).optional(),
+      left_arm_relaxed: z.union([z.string(), z.number()]).optional(),
+      left_arm_flexed: z.union([z.string(), z.number()]).optional(),
+      left_forearm: z.union([z.string(), z.number()]).optional(),
+      right_thigh: z.union([z.string(), z.number()]).optional(),
+      right_calf: z.union([z.string(), z.number()]).optional(),
+      left_thigh: z.union([z.string(), z.number()]).optional(),
+      left_calf: z.union([z.string(), z.number()]).optional(),
     })
     .optional(),
 
   vo2_test: z
     .object({
       enabled: z.boolean().default(false),
-      bpm: z.number().optional(),
-      beats_15s: z.number().optional(),
-      vo2_max: z.string().optional(),
+      bpm: z.union([z.string(), z.number()]).optional(),
+      beats_15s: z.union([z.string(), z.number()]).optional(),
+      vo2_max: z.union([z.string(), z.number()]).optional(),
       classification: z.string().optional(),
     })
     .optional(),
