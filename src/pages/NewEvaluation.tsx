@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -17,6 +17,21 @@ import { TrainingFields } from './eval-sections/Training'
 import { AnthropometryFields } from './eval-sections/Anthropometry'
 import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
+
+function AutoSaver({ form }: { form: any }) {
+  const values = useWatch({ control: form.control })
+
+  useEffect(() => {
+    if (values && Object.keys(values).length > 0) {
+      const timer = setTimeout(() => {
+        localStorage.setItem('evaluationDraft', JSON.stringify(form.getValues()))
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [values, form])
+
+  return null
+}
 
 export default function NewEvaluation() {
   const navigate = useNavigate()
@@ -125,17 +140,16 @@ export default function NewEvaluation() {
     if (existingIdDraft) setExistingId(existingIdDraft)
   }, [form, toast])
 
-  // Autosave draft to localStorage whenever form changes
+  // Listener para capturar o disparo forçado de salvamento dos Selects/Inputs
   useEffect(() => {
-    const subscription = form.watch(() => {
-      // Utilizamos form.getValues() para garantir que todos os campos (incluindo Selects)
-      // sejam devidamente capturados no estado mais recente, superando qualquer defasagem do watch.
+    const handleForceSave = () => {
       const currentValues = form.getValues()
       if (currentValues && Object.keys(currentValues).length > 0) {
         localStorage.setItem('evaluationDraft', JSON.stringify(currentValues))
       }
-    })
-    return () => subscription.unsubscribe()
+    }
+    window.addEventListener('force-autosave', handleForceSave)
+    return () => window.removeEventListener('force-autosave', handleForceSave)
   }, [form])
 
   const handleSetExistingId = (id: string | null) => {
@@ -215,6 +229,8 @@ export default function NewEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+          <AutoSaver form={form} />
+
           <IdentificationFields setExistingId={handleSetExistingId} />
           <TrainingHistoryFields />
           <CurrentLifestyleFields />

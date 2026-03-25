@@ -85,6 +85,11 @@ export const FInput = ({
                   field.onChange(e.target.value)
                 }
               }}
+              onBlur={(e) => {
+                field.onBlur()
+                if (props.onBlur) props.onBlur(e)
+                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+              }}
               {...props}
             />
           </FormControl>
@@ -120,6 +125,11 @@ export const FPhoneInput = ({ name, label, placeholder, disabled, ...props }: an
                 onChange={handleChange}
                 maxLength={19}
                 disabled={disabled}
+                onBlur={(e) => {
+                  field.onBlur()
+                  if (props.onBlur) props.onBlur(e)
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+                }}
                 {...props}
               />
             </FormControl>
@@ -149,6 +159,11 @@ export const FTextarea = ({ name, label, placeholder, disabled, ...props }: any)
               disabled={disabled}
               {...field}
               value={field.value || ''}
+              onBlur={(e) => {
+                field.onBlur()
+                if (props.onBlur) props.onBlur(e)
+                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+              }}
               {...props}
             />
           </FormControl>
@@ -172,7 +187,10 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...', di
             <PrevEvalBadge name={name} />
           </FormLabel>
           <Select
-            onValueChange={field.onChange}
+            onValueChange={(val) => {
+              field.onChange(val)
+              setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+            }}
             value={field.value ? String(field.value) : undefined}
             disabled={disabled}
           >
@@ -214,7 +232,14 @@ export const FSwitch = ({ name, label, className, disabled }: any) => {
             <PrevEvalBadge name={name} />
           </FormLabel>
           <FormControl>
-            <Switch checked={field.value} onCheckedChange={field.onChange} disabled={disabled} />
+            <Switch
+              checked={field.value}
+              onCheckedChange={(val) => {
+                field.onChange(val)
+                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+              }}
+              disabled={disabled}
+            />
           </FormControl>
         </FormItem>
       )}

@@ -56,7 +56,10 @@ export const FDatePicker = ({
               <Calendar
                 mode="single"
                 selected={isValid(field.value) ? field.value : undefined}
-                onSelect={field.onChange}
+                onSelect={(date) => {
+                  field.onChange(date)
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
+                }}
                 disabled={disabled}
                 initialFocus
                 {...calendarProps}
@@ -94,9 +97,14 @@ export const FMultiSelect = ({ name, label, options }: any) => {
                       <Checkbox
                         checked={field.value?.includes(opt)}
                         onCheckedChange={(checked) => {
-                          return checked
-                            ? field.onChange([...(field.value || []), opt])
-                            : field.onChange(field.value?.filter((value: string) => value !== opt))
+                          const newVal = checked
+                            ? [...(field.value || []), opt]
+                            : field.value?.filter((value: string) => value !== opt)
+                          field.onChange(newVal)
+                          setTimeout(
+                            () => window.dispatchEvent(new CustomEvent('force-autosave')),
+                            100,
+                          )
                         }}
                       />
                     </FormControl>
