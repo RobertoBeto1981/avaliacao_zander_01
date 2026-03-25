@@ -27,25 +27,73 @@ export default function NewEvaluation() {
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
       data_avaliacao: new Date(),
+      nome_cliente: '',
+      telefone_cliente: '',
+      evo_id: '',
+      gender: '',
+      periodo_treino: '',
       objectives: [],
+      main_objective: '',
+      target_date: null,
+      training_frequency: '',
+      activity_level: '',
+      practice_time: '',
+      modalities: '',
+      nutritional_status: { choice: '', reason: '' },
+      meals_per_day: '',
+      sleep_hours: '',
+      alcohol: '',
       available_days: [],
+      session_duration: '',
+      discovery_source: '',
       enjoys_training: [],
       dislikes_looking_at: [],
       dislikes_training: [],
-      supplements: { choice: false },
-      medications: { choice: false },
-      allergies: { choice: false },
-      intolerances: { choices: [] },
-      smoking: { choice: false },
-      cardio_pathology: { choice: false },
-      surgeries: { choice: false },
-      pains: { choice: false },
+      favorite_exercises: '',
+      hated_exercises: '',
+      supplements: { choice: false, list: '' },
+      medications: { choice: false, list: '' },
+      allergies: { choice: false, list: '' },
+      intolerances: { choices: [], list: '' },
+      smoking: { choice: false, amount: '' },
+      cardio_pathology: { choice: false, list: '' },
+      surgeries: { choice: false, list: '' },
+      pains: { choice: false, observation: '' },
       diabetes: false,
       hypertension: false,
       respiratory_pathology: false,
-      hemodynamics: {},
-      anthropometry: {},
-      vo2_test: { enabled: false, bpm: 88 },
+      health_exams: { choice: '', notes: '' },
+      health_insurance: { choice: '', other: '' },
+      hemodynamics: { systolic_bp: '', diastolic_bp: '', heart_rate: '' },
+      anthropometry: {
+        weight: '',
+        height: '',
+        shoulders: '',
+        chest: '',
+        waist: '',
+        abdomen: '',
+        hips: '',
+        right_arm_relaxed: '',
+        right_arm_flexed: '',
+        right_forearm: '',
+        left_arm_relaxed: '',
+        left_arm_flexed: '',
+        left_forearm: '',
+        right_thigh: '',
+        right_calf: '',
+        left_thigh: '',
+        left_calf: '',
+      },
+      vo2_test: { enabled: false, bpm: 88, beats_15s: '', vo2_max: '', classification: '' },
+      final_observations: '',
+      professor_observations: '',
+      emergency_contact: '',
+      client_links: {
+        symptoms: '',
+        pain: '',
+        bia: '',
+        myscore: '',
+      },
     },
   })
 
@@ -79,11 +127,10 @@ export default function NewEvaluation() {
 
   // Autosave draft to localStorage whenever form changes
   useEffect(() => {
-    const subscription = form.watch(() => {
-      // Usando getValues() para garantir que pegamos todo o estado de forma profunda
-      const currentValues = form.getValues()
-      if (currentValues && Object.keys(currentValues).length > 0) {
-        localStorage.setItem('evaluationDraft', JSON.stringify(currentValues))
+    const subscription = form.watch((value) => {
+      // Utilizamos o value do próprio watch que reflete as atualizações imediatamente
+      if (value && Object.keys(value).length > 0) {
+        localStorage.setItem('evaluationDraft', JSON.stringify(value))
       }
     })
     return () => subscription.unsubscribe()
