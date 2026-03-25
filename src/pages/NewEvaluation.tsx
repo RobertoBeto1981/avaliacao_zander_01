@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -17,21 +17,6 @@ import { TrainingFields } from './eval-sections/Training'
 import { AnthropometryFields } from './eval-sections/Anthropometry'
 import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
-
-function AutoSaver({ form }: { form: any }) {
-  const values = useWatch({ control: form.control })
-
-  useEffect(() => {
-    if (values && Object.keys(values).length > 0) {
-      const timer = setTimeout(() => {
-        localStorage.setItem('evaluationDraft', JSON.stringify(form.getValues()))
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [values, form])
-
-  return null
-}
 
 export default function NewEvaluation() {
   const navigate = useNavigate()
@@ -112,53 +97,8 @@ export default function NewEvaluation() {
     },
   })
 
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    const draft = localStorage.getItem('evaluationDraft')
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft)
-
-        // Restore dates correctly
-        if (parsed.data_avaliacao) parsed.data_avaliacao = new Date(parsed.data_avaliacao)
-        if (parsed.data_reavaliacao) parsed.data_reavaliacao = new Date(parsed.data_reavaliacao)
-        if (parsed.target_date) parsed.target_date = new Date(parsed.target_date)
-        if (parsed.data_nascimento) parsed.data_nascimento = new Date(parsed.data_nascimento)
-
-        form.reset(parsed)
-
-        toast({
-          title: 'Rascunho recuperado',
-          description: 'Seus dados preenchidos anteriormente foram restaurados.',
-        })
-      } catch (e) {
-        console.error('Failed to parse evaluation draft', e)
-      }
-    }
-
-    const existingIdDraft = localStorage.getItem('evaluationDraftExistingId')
-    if (existingIdDraft) setExistingId(existingIdDraft)
-  }, [form, toast])
-
-  // Listener para capturar o disparo forçado de salvamento dos Selects/Inputs
-  useEffect(() => {
-    const handleForceSave = () => {
-      const currentValues = form.getValues()
-      if (currentValues && Object.keys(currentValues).length > 0) {
-        localStorage.setItem('evaluationDraft', JSON.stringify(currentValues))
-      }
-    }
-    window.addEventListener('force-autosave', handleForceSave)
-    return () => window.removeEventListener('force-autosave', handleForceSave)
-  }, [form])
-
   const handleSetExistingId = (id: string | null) => {
     setExistingId(id)
-    if (id) {
-      localStorage.setItem('evaluationDraftExistingId', id)
-    } else {
-      localStorage.removeItem('evaluationDraftExistingId')
-    }
   }
 
   const onSubmit = async (data: EvaluationFormValues) => {
@@ -195,10 +135,6 @@ export default function NewEvaluation() {
 
       const res = await createEvaluation(avaliacao, links, existingId || undefined)
 
-      // Clear draft on successful submission
-      localStorage.removeItem('evaluationDraft')
-      localStorage.removeItem('evaluationDraftExistingId')
-
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
 
       // Disparar automações de WhatsApp e fila de vídeos
@@ -211,9 +147,7 @@ export default function NewEvaluation() {
   }
 
   const handleCancel = () => {
-    if (window.confirm('Tem certeza que deseja cancelar? O rascunho atual será perdido.')) {
-      localStorage.removeItem('evaluationDraft')
-      localStorage.removeItem('evaluationDraftExistingId')
+    if (window.confirm('Tem certeza que deseja cancelar? Os dados não salvos serão perdidos.')) {
       navigate('/')
     }
   }
@@ -229,8 +163,6 @@ export default function NewEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-          <AutoSaver form={form} />
-
           <IdentificationFields setExistingId={handleSetExistingId} />
           <TrainingHistoryFields />
           <CurrentLifestyleFields />

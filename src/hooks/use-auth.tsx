@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        setLoading(true)
+        // We DO NOT set loading to true here to prevent remounting components (like forms)
+        // when the user switches tabs and triggers a token refresh or auth event.
         fetchProfile(session.user.id)
       } else {
         setProfile(null)

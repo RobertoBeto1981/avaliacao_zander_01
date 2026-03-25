@@ -58,7 +58,6 @@ export const FDatePicker = ({
                 selected={isValid(field.value) ? field.value : undefined}
                 onSelect={(date) => {
                   field.onChange(date)
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
                 }}
                 disabled={disabled}
                 initialFocus
@@ -101,10 +100,6 @@ export const FMultiSelect = ({ name, label, options }: any) => {
                             ? [...(field.value || []), opt]
                             : field.value?.filter((value: string) => value !== opt)
                           field.onChange(newVal)
-                          setTimeout(
-                            () => window.dispatchEvent(new CustomEvent('force-autosave')),
-                            100,
-                          )
                         }}
                       />
                     </FormControl>

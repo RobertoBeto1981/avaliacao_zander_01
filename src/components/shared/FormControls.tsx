@@ -88,7 +88,6 @@ export const FInput = ({
               onBlur={(e) => {
                 field.onBlur()
                 if (props.onBlur) props.onBlur(e)
-                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
               }}
               {...props}
             />
@@ -128,7 +127,6 @@ export const FPhoneInput = ({ name, label, placeholder, disabled, ...props }: an
                 onBlur={(e) => {
                   field.onBlur()
                   if (props.onBlur) props.onBlur(e)
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
                 }}
                 {...props}
               />
@@ -162,7 +160,6 @@ export const FTextarea = ({ name, label, placeholder, disabled, ...props }: any)
               onBlur={(e) => {
                 field.onBlur()
                 if (props.onBlur) props.onBlur(e)
-                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
               }}
               {...props}
             />
@@ -189,7 +186,6 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...', di
           <Select
             onValueChange={(val) => {
               field.onChange(val)
-              setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
             }}
             value={field.value ? String(field.value) : undefined}
             disabled={disabled}
@@ -236,7 +232,6 @@ export const FSwitch = ({ name, label, className, disabled }: any) => {
               checked={field.value}
               onCheckedChange={(val) => {
                 field.onChange(val)
-                setTimeout(() => window.dispatchEvent(new CustomEvent('force-autosave')), 100)
               }}
               disabled={disabled}
             />
