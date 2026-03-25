@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, ArrowLeft, MessageCircle, FileText } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
-import { format, differenceInYears } from 'date-fns'
+import { format, differenceInYears, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
@@ -92,14 +92,21 @@ export default function EvaluationDetails() {
       .finally(() => setLoading(false))
   }, [id, toast, navigate])
 
+  const getValidDate = (
+    dateStr: string | null | undefined,
+    fallbackStr?: string | null | undefined,
+  ) => {
+    if (dateStr && isValid(new Date(dateStr))) return new Date(dateStr)
+    if (fallbackStr && isValid(new Date(fallbackStr))) return new Date(fallbackStr)
+    return new Date()
+  }
+
   const getFileName = () => {
     if (!data) return 'AVALIACAO'
     const evoId = data.evo_id || 'SEM-ID'
     const nome = data.nome_cliente?.replace(/\s+/g, '_').toUpperCase() || 'ALUNO'
-    const dataFormatada = data.data_avaliacao
-      ? format(new Date(data.data_avaliacao), 'dd-MM-yyyy')
-      : format(new Date(data.created_at), 'dd-MM-yyyy')
-    return `${evoId}_${nome}_${dataFormatada}`
+    const dDate = getValidDate(data.data_avaliacao, data.created_at)
+    return `${evoId}_${nome}_${format(dDate, 'dd-MM-yyyy')}`
   }
 
   const handleGeneratePDF = () => {
@@ -164,7 +171,12 @@ export default function EvaluationDetails() {
   if (!data) return null
 
   const r = data.respostas || {}
-  const age = r.data_nascimento ? differenceInYears(new Date(), new Date(r.data_nascimento)) : null
+  const age =
+    r.data_nascimento && isValid(new Date(r.data_nascimento))
+      ? differenceInYears(new Date(), new Date(r.data_nascimento))
+      : null
+
+  const evalDate = getValidDate(data.data_avaliacao, data.created_at)
 
   return (
     <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:space-y-4">
@@ -187,7 +199,7 @@ export default function EvaluationDetails() {
             </h1>
             <p className="text-muted-foreground mt-1">
               {data.nome_cliente} -{' '}
-              {format(new Date(data.data_avaliacao || data.created_at), "dd 'de' MMMM 'de' yyyy", {
+              {format(evalDate, "dd 'de' MMMM 'de' yyyy", {
                 locale: ptBR,
               })}
             </p>
@@ -222,7 +234,7 @@ export default function EvaluationDetails() {
         <h2 className="text-xl font-semibold mt-1">{data.nome_cliente}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           <strong>ID EVO:</strong> {data.evo_id || 'N/A'} &bull; <strong>Data:</strong>{' '}
-          {format(new Date(data.data_avaliacao || data.created_at), 'dd/MM/yyyy')}
+          {format(evalDate, 'dd/MM/yyyy')}
         </p>
       </div>
 
@@ -231,7 +243,7 @@ export default function EvaluationDetails() {
           <PrintField label="Nome do Cliente" value={data.nome_cliente} />
           <PrintField label="ID EVO" value={data.evo_id} />
           <PrintField label="Telefone" value={data.telefone_cliente} />
-          <PrintField label="Idade" value={age ? `${age} anos` : '-'} />
+          <PrintField label="Idade" value={age !== null ? `${age} anos` : '-'} />
           <PrintField label="Gênero" value={r.gender} />
           <PrintField label="Período de Treino" value={data.periodo_treino} />
           <PrintField
@@ -246,7 +258,9 @@ export default function EvaluationDetails() {
           <PrintField
             label="Data Alvo"
             value={
-              r.target_date ? format(new Date(r.target_date + 'T12:00:00'), 'dd/MM/yyyy') : '-'
+              r.target_date && isValid(new Date(r.target_date + 'T12:00:00'))
+                ? format(new Date(r.target_date + 'T12:00:00'), 'dd/MM/yyyy')
+                : '-'
             }
           />
           <PrintField label="Frequência Semanal Atual" value={r.training_frequency} />
