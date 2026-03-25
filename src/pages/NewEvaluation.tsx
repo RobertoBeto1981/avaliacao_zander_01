@@ -127,10 +127,12 @@ export default function NewEvaluation() {
 
   // Autosave draft to localStorage whenever form changes
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      // Utilizamos o value do próprio watch que reflete as atualizações imediatamente
-      if (value && Object.keys(value).length > 0) {
-        localStorage.setItem('evaluationDraft', JSON.stringify(value))
+    const subscription = form.watch(() => {
+      // Utilizamos form.getValues() para garantir que todos os campos (incluindo Selects)
+      // sejam devidamente capturados no estado mais recente, superando qualquer defasagem do watch.
+      const currentValues = form.getValues()
+      if (currentValues && Object.keys(currentValues).length > 0) {
+        localStorage.setItem('evaluationDraft', JSON.stringify(currentValues))
       }
     })
     return () => subscription.unsubscribe()

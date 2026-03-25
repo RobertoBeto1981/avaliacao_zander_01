@@ -173,8 +173,7 @@ export const FSelect = ({ name, label, options, placeholder = 'Selecione...', di
           </FormLabel>
           <Select
             onValueChange={field.onChange}
-            defaultValue={field.value || ''}
-            value={field.value || ''}
+            value={field.value ? String(field.value) : undefined}
             disabled={disabled}
           >
             <FormControl>
