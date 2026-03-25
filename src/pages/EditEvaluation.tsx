@@ -14,6 +14,8 @@ import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
 import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
 import { TrainingFields } from './eval-sections/Training'
+import { AnthropometryFields } from './eval-sections/Anthropometry'
+import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
 import { Loader2, Info } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
@@ -63,6 +65,9 @@ export default function EditEvaluation() {
           periodo_treino: data.periodo_treino || '',
           objectives: data.objectives || [],
 
+          data_nascimento: parseOptionalDate(respostas.data_nascimento),
+          gender: respostas.gender || '',
+
           main_objective: respostas.main_objective || '',
           target_date: parseOptionalDate(respostas.target_date),
           training_frequency: respostas.training_frequency || '',
@@ -97,6 +102,33 @@ export default function EditEvaluation() {
           emergency_contact: respostas.emergency_contact || '',
           final_observations: respostas.final_observations || '',
           professor_observations: respostas.professor_observations || '',
+
+          anthropometry: respostas.anthropometry || {
+            weight: '',
+            height: '',
+            shoulders: '',
+            chest: '',
+            waist: '',
+            abdomen: '',
+            hips: '',
+            right_arm_relaxed: '',
+            right_arm_flexed: '',
+            right_forearm: '',
+            left_arm_relaxed: '',
+            left_arm_flexed: '',
+            left_forearm: '',
+            right_thigh: '',
+            right_calf: '',
+            left_thigh: '',
+            left_calf: '',
+          },
+          vo2_test: respostas.vo2_test || {
+            enabled: false,
+            bpm: 88,
+            beats_15s: '',
+            vo2_max: '',
+            classification: '',
+          },
 
           client_links: {
             symptoms: links.mapeamento_sintomas_url || '',
@@ -136,6 +168,12 @@ export default function EditEvaluation() {
         respostasToSave.target_date = null
       }
 
+      if (respostasToSave.data_nascimento && isValid(respostasToSave.data_nascimento)) {
+        respostasToSave.data_nascimento = format(respostasToSave.data_nascimento, 'yyyy-MM-dd')
+      } else {
+        respostasToSave.data_nascimento = null
+      }
+
       const avaliacao = {
         evo_id,
         nome_cliente,
@@ -164,7 +202,6 @@ export default function EditEvaluation() {
 
       toast({ title: 'Sucesso!', description: 'Avaliação atualizada com sucesso.' })
 
-      // Disparar automações de WhatsApp e fila de vídeos
       triggerPostSaveAutomation(id!).catch(console.error)
 
       navigate(`/evaluation/${id}`)
@@ -224,6 +261,8 @@ export default function EditEvaluation() {
             <CurrentLifestyleFields />
             <HealthFields />
             <TrainingFields />
+            <AnthropometryFields disabled={isProfessor} />
+            <VO2TestFields disabled={isProfessor} />
           </fieldset>
 
           <LinksFields isProfessor={isProfessor} isAvaliador={isAvaliador} />
