@@ -30,16 +30,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true
 
     const fetchProfile = async (userId: string) => {
-      const { data } = await supabase.from('users').select('*').eq('id', userId).single()
-      if (mounted) {
-        setProfile(data)
-        setLoading(false)
+      try {
+        const { data, error } = await supabase.from('users').select('*').eq('id', userId).single()
+        if (error) {
+          console.error('Error fetching profile:', error)
+        }
+        if (mounted) {
+          setProfile(data)
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Exception fetching profile:', err)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -51,17 +69,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     })
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          fetchProfile(session.user.id)
-        } else {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('Supabase auth error:', error)
+        }
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            fetchProfile(session.user.id)
+          } else {
+            setLoading(false)
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Supabase auth promise error:', err)
+        if (mounted) {
+          setSession(null)
+          setUser(null)
+          setProfile(null)
           setLoading(false)
         }
-      }
-    })
+      })
 
     return () => {
       mounted = false

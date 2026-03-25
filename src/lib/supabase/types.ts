@@ -503,6 +503,7 @@ export type Database = {
           nome: string
           pending_role: Database['public']['Enums']['user_role'] | null
           periodo: string | null
+          periodos: string[] | null
           role: Database['public']['Enums']['user_role']
           roles: string[] | null
           telefone: string | null
@@ -514,6 +515,7 @@ export type Database = {
           nome: string
           pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
+          periodos?: string[] | null
           role: Database['public']['Enums']['user_role']
           roles?: string[] | null
           telefone?: string | null
@@ -525,6 +527,7 @@ export type Database = {
           nome?: string
           pending_role?: Database['public']['Enums']['user_role'] | null
           periodo?: string | null
+          periodos?: string[] | null
           role?: Database['public']['Enums']['user_role']
           roles?: string[] | null
           telefone?: string | null
@@ -891,6 +894,7 @@ export const Constants = {
 //   foto_url: text (nullable)
 //   pending_role: user_role (nullable)
 //   roles: _text (nullable, default: '{}'::text[])
+//   periodos: _text (nullable, default: '{}'::text[])
 // Table: video_automations_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   dias_trigger: integer (not null)
@@ -1051,17 +1055,18 @@ export const Constants = {
 //   DECLARE
 //     selected_prof_id UUID;
 //   BEGIN
-//     NEW.status := 'pendente';
-//
-//     IF NEW.professor_id IS NULL THEN
+//     -- Só distribui se for uma avaliação real (não pré-avaliação) e se não tiver professor
+//     IF NEW.is_pre_avaliacao = false AND NEW.professor_id IS NULL AND NEW.periodo_treino IS NOT NULL THEN
+//       -- Tenta encontrar um professor que tenha o período correspondente nos seus periodos
 //       SELECT u.id INTO selected_prof_id
 //       FROM public.users u
 //       LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//       WHERE 'professor' = ANY(u.roles) AND u.periodo = NEW.periodo_treino
+//       WHERE 'professor' = ANY(u.roles) AND NEW.periodo_treino = ANY(u.periodos)
 //       GROUP BY u.id
 //       ORDER BY COUNT(a.id) ASC
 //       LIMIT 1;
 //
+//       -- Se não encontrar por período, pega qualquer professor com menos avaliações
 //       IF selected_prof_id IS NULL THEN
 //         SELECT u.id INTO selected_prof_id
 //         FROM public.users u
@@ -1073,6 +1078,11 @@ export const Constants = {
 //       END IF;
 //
 //       NEW.professor_id := selected_prof_id;
+//     END IF;
+//
+//     -- Define status inicial se estiver nulo e não for pré-avaliação
+//     IF NEW.status IS NULL AND NEW.is_pre_avaliacao = false THEN
+//       NEW.status := 'pendente';
 //     END IF;
 //
 //     RETURN NEW;
@@ -1101,6 +1111,7 @@ export const Constants = {
 //   AS $function$
 //   DECLARE
 //     v_roles text[];
+//     v_periodos text[];
 //   BEGIN
 //     IF NEW.raw_user_meta_data->>'nome' IS NOT NULL THEN
 //
@@ -1113,7 +1124,14 @@ export const Constants = {
 //         v_roles := ARRAY['professor'];
 //       END IF;
 //
-//       INSERT INTO public.users (id, email, nome, telefone, role, roles, periodo)
+//       -- Trata o array de periodos
+//       IF NEW.raw_user_meta_data->'periodos' IS NOT NULL AND jsonb_array_length(NEW.raw_user_meta_data->'periodos') > 0 THEN
+//         SELECT array_agg(x::text) INTO v_periodos FROM jsonb_array_elements_text(NEW.raw_user_meta_data->'periodos') x;
+//       ELSE
+//         v_periodos := '{}'::text[];
+//       END IF;
+//
+//       INSERT INTO public.users (id, email, nome, telefone, role, roles, periodo, periodos)
 //       VALUES (
 //         NEW.id,
 //         NEW.email,
@@ -1121,10 +1139,12 @@ export const Constants = {
 //         NEW.raw_user_meta_data->>'telefone',
 //         (v_roles[1])::public.user_role,
 //         v_roles,
-//         NEW.raw_user_meta_data->>'periodo'
+//         NEW.raw_user_meta_data->>'periodo',
+//         v_periodos
 //       )
 //       ON CONFLICT (id) DO UPDATE SET
 //         periodo = EXCLUDED.periodo,
+//         periodos = EXCLUDED.periodos,
 //         roles = EXCLUDED.roles,
 //         nome = EXCLUDED.nome,
 //         telefone = EXCLUDED.telefone;
@@ -1287,7 +1307,7 @@ export const Constants = {
 //   on_acompanhamento_change_log: CREATE TRIGGER on_acompanhamento_change_log AFTER INSERT OR UPDATE ON public.avaliacao_acompanhamentos FOR EACH ROW EXECUTE FUNCTION log_acompanhamento_changes()
 // Table: avaliacoes
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
-//   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
+//   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT OR UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
 // Table: users
 //   trg_prevent_role_update: CREATE TRIGGER trg_prevent_role_update BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION prevent_role_update()
