@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
+import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -106,7 +107,7 @@ export default function CoordinatorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
     toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
   }
@@ -131,8 +132,10 @@ export default function CoordinatorDashboard() {
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold">Painel do Coordenador</h1>
+        <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
       </div>
+
+      {evaluations.length > 0 && <DashboardCharts data={evaluations} />}
 
       {lateEvals.length > 0 && (
         <Alert
@@ -168,40 +171,33 @@ export default function CoordinatorDashboard() {
           <TableHeader className="bg-muted/30">
             <TableRow>
               <TableHead className="min-w-[220px]">Nome do Cliente</TableHead>
-              <TableHead className="whitespace-nowrap">Data da Avaliação</TableHead>
+              <TableHead className="whitespace-nowrap">Data Avaliação</TableHead>
               <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
-              <TableHead className="whitespace-nowrap">Período de Treino</TableHead>
+              <TableHead className="whitespace-nowrap">Professor</TableHead>
+              <TableHead className="whitespace-nowrap">Período</TableHead>
               <TableHead className="whitespace-nowrap">Status</TableHead>
-              <TableHead className="whitespace-nowrap">Prazo</TableHead>
-              <TableHead className="whitespace-nowrap">Acompanhamento</TableHead>
+              <TableHead className="whitespace-nowrap">Prazo (Treino)</TableHead>
+              <TableHead className="whitespace-nowrap">Ações</TableHead>
               <TableHead className="whitespace-nowrap text-right">Links</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((ev) => {
               const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao
-                ? new Date(ev.data_avaliacao + 'T00:00:00')
-                : new Date()
-              const deadline = ev.data_avaliacao
-                ? calculateDeadline(ev.data_avaliacao, 3)
-                : new Date()
+              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
+              const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
+
+              const deadline = ev.data_avaliacao ? calculateDeadline(ev.data_avaliacao, 3) : null
               const isLate =
-                !ev.is_pre_avaliacao &&
-                ev.data_avaliacao &&
-                isAfter(today, deadline) &&
-                ev.status !== 'concluido'
+                !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
-              const isNotExecuted =
-                ev.is_pre_avaliacao || !ev.data_avaliacao || ev.status === 'pendente'
-
-              const daysSinceEval = differenceInDays(today, evalDate)
               let reevalColorClass = ''
               let reevalDotClass = ''
               let isPulsing = false
 
-              if (!ev.is_pre_avaliacao && ev.data_reavaliacao) {
+              if (!isPre && ev.data_reavaliacao && evalDate) {
+                const daysSinceEval = differenceInDays(today, evalDate)
                 if (daysSinceEval <= 29) {
                   reevalColorClass = 'text-primary'
                   reevalDotClass = 'bg-primary'
@@ -267,14 +263,16 @@ export default function CoordinatorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted ? (
+                    {isPre ? (
                       <span className="text-muted-foreground">-</span>
-                    ) : (
+                    ) : evalDate ? (
                       format(evalDate, 'dd/MM/yyyy')
+                    ) : (
+                      '-'
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted || !ev.data_reavaliacao ? (
+                    {isPre || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div
@@ -286,9 +284,21 @@ export default function CoordinatorDashboard() {
                       >
                         <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
                         <span>
-                          {format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
+                          {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
                         </span>
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {ev.professor?.nome ? (
+                      <Badge
+                        variant="outline"
+                        className="font-normal bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
+                      >
+                        {ev.professor.nome}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm italic">Não atribuído</span>
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{ev.periodo_treino || '-'}</TableCell>
@@ -299,7 +309,7 @@ export default function CoordinatorDashboard() {
                     >
                       <SelectTrigger
                         className={cn(
-                          'w-[140px] h-8 text-xs font-semibold',
+                          'w-[130px] h-8 text-xs font-semibold',
                           (!ev.status || ev.status === 'pendente') &&
                             'border-amber-500/30 text-amber-500 bg-amber-500/10',
                           ev.status === 'em_progresso' &&
@@ -318,7 +328,7 @@ export default function CoordinatorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted ? (
+                    {isPre || !deadline ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div className="flex items-center gap-2 font-medium">
@@ -444,7 +454,7 @@ export default function CoordinatorDashboard() {
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   Nenhuma avaliação encontrada.
                 </TableCell>
               </TableRow>

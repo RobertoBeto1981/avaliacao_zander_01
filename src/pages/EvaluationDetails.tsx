@@ -93,7 +93,10 @@ export default function EvaluationDetails() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, '_blank')
+    window.open(
+      `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(text)}`,
+      '_blank',
+    )
   }
 
   return (

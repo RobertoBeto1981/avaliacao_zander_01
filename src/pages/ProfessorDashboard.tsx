@@ -118,7 +118,7 @@ export default function ProfessorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
     toast({
       title: 'WhatsApp Aberto',
@@ -220,35 +220,27 @@ export default function ProfessorDashboard() {
               <TableHead className="whitespace-nowrap">Período de Treino</TableHead>
               <TableHead className="whitespace-nowrap">Treino</TableHead>
               <TableHead className="whitespace-nowrap">Prazo</TableHead>
-              <TableHead className="whitespace-nowrap">Acompanhamento</TableHead>
+              <TableHead className="whitespace-nowrap">Ações</TableHead>
               <TableHead className="whitespace-nowrap text-right">Links</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((ev) => {
               const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao
-                ? new Date(ev.data_avaliacao + 'T00:00:00')
-                : new Date()
-              const deadline = ev.data_avaliacao
-                ? calculateDeadline(ev.data_avaliacao, 3)
-                : new Date()
+              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
+              const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
+
+              const deadline = ev.data_avaliacao ? calculateDeadline(ev.data_avaliacao, 3) : null
               const isLate =
-                !ev.is_pre_avaliacao &&
-                ev.data_avaliacao &&
-                isAfter(today, deadline) &&
-                ev.status !== 'concluido'
+                !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
-              const isNotExecuted =
-                ev.is_pre_avaliacao || !ev.data_avaliacao || ev.status === 'pendente'
-
-              const daysSinceEval = differenceInDays(today, evalDate)
               let reevalColorClass = ''
               let reevalDotClass = ''
               let isPulsing = false
 
-              if (!ev.is_pre_avaliacao && ev.data_reavaliacao) {
+              if (!isPre && ev.data_reavaliacao && evalDate) {
+                const daysSinceEval = differenceInDays(today, evalDate)
                 if (daysSinceEval <= 29) {
                   reevalColorClass = 'text-primary'
                   reevalDotClass = 'bg-primary'
@@ -319,14 +311,16 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted ? (
+                    {isPre ? (
                       <span className="text-muted-foreground">-</span>
-                    ) : (
+                    ) : evalDate ? (
                       format(evalDate, 'dd/MM/yyyy')
+                    ) : (
+                      '-'
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted || !ev.data_reavaliacao ? (
+                    {isPre || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div
@@ -338,7 +332,7 @@ export default function ProfessorDashboard() {
                       >
                         <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
                         <span>
-                          {format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
+                          {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
                         </span>
                       </div>
                     )}
@@ -370,7 +364,7 @@ export default function ProfessorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted ? (
+                    {isPre || !deadline ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div className="flex items-center gap-2 font-medium">

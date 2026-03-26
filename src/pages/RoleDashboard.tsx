@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
+import { format, startOfDay, differenceInDays } from 'date-fns'
 import {
   FileText,
   HeartPulse,
@@ -126,25 +126,23 @@ export default function RoleDashboard() {
               <TableHead className="whitespace-nowrap">Data Avaliação</TableHead>
               <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
               <TableHead className="whitespace-nowrap">Status</TableHead>
-              <TableHead className="whitespace-nowrap">Acompanhamento</TableHead>
+              <TableHead className="whitespace-nowrap">Ações</TableHead>
               <TableHead className="whitespace-nowrap text-right">Links</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((ev) => {
               const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao
-                ? new Date(ev.data_avaliacao + 'T00:00:00')
-                : new Date()
-              const isNotExecuted =
-                ev.is_pre_avaliacao || !ev.data_avaliacao || ev.status === 'pendente'
+              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
+              const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
               const links = ev.links_avaliacao?.[0] || {}
 
-              const daysSinceEval = differenceInDays(today, evalDate)
-              let reevalColorClass = '',
-                reevalDotClass = '',
-                isPulsing = false
-              if (!ev.is_pre_avaliacao && ev.data_reavaliacao) {
+              let reevalColorClass = ''
+              let reevalDotClass = ''
+              let isPulsing = false
+
+              if (!isPre && ev.data_reavaliacao && evalDate) {
+                const daysSinceEval = differenceInDays(today, evalDate)
                 if (daysSinceEval <= 29) {
                   reevalColorClass = 'text-primary'
                   reevalDotClass = 'bg-primary'
@@ -203,14 +201,16 @@ export default function RoleDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted ? (
+                    {isPre ? (
                       <span className="text-muted-foreground">-</span>
-                    ) : (
+                    ) : evalDate ? (
                       format(evalDate, 'dd/MM/yyyy')
+                    ) : (
+                      '-'
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isNotExecuted || !ev.data_reavaliacao ? (
+                    {isPre || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div
@@ -222,7 +222,7 @@ export default function RoleDashboard() {
                       >
                         <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
                         <span>
-                          {format(new Date(ev.data_reavaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
+                          {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
                         </span>
                       </div>
                     )}

@@ -119,25 +119,34 @@ export default function Layout() {
 
                   {isCoordenador && (
                     <>
+                      <Link
+                        to="/coordinator"
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                          location.pathname === '/coordinator'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+
                       <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-1.5 text-sm font-medium transition-colors text-muted-foreground hover:text-primary outline-none">
-                          Painéis da Equipe <ChevronDown className="w-3.5 h-3.5" />
+                          Outros Painéis <ChevronDown className="w-3.5 h-3.5" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem asChild>
-                            <Link to="/coordinator">Coordenador</Link>
+                            <Link to="/professor">Painel Professor</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/professor">Professor</Link>
+                            <Link to="/avaliador">Painel Avaliador</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/avaliador">Avaliador</Link>
+                            <Link to="/fisioterapeuta">Painel Fisio</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to="/fisioterapeuta">Fisioterapeuta</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/nutricionista">Nutricionista</Link>
+                            <Link to="/nutricionista">Painel Nutri</Link>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
