@@ -58,7 +58,7 @@ export default function EvaluationDetails() {
   }
 
   return (
-    <div className="container mx-auto py-8 animate-fade-in print:p-0 print:m-0">
+    <div className="container mx-auto py-8 animate-fade-in print:py-4 print:px-0">
       <div className="flex flex-wrap gap-4 items-center justify-between mb-6 print:hidden">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
@@ -76,7 +76,7 @@ export default function EvaluationDetails() {
             className="border-primary/50 text-primary hover:bg-primary/10"
           >
             <Printer className="w-4 h-4 mr-2" />
-            Imprimir Relatório (A4)
+            Gerar PDF
           </Button>
           <Button variant="outline" onClick={() => setHistoryOpen(true)}>
             Histórico
@@ -104,19 +104,22 @@ export default function EvaluationDetails() {
         </div>
       </div>
 
-      <div className="print:block hidden mb-4 text-center border-b pb-4">
-        <h1 className="text-2xl font-bold uppercase">Relatório de Avaliação Física</h1>
+      <div className="print:block hidden mb-6 text-center border-b border-border/50 pb-4">
+        <h1 className="text-2xl font-bold uppercase text-foreground">
+          Relatório de Avaliação Física
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">Academia ZANDER</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-2 print:text-[11px] text-sm">
-        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
-          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+      {/* Alterado para print:flex print:flex-col para permitir paginação correta sem cortar */}
+      <div className="grid md:grid-cols-2 gap-4 print:flex print:flex-col print:gap-5 print:text-[13px] text-sm">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Identificação
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
             <p>
               <strong>Nome:</strong> {data.nome_cliente}
             </p>
@@ -144,13 +147,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
-          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Treinamento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
             <p>
               <strong>Objetivos:</strong> {data.objectives?.join(', ') || '-'}
             </p>
@@ -172,13 +175,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
-          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Saúde e Estilo de Vida
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
             <p>
               <strong>Refeições/dia:</strong> {respostas.meals_per_day || '-'}
             </p>
@@ -218,13 +221,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
-          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Antropometria
             </CardTitle>
           </CardHeader>
-          <CardContent className="py-3 print:py-1 print:px-2">
+          <CardContent className="py-3 print:py-2 print:px-3">
             <div className="grid grid-cols-2 gap-2">
               <p>
                 <strong>Peso:</strong> {anthropometry.weight ? `${anthropometry.weight} kg` : '-'}
@@ -262,13 +265,13 @@ export default function EvaluationDetails() {
         </Card>
 
         {vo2Test.enabled && (
-          <Card className="print:shadow-none print:border-border/50 md:col-span-2 print:col-span-2 break-inside-avoid">
-            <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-              <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+          <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:col-span-1 break-inside-avoid print:break-inside-avoid">
+            <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+              <CardTitle className="text-base print:text-sm uppercase tracking-wider">
                 Teste de VO² (Step Test)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2 flex flex-wrap gap-x-12 gap-y-2">
+            <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 flex flex-wrap gap-x-12 gap-y-2">
               <p>
                 <strong>Batimentos (15s):</strong> {vo2Test.beats_15s || '-'}
               </p>
@@ -286,13 +289,13 @@ export default function EvaluationDetails() {
           </Card>
         )}
 
-        <Card className="print:shadow-none print:border-border/50 md:col-span-2 print:col-span-2 break-inside-avoid">
-          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
-            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:col-span-1 break-inside-avoid print:break-inside-avoid">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Observações do Avaliador
             </CardTitle>
           </CardHeader>
-          <CardContent className="py-3 print:py-1 print:px-2">
+          <CardContent className="py-3 print:py-2 print:px-3">
             <p className="whitespace-pre-wrap">
               {respostas.final_observations || 'Nenhuma observação registrada.'}
             </p>

@@ -125,11 +125,11 @@ export default function ProfessorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
     toast({
       title: 'WhatsApp Aberto',
-      description: 'A janela do WhatsApp foi aberta no seu dispositivo.',
+      description: 'A janela do WhatsApp Web foi aberta no seu dispositivo.',
     })
   }
 

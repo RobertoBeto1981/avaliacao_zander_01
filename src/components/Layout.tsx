@@ -8,8 +8,8 @@ import {
   AlertCircle,
   UserCircle,
   MessageSquare,
-  PieChart,
   Video,
+  ChevronDown,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -28,6 +28,15 @@ export default function Layout() {
   const location = useLocation()
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
 
+  const isDashboardRoute = [
+    '/',
+    '/coordinator',
+    '/professor',
+    '/avaliador',
+    '/fisioterapeuta',
+    '/nutricionista',
+  ].includes(location.pathname)
+
   return (
     <main className="flex flex-col min-h-screen bg-background">
       {!isAuthPage && (
@@ -43,57 +52,39 @@ export default function Layout() {
                 <nav className="hidden md:flex items-center gap-6">
                   <Link
                     to="/"
-                    className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                      isDashboardRoute ? 'text-primary' : 'text-muted-foreground'
+                    }`}
                   >
+                    <LayoutDashboard className="w-4 h-4" />
                     Início
                   </Link>
-                  {profile && profile.role === 'coordenador' && (
-                    <Link
-                      to="/coordinator"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/coordinator' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <PieChart className="w-4 h-4" />
-                      Dashboard
-                    </Link>
-                  )}
-                  {profile && profile.role === 'professor' && (
-                    <Link
-                      to="/professor"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/professor' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Painel do Professor
-                    </Link>
-                  )}
-                  {profile && profile.role === 'avaliador' && (
-                    <Link
-                      to="/avaliador"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/avaliador' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Painel do Avaliador
-                    </Link>
-                  )}
-                  {profile && profile.role === 'fisioterapeuta' && (
-                    <Link
-                      to="/fisioterapeuta"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/fisioterapeuta' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Painel do Fisioterapeuta
-                    </Link>
-                  )}
-                  {profile && profile.role === 'nutricionista' && (
-                    <Link
-                      to="/nutricionista"
-                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/nutricionista' ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Painel do Nutricionista
-                    </Link>
-                  )}
-                  {profile && profile.role === 'coordenador' && (
+
+                  {profile && profile.roles?.includes('coordenador') && (
                     <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="flex items-center gap-1.5 text-sm font-medium transition-colors text-muted-foreground hover:text-primary outline-none">
+                          Painéis da Equipe <ChevronDown className="w-3.5 h-3.5" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link to="/coordinator">Coordenador</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/professor">Professor</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/avaliador">Avaliador</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/fisioterapeuta">Fisioterapeuta</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/nutricionista">Nutricionista</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                       <Link
                         to="/communications"
                         className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
