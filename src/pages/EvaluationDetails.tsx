@@ -5,7 +5,16 @@ import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Edit, MessageSquare, Repeat, Printer, History } from 'lucide-react'
+import {
+  Loader2,
+  ArrowLeft,
+  Edit,
+  MessageSquare,
+  Repeat,
+  Printer,
+  History,
+  MessageCircle,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
@@ -47,14 +56,44 @@ export default function EvaluationDetails() {
   const anthropometry = respostas.anthropometry || {}
   const vo2Test = respostas.vo2_test || {}
 
+  const parseDateString = (dateStr: any) => {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    return isValid(d) ? d : null
+  }
+
   const evalDate = data.data_avaliacao ? new Date(data.data_avaliacao + 'T12:00:00') : null
   const reevalDate = data.data_reavaliacao ? new Date(data.data_reavaliacao + 'T12:00:00') : null
-  const dobDate = respostas.data_nascimento
-    ? new Date(respostas.data_nascimento + 'T12:00:00')
-    : null
+  const dobDate = parseDateString(respostas.data_nascimento)
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleWhatsApp = () => {
+    if (!data.telefone_cliente) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Cliente sem telefone cadastrado.',
+      })
+      return
+    }
+    const phone = data.telefone_cliente.replace(/\D/g, '')
+    const number = phone.startsWith('55') ? phone : `55${phone}`
+    const links = data.links_avaliacao?.[0] || {}
+
+    let text = `Olá *${data.nome_cliente.split(' ')[0]}*, tudo bem?\n\nAqui estão os links para a sua avaliação física:\n\n`
+    if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) text += `⚖️ *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
+    if (links.relatorio_pdf_url) text += `📄 *Relatório PDF:* ${links.relatorio_pdf_url}\n`
+
+    text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
+
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   return (
@@ -70,6 +109,14 @@ export default function EvaluationDetails() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30 print:hidden"
+            onClick={handleWhatsApp}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            WhatsApp
+          </Button>
           <Button
             variant="outline"
             onClick={handlePrint}
@@ -104,6 +151,89 @@ export default function EvaluationDetails() {
           </Button>
         </div>
       </div>
+
+      {data.links_avaliacao && data.links_avaliacao.length > 0 && (
+        <Card className="print:hidden mb-6 border-blue-100 dark:border-blue-900 shadow-sm">
+          <CardHeader className="py-3 bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900">
+            <CardTitle className="text-base uppercase tracking-wider text-blue-700 dark:text-blue-400">
+              Links da Avaliação
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-4 flex flex-wrap gap-3">
+            {data.links_avaliacao[0].anamnese_url && (
+              <a
+                href={data.links_avaliacao[0].anamnese_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+              >
+                📝 Anamnese
+              </a>
+            )}
+            {data.links_avaliacao[0].mapeamento_sintomas_url && (
+              <a
+                href={data.links_avaliacao[0].mapeamento_sintomas_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+              >
+                🔍 Sintomas
+              </a>
+            )}
+            {data.links_avaliacao[0].mapeamento_dor_url && (
+              <a
+                href={data.links_avaliacao[0].mapeamento_dor_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+              >
+                🎯 Mapa de Dor
+              </a>
+            )}
+            {data.links_avaliacao[0].bia_url && (
+              <a
+                href={data.links_avaliacao[0].bia_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+              >
+                ⚖️ BIA
+              </a>
+            )}
+            {data.links_avaliacao[0].my_score_url && (
+              <a
+                href={data.links_avaliacao[0].my_score_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+              >
+                📊 My Score
+              </a>
+            )}
+            {data.links_avaliacao[0].relatorio_pdf_url && (
+              <a
+                href={data.links_avaliacao[0].relatorio_pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60 font-medium"
+              >
+                📄 Relatório PDF
+              </a>
+            )}
+
+            {!data.links_avaliacao[0].anamnese_url &&
+              !data.links_avaliacao[0].mapeamento_sintomas_url &&
+              !data.links_avaliacao[0].mapeamento_dor_url &&
+              !data.links_avaliacao[0].bia_url &&
+              !data.links_avaliacao[0].my_score_url &&
+              !data.links_avaliacao[0].relatorio_pdf_url && (
+                <span className="text-muted-foreground text-sm italic">
+                  Nenhum link gerado. Edite a avaliação para adicionar.
+                </span>
+              )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="print:block hidden mb-6 text-center border-b border-border/50 pb-4">
         <h1 className="text-2xl font-bold uppercase text-foreground">
@@ -171,6 +301,42 @@ export default function EvaluationDetails() {
             </p>
             <p>
               <strong>Modalidades:</strong> {respostas.modalities || '-'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+              Preferências de Treino
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
+            <p>
+              <strong>Dias Disponíveis:</strong> {respostas.available_days?.join(', ') || '-'}
+            </p>
+            <p>
+              <strong>Tempo por Sessão:</strong> {respostas.session_duration || '-'}
+            </p>
+            <p>
+              <strong>Como soube da academia:</strong> {respostas.discovery_source || '-'}
+            </p>
+            <p>
+              <strong>Gosta de Treinar:</strong> {respostas.enjoys_training?.join(', ') || '-'}
+            </p>
+            <p>
+              <strong>Incomoda no espelho:</strong>{' '}
+              {respostas.dislikes_looking_at?.join(', ') || '-'}
+            </p>
+            <p>
+              <strong>Não gosta de Treinar:</strong>{' '}
+              {respostas.dislikes_training?.join(', ') || '-'}
+            </p>
+            <p>
+              <strong>Exercícios Favoritos:</strong> {respostas.favorite_exercises || '-'}
+            </p>
+            <p>
+              <strong>Exercícios que não gosta:</strong> {respostas.hated_exercises || '-'}
             </p>
           </CardContent>
         </Card>
