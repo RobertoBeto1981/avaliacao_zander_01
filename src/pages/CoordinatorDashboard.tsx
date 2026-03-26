@@ -106,9 +106,9 @@ export default function CoordinatorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
-    toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp Web foi aberta.' })
+    toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
   }
 
   const filtered = useMemo(() => {
@@ -372,7 +372,7 @@ export default function CoordinatorDashboard() {
                               <MessageCircle className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Enviar links via WhatsApp Web</TooltipContent>
+                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
                         </Tooltip>
                       )}
                       <Tooltip>

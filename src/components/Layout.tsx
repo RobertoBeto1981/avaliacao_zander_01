@@ -10,6 +10,9 @@ import {
   MessageSquare,
   Video,
   ChevronDown,
+  ClipboardCheck,
+  ActivitySquare,
+  Utensils,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -28,14 +31,12 @@ export default function Layout() {
   const location = useLocation()
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
 
-  const isDashboardRoute = [
-    '/',
-    '/coordinator',
-    '/professor',
-    '/avaliador',
-    '/fisioterapeuta',
-    '/nutricionista',
-  ].includes(location.pathname)
+  const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+  const isCoordenador = userRoles.includes('coordenador')
+  const isProfessor = userRoles.includes('professor')
+  const isAvaliador = userRoles.includes('avaliador')
+  const isFisio = userRoles.includes('fisioterapeuta')
+  const isNutri = userRoles.includes('nutricionista')
 
   return (
     <main className="flex flex-col min-h-screen bg-background">
@@ -49,18 +50,74 @@ export default function Layout() {
               </Link>
 
               {user && (
-                <nav className="hidden md:flex items-center gap-6">
+                <nav className="hidden md:flex items-center gap-4 lg:gap-6">
                   <Link
                     to="/"
                     className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
-                      isDashboardRoute ? 'text-primary' : 'text-muted-foreground'
+                      location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
                     }`}
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     Início
                   </Link>
 
-                  {profile && profile.roles?.includes('coordenador') && (
+                  {isProfessor && !isCoordenador && (
+                    <Link
+                      to="/professor"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                        location.pathname === '/professor'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <Dumbbell className="w-4 h-4" />
+                      Painel do Professor
+                    </Link>
+                  )}
+
+                  {isAvaliador && !isCoordenador && (
+                    <Link
+                      to="/avaliador"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                        location.pathname === '/avaliador'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      Painel do Avaliador
+                    </Link>
+                  )}
+
+                  {isFisio && !isCoordenador && (
+                    <Link
+                      to="/fisioterapeuta"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                        location.pathname === '/fisioterapeuta'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <ActivitySquare className="w-4 h-4" />
+                      Painel Fisio
+                    </Link>
+                  )}
+
+                  {isNutri && !isCoordenador && (
+                    <Link
+                      to="/nutricionista"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                        location.pathname === '/nutricionista'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <Utensils className="w-4 h-4" />
+                      Painel Nutri
+                    </Link>
+                  )}
+
+                  {isCoordenador && (
                     <>
                       <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-1.5 text-sm font-medium transition-colors text-muted-foreground hover:text-primary outline-none">

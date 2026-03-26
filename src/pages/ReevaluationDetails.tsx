@@ -62,7 +62,7 @@ export default function ReevaluationDetails() {
 
     const fileName = getFileName()
     const text = `Olá ${data.avaliacao.nome_cliente.split(' ')[0]}, segue o seu Relatório de Evolução!\n\n(Por favor, anexe o arquivo gerado: ${fileName}.pdf)`
-    const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
   }
 
@@ -126,7 +126,7 @@ export default function ReevaluationDetails() {
         </div>
       </div>
 
-      <Card className="border-border/50">
+      <Card className="border-border/50 print:break-inside-avoid">
         <CardHeader>
           <CardTitle className="text-xl">Evolução do Aluno</CardTitle>
         </CardHeader>
@@ -178,7 +178,7 @@ export default function ReevaluationDetails() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
+      <Card className="border-border/50 print:break-inside-avoid">
         <CardHeader>
           <CardTitle className="text-xl">Novas Respostas (Anamnese)</CardTitle>
         </CardHeader>

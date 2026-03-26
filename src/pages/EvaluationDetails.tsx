@@ -79,6 +79,7 @@ export default function EvaluationDetails() {
             Gerar PDF
           </Button>
           <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+            <History className="w-4 h-4 mr-2" />
             Histórico
           </Button>
           <Button
@@ -111,9 +112,8 @@ export default function EvaluationDetails() {
         <p className="text-sm text-muted-foreground mt-1">Academia ZANDER</p>
       </div>
 
-      {/* Alterado para print:flex print:flex-col para permitir paginação correta sem cortar */}
-      <div className="grid md:grid-cols-2 gap-4 print:flex print:flex-col print:gap-5 print:text-[13px] text-sm">
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+      <div className="grid md:grid-cols-2 gap-4 print:block print:space-y-6 print:text-[13px] text-sm">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Identificação
@@ -147,7 +147,7 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Treinamento
@@ -175,7 +175,7 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Saúde e Estilo de Vida
@@ -221,7 +221,7 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent break-inside-avoid print:break-inside-avoid">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Antropometria
@@ -265,7 +265,7 @@ export default function EvaluationDetails() {
         </Card>
 
         {vo2Test.enabled && (
-          <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:col-span-1 break-inside-avoid print:break-inside-avoid">
+          <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:break-inside-avoid print:mb-6">
             <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
               <CardTitle className="text-base print:text-sm uppercase tracking-wider">
                 Teste de VO² (Step Test)
@@ -289,7 +289,7 @@ export default function EvaluationDetails() {
           </Card>
         )}
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:col-span-1 break-inside-avoid print:break-inside-avoid">
+        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider">
               Observações do Avaliador

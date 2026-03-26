@@ -63,20 +63,13 @@ export default function ProfessorDashboard() {
   const { profile } = useAuth()
 
   const isCoordenador = profile?.role === 'coordenador'
-  const isProfessor = profile?.role === 'professor'
+  const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
 
   const loadData = async () => {
     try {
       const data = await getEvaluations()
-      if (isCoordenador) {
-        setEvaluations(data)
-      } else {
-        setEvaluations(
-          data.filter(
-            (ev: any) => ev.professor_id === profile?.id || ev.avaliador_id === profile?.id,
-          ),
-        )
-      }
+      // Filtra apenas os alunos que foram atribuídos a ESTE professor específico
+      setEvaluations(data.filter((ev: any) => ev.professor_id === profile?.id))
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
@@ -125,11 +118,11 @@ export default function ProfessorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
     toast({
       title: 'WhatsApp Aberto',
-      description: 'A janela do WhatsApp Web foi aberta no seu dispositivo.',
+      description: 'A janela do WhatsApp foi aberta.',
     })
   }
 
@@ -160,7 +153,12 @@ export default function ProfessorDashboard() {
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold">Painel do Professor</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Meu Painel de Professor</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Exibindo exclusivamente os alunos distribuídos para você montar o treino.
+          </p>
+        </div>
         {isProfessor && (
           <Button onClick={() => setIsNewStudentOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -429,7 +427,7 @@ export default function ProfessorDashboard() {
                               <MessageCircle className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Enviar links via WhatsApp Web</TooltipContent>
+                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
                         </Tooltip>
                       )}
 
@@ -504,7 +502,7 @@ export default function ProfessorDashboard() {
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  Nenhuma avaliação encontrada.
+                  Nenhuma avaliação atribuída a você no momento.
                 </TableCell>
               </TableRow>
             )}
