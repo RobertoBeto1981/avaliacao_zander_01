@@ -64,8 +64,10 @@ export default function NewReevaluation() {
           telefone_cliente: data.telefone_cliente || '',
           data_avaliacao: new Date(), // Hoje
           data_reavaliacao: new Date(new Date().setDate(new Date().getDate() + 90)), // +90 dias
-          data_nascimento: data.data_nascimento ? new Date(data.data_nascimento) : undefined,
-          gender: data.gender || '',
+          data_nascimento: respostas.data_nascimento
+            ? new Date(respostas.data_nascimento)
+            : undefined,
+          gender: respostas.gender || '',
 
           // Demais campos não são preenchidos na reavaliação para obrigar o avaliador a perguntar
           periodo_treino: '',
@@ -186,7 +188,8 @@ export default function NewReevaluation() {
         <p className="text-sm">
           Atenção: Os campos de anamnese estão em branco para que você pergunte novamente ao
           cliente. O selo <strong>Ant: valor</strong> exibe a resposta exata da última avaliação
-          para auxiliar na comparação.
+          para auxiliar na comparação. A data de nascimento e o gênero foram preenchidos
+          automaticamente.
         </p>
       </div>
 

@@ -1,555 +1,319 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { format, isValid } from 'date-fns'
 import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
-import { Loader2, ArrowLeft, MessageCircle, FileText } from 'lucide-react'
-import { useAuth } from '@/hooks/use-auth'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, ArrowLeft, Edit, MessageSquare, Repeat, Printer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { format, differenceInYears, isValid } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
-
-const formatChoiceObj = (obj: any) => {
-  if (!obj) return '-'
-  let res = ''
-  if (obj.choice !== undefined) {
-    if (typeof obj.choice === 'boolean') {
-      res = obj.choice ? 'Sim' : 'Não'
-    } else {
-      res = obj.choice
-    }
-  } else if (obj.choices) {
-    res = obj.choices.join(', ')
-  }
-
-  const extras = [obj.list, obj.reason, obj.amount, obj.other, obj.observation, obj.notes].filter(
-    Boolean,
-  )
-  if (extras.length > 0) {
-    res += res ? ` - ${extras.join(', ')}` : extras.join(', ')
-  }
-  return res || '-'
-}
-
-const formatValue = (val: any) => {
-  if (val === undefined || val === null || val === '') return '-'
-  if (typeof val === 'boolean') return val ? 'Sim' : 'Não'
-  if (Array.isArray(val)) return val.length > 0 ? val.join(', ') : '-'
-  return String(val)
-}
-
-const Section = ({ title, children, className }: any) => (
-  <div
-    className={cn(
-      'rounded-xl border border-border bg-card text-card-foreground shadow-sm break-inside-avoid mb-6',
-      'print:rounded-md print:border-gray-300 print:shadow-none print:mb-3 print:bg-transparent',
-      className,
-    )}
-  >
-    <div className="px-6 py-4 border-b border-border/50 bg-muted/30 print:bg-gray-100/50 print:border-gray-300 print:px-3 print:py-1.5">
-      <h3 className="text-lg font-semibold text-primary print:text-black print:text-[11px] print:font-bold print:uppercase print:tracking-wider">
-        {title}
-      </h3>
-    </div>
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 print:px-3 print:py-2.5 print:grid-cols-4 print:gap-x-4 print:gap-y-3">
-      {children}
-    </div>
-  </div>
-)
-
-const PrintField = ({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: React.ReactNode
-  className?: string
-}) => (
-  <div className={cn('flex flex-col', className)}>
-    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 print:text-[8px] print:text-gray-500 print:mb-0.5 print:leading-tight">
-      {label}
-    </span>
-    <span className="font-medium text-sm text-foreground whitespace-pre-wrap print:text-[10px] print:leading-snug print:text-black">
-      {value || '-'}
-    </span>
-  </div>
-)
+import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
+import { HistoryDialog } from '@/components/HistoryDialog'
 
 export default function EvaluationDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { profile } = useAuth()
   const { toast } = useToast()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-
-  const canSendWhatsApp = profile?.role === 'coordenador' || profile?.role === 'avaliador'
+  const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
-    getEvaluationById(id)
-      .then(setData)
-      .catch((err) => {
-        toast({ title: 'Erro', description: err.message, variant: 'destructive' })
-        navigate(-1)
-      })
-      .finally(() => setLoading(false))
-  }, [id, toast, navigate])
-
-  const getValidDate = (
-    dateStr: string | null | undefined,
-    fallbackStr?: string | null | undefined,
-  ) => {
-    if (dateStr && isValid(new Date(dateStr))) return new Date(dateStr)
-    if (fallbackStr && isValid(new Date(fallbackStr))) return new Date(fallbackStr)
-    return new Date()
-  }
-
-  const getFileName = () => {
-    if (!data) return 'AVALIACAO'
-    const evoId = data.evo_id || 'SEM-ID'
-    const nome = data.nome_cliente?.replace(/\s+/g, '_').toUpperCase() || 'ALUNO'
-    const dDate = getValidDate(data.data_avaliacao, data.created_at)
-    return `${evoId}_${nome}_${format(dDate, 'dd-MM-yyyy')}`
-  }
-
-  const handleGeneratePDF = () => {
-    const fileName = getFileName()
-    const originalTitle = document.title
-    document.title = fileName
-    window.print()
-    setTimeout(() => {
-      document.title = originalTitle
-      toast({ title: 'Sucesso', description: 'Relatório preparado para impressão/PDF.' })
-    }, 500)
-  }
-
-  const handleSendWhatsApp = () => {
-    if (!data?.telefone_cliente) {
-      toast({
-        title: 'Telefone indisponível',
-        description: 'O cliente não possui telefone cadastrado.',
-        variant: 'destructive',
-      })
-      return
+    const load = async () => {
+      try {
+        const ev = await getEvaluationById(id)
+        setData(ev)
+      } catch (err: any) {
+        toast({ variant: 'destructive', title: 'Erro', description: err.message })
+      } finally {
+        setLoading(false)
+      }
     }
-    let phone = data.telefone_cliente.replace(/\D/g, '')
-    if (!phone.startsWith('55')) phone = '55' + phone
+    load()
+  }, [id, toast])
 
-    const pdfUrl = data.links_avaliacao?.[0]?.relatorio_pdf_url
-    const fileName = getFileName()
-
-    let text = `Olá ${data.nome_cliente.split(' ')[0]}, segue o seu relatório de avaliação física!`
-    if (pdfUrl) {
-      text += `\n\nAcesse seu PDF aqui: ${pdfUrl}`
-    } else {
-      text += `\n\n(Por favor, anexe o arquivo gerado: ${fileName}.pdf)`
-    }
-
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-
-    if (!pdfUrl) {
-      toast({
-        title: 'Gerando PDF',
-        description: `Lembre-se de salvar o arquivo (${fileName}.pdf) e anexá-lo na conversa!`,
-      })
-      window.open(url, '_blank')
-      setTimeout(() => {
-        handleGeneratePDF()
-      }, 800)
-    } else {
-      window.open(url, '_blank')
-    }
-  }
-
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex justify-center p-8">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
+  if (!data)
+    return <div className="p-8 text-center text-muted-foreground">Avaliação não encontrada.</div>
+
+  const respostas = data.respostas || {}
+  const anthropometry = respostas.anthropometry || {}
+  const vo2Test = respostas.vo2_test || {}
+
+  const evalDate = data.data_avaliacao ? new Date(data.data_avaliacao + 'T12:00:00') : null
+  const reevalDate = data.data_reavaliacao ? new Date(data.data_reavaliacao + 'T12:00:00') : null
+  const dobDate = respostas.data_nascimento
+    ? new Date(respostas.data_nascimento + 'T12:00:00')
+    : null
+
+  const handlePrint = () => {
+    window.print()
   }
 
-  if (!data) return null
-
-  const r = data.respostas || {}
-  const age =
-    r.data_nascimento && isValid(new Date(r.data_nascimento))
-      ? differenceInYears(new Date(), new Date(r.data_nascimento))
-      : null
-
-  const evalDate = getValidDate(data.data_avaliacao, data.created_at)
-
   return (
-    <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:space-y-0">
-      <style>{`
-        @media print {
-          @page { margin: 10mm; size: A4 portrait; }
-          body { 
-            background: white; 
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact;
-          }
-          .break-inside-avoid { break-inside: avoid; }
-        }
-      `}</style>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden mb-6">
+    <div className="container mx-auto py-8 animate-fade-in print:p-0 print:m-0">
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-6 print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Detalhes da Avaliação
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {data.nome_cliente} -{' '}
-              {format(evalDate, "dd 'de' MMMM 'de' yyyy", {
-                locale: ptBR,
-              })}
-            </p>
+            <h1 className="text-3xl font-bold text-foreground">{data.nome_cliente}</h1>
+            <p className="text-muted-foreground mt-1">ID EVO: {data.evo_id || 'Não informado'}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={handleGeneratePDF}>
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar PDF
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="border-primary/50 text-primary hover:bg-primary/10"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Imprimir Relatório (A4)
           </Button>
-          {canSendWhatsApp && (
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleSendWhatsApp}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Enviar por WhatsApp
-            </Button>
-          )}
-          {canSendWhatsApp && !data.is_pre_avaliacao && (
-            <Button onClick={() => navigate(`/evaluation/${id}/reevaluate`)} variant="secondary">
-              Nova Reavaliação
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+            Histórico
+          </Button>
+          <Button
+            variant="secondary"
+            className="bg-secondary/60 hover:bg-secondary"
+            onClick={() => setAcompanhamentoOpen(true)}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Anotações / Ações
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to={`/evaluation/edit/${data.id}`}>
+              <Edit className="w-4 h-4 mr-2" />
+              Editar
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to={`/evaluation/${data.id}/reevaluate`}>
+              <Repeat className="w-4 h-4 mr-2" />
+              Reavaliar
+            </Link>
+          </Button>
         </div>
       </div>
 
-      <div className="hidden print:flex flex-col mb-4 border-b-2 border-gray-800 pb-3">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-xl font-bold uppercase tracking-wider text-black">
-              Relatório de Avaliação Física
-            </h1>
-            <h2 className="text-sm font-semibold mt-1 text-black">{data.nome_cliente}</h2>
-          </div>
-          <div className="text-right text-[10px] text-gray-600">
-            <p>
-              <strong>ID EVO:</strong> {data.evo_id || 'N/A'}
-            </p>
-            <p>
-              <strong>Data:</strong> {format(evalDate, 'dd/MM/yyyy')}
-            </p>
-          </div>
-        </div>
+      <div className="print:block hidden mb-4 text-center border-b pb-4">
+        <h1 className="text-2xl font-bold uppercase">Relatório de Avaliação Física</h1>
+        <p className="text-sm text-muted-foreground mt-1">Academia ZANDER</p>
       </div>
 
-      <div className="print:block">
-        <Section title="Identificação">
-          <PrintField
-            label="Nome do Cliente"
-            value={data.nome_cliente}
-            className="print:col-span-2"
-          />
-          <PrintField label="ID EVO" value={data.evo_id} />
-          <PrintField label="Telefone" value={data.telefone_cliente} />
-          <PrintField label="Idade" value={age !== null ? `${age} anos` : '-'} />
-          <PrintField label="Gênero" value={r.gender} />
-          <PrintField label="Período de Treino" value={data.periodo_treino} />
-          <PrintField
-            label="Objetivos"
-            value={data.objectives?.join(', ')}
-            className="md:col-span-2 print:col-span-4"
-          />
-        </Section>
+      <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-2 print:text-[11px] text-sm">
+        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
+          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+              Identificação
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+            <p>
+              <strong>Nome:</strong> {data.nome_cliente}
+            </p>
+            <p>
+              <strong>Telefone:</strong> {data.telefone_cliente || '-'}
+            </p>
+            <p>
+              <strong>Data Nasc.:</strong>{' '}
+              {dobDate && isValid(dobDate) ? format(dobDate, 'dd/MM/yyyy') : '-'}
+            </p>
+            <p>
+              <strong>Gênero:</strong> {respostas.gender || '-'}
+            </p>
+            <p>
+              <strong>Data Avaliação:</strong>{' '}
+              {evalDate && isValid(evalDate) ? format(evalDate, 'dd/MM/yyyy') : '-'}
+            </p>
+            <p>
+              <strong>Data Reavaliação:</strong>{' '}
+              {reevalDate && isValid(reevalDate) ? format(reevalDate, 'dd/MM/yyyy') : '-'}
+            </p>
+            <div className="print:hidden">
+              <strong>Status:</strong> <Badge className="ml-1">{data.status || 'pendente'}</Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Section title="Histórico de Treinamento">
-          <PrintField label="Objetivo Principal" value={r.main_objective} />
-          <PrintField
-            label="Data Alvo"
-            value={
-              r.target_date && isValid(new Date(r.target_date + 'T12:00:00'))
-                ? format(new Date(r.target_date + 'T12:00:00'), 'dd/MM/yyyy')
-                : '-'
-            }
-          />
-          <PrintField label="Frequência Semanal Atual" value={r.training_frequency} />
-          <PrintField label="Nível de Condicionamento" value={r.activity_level} />
-          <PrintField label="Tempo de Prática" value={r.practice_time} />
-          <PrintField label="Modalidades" value={r.modalities} />
-        </Section>
+        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
+          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+              Treinamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+            <p>
+              <strong>Objetivos:</strong> {data.objectives?.join(', ') || '-'}
+            </p>
+            <p>
+              <strong>Período:</strong> {data.periodo_treino || '-'}
+            </p>
+            <p>
+              <strong>Frequência Semanal:</strong> {respostas.training_frequency || '-'}
+            </p>
+            <p>
+              <strong>Nível de Atividade:</strong> {respostas.activity_level || '-'}
+            </p>
+            <p>
+              <strong>Tempo de Prática:</strong> {respostas.practice_time || '-'}
+            </p>
+            <p>
+              <strong>Modalidades:</strong> {respostas.modalities || '-'}
+            </p>
+          </CardContent>
+        </Card>
 
-        <Section title="Estilo de Vida Atual">
-          <PrintField label="Refeições por Dia" value={r.meals_per_day} />
-          <PrintField label="Horas de Sono" value={r.sleep_hours} />
-          <PrintField label="Álcool" value={r.alcohol} />
-          <PrintField
-            label="Acompanhamento Nutricional"
-            value={formatChoiceObj(r.nutritional_status)}
-          />
-          <PrintField label="Suplementos" value={formatChoiceObj(r.supplements)} />
-          <PrintField label="Tabagismo" value={formatChoiceObj(r.smoking)} />
-          <PrintField
-            label="Intolerâncias"
-            value={formatChoiceObj(r.intolerances)}
-            className="md:col-span-3 print:col-span-2"
-          />
-        </Section>
+        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
+          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+              Saúde e Estilo de Vida
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2">
+            <p>
+              <strong>Refeições/dia:</strong> {respostas.meals_per_day || '-'}
+            </p>
+            <p>
+              <strong>Sono:</strong> {respostas.sleep_hours || '-'}
+            </p>
+            <p>
+              <strong>Álcool:</strong> {respostas.alcohol || '-'}
+            </p>
+            <p>
+              <strong>Fumante:</strong>{' '}
+              {respostas.smoking?.choice ? `Sim (${respostas.smoking.amount})` : 'Não'}
+            </p>
+            <p>
+              <strong>Diabético:</strong> {respostas.diabetes ? 'Sim' : 'Não'}
+            </p>
+            <p>
+              <strong>Hipertenso:</strong> {respostas.hypertension ? 'Sim' : 'Não'}
+            </p>
+            <p>
+              <strong>Medicamentos:</strong>{' '}
+              {respostas.medications?.choice
+                ? `Sim - ${respostas.medications.list?.replace(/\n/g, ', ')}`
+                : 'Não'}
+            </p>
+            <p>
+              <strong>Alergias:</strong>{' '}
+              {respostas.allergies?.choice ? `Sim - ${respostas.allergies.list}` : 'Não'}
+            </p>
+            <p>
+              <strong>Dores:</strong>{' '}
+              {respostas.pains?.choice ? `Sim - ${respostas.pains.observation}` : 'Não'}
+            </p>
+            <p>
+              <strong>Contato Emergência:</strong> {respostas.emergency_contact || '-'}
+            </p>
+          </CardContent>
+        </Card>
 
-        <Section title="Saúde e Histórico Médico">
-          <PrintField
-            label="Medicamentos Contínuos"
-            value={formatChoiceObj(r.medications)}
-            className="md:col-span-2 print:col-span-2"
-          />
-          <PrintField
-            label="Alergias"
-            value={formatChoiceObj(r.allergies)}
-            className="print:col-span-2"
-          />
+        <Card className="print:shadow-none print:border-border/50 break-inside-avoid">
+          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+              Antropometria
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-3 print:py-1 print:px-2">
+            <div className="grid grid-cols-2 gap-2">
+              <p>
+                <strong>Peso:</strong> {anthropometry.weight ? `${anthropometry.weight} kg` : '-'}
+              </p>
+              <p>
+                <strong>Altura:</strong> {anthropometry.height ? `${anthropometry.height} m` : '-'}
+              </p>
+              <p>
+                <strong>Ombros:</strong>{' '}
+                {anthropometry.shoulders ? `${anthropometry.shoulders} cm` : '-'}
+              </p>
+              <p>
+                <strong>Tórax:</strong> {anthropometry.chest ? `${anthropometry.chest} cm` : '-'}
+              </p>
+              <p>
+                <strong>Cintura:</strong> {anthropometry.waist ? `${anthropometry.waist} cm` : '-'}
+              </p>
+              <p>
+                <strong>Abdômen:</strong>{' '}
+                {anthropometry.abdomen ? `${anthropometry.abdomen} cm` : '-'}
+              </p>
+              <p>
+                <strong>Quadril:</strong> {anthropometry.hips ? `${anthropometry.hips} cm` : '-'}
+              </p>
+              <p>
+                <strong>Coxa Dir.:</strong>{' '}
+                {anthropometry.right_thigh ? `${anthropometry.right_thigh} cm` : '-'}
+              </p>
+              <p>
+                <strong>Coxa Esq.:</strong>{' '}
+                {anthropometry.left_thigh ? `${anthropometry.left_thigh} cm` : '-'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <PrintField
-            label="Pressão Arterial (mmHg)"
-            value={
-              r.hemodynamics?.systolic_bp
-                ? `${r.hemodynamics.systolic_bp} x ${r.hemodynamics.diastolic_bp}`
-                : '-'
-            }
-          />
-          <PrintField
-            label="Freq. Cardíaca (bpm)"
-            value={r.hemodynamics?.heart_rate ? `${r.hemodynamics.heart_rate}` : '-'}
-          />
-          <PrintField
-            label="Exames Alterados"
-            value={formatChoiceObj(r.health_exams)}
-            className="print:col-span-2"
-          />
-
-          <PrintField label="Diabetes" value={r.diabetes ? 'Sim' : 'Não'} />
-          <PrintField label="Hipertensão" value={r.hypertension ? 'Sim' : 'Não'} />
-          <PrintField
-            label="Patologia Respiratória"
-            value={r.respiratory_pathology ? 'Sim' : 'Não'}
-          />
-
-          <PrintField
-            label="Patologia Cardiovascular"
-            value={formatChoiceObj(r.cardio_pathology)}
-          />
-          <PrintField
-            label="Cirurgias"
-            value={formatChoiceObj(r.surgeries)}
-            className="print:col-span-2"
-          />
-          <PrintField
-            label="Dores Articulares/Musculares"
-            value={formatChoiceObj(r.pains)}
-            className="print:col-span-2"
-          />
-
-          <PrintField
-            label="Plano de Saúde"
-            value={formatChoiceObj(r.health_insurance)}
-            className="print:col-span-2"
-          />
-          <PrintField
-            label="Contato de Emergência"
-            value={r.emergency_contact}
-            className="print:col-span-2"
-          />
-        </Section>
-
-        <Section title="Preferências de Treino">
-          <PrintField
-            label="Dias Disponíveis"
-            value={formatValue(r.available_days)}
-            className="md:col-span-2 print:col-span-2"
-          />
-          <PrintField label="Duração da Sessão" value={r.session_duration} />
-          <PrintField label="Como conheceu a academia?" value={r.discovery_source} />
-
-          <div className="col-span-full border-t border-border/50 print:border-gray-300 pt-4 print:pt-2 grid grid-cols-1 sm:grid-cols-3 gap-6 print:grid-cols-3 print:gap-x-4 print:gap-y-2">
-            <PrintField label="Gosta de Treinar" value={formatValue(r.enjoys_training)} />
-            <PrintField label="Incomoda no Espelho" value={formatValue(r.dislikes_looking_at)} />
-            <PrintField label="NÃO Gosta de Treinar" value={formatValue(r.dislikes_training)} />
-          </div>
-
-          <div className="col-span-full border-t border-border/50 print:border-gray-300 pt-4 print:pt-2 grid grid-cols-1 sm:grid-cols-2 gap-6 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
-            <PrintField label="Exercícios Favoritos" value={r.favorite_exercises} />
-            <PrintField label="Exercícios Odiados" value={r.hated_exercises} />
-          </div>
-        </Section>
-
-        {r.anthropometry &&
-          (r.anthropometry.weight || r.anthropometry.height || r.anthropometry.chest) && (
-            <Section title="Antropometria">
-              <PrintField
-                label="Peso"
-                value={r.anthropometry.weight ? `${r.anthropometry.weight} kg` : '-'}
-              />
-              <PrintField
-                label="Altura"
-                value={r.anthropometry.height ? `${r.anthropometry.height} m` : '-'}
-              />
-              <PrintField
-                label="Ombros"
-                value={r.anthropometry.shoulders ? `${r.anthropometry.shoulders} cm` : '-'}
-              />
-              <PrintField
-                label="Tórax"
-                value={r.anthropometry.chest ? `${r.anthropometry.chest} cm` : '-'}
-              />
-              <PrintField
-                label="Cintura"
-                value={r.anthropometry.waist ? `${r.anthropometry.waist} cm` : '-'}
-              />
-              <PrintField
-                label="Abdômen"
-                value={r.anthropometry.abdomen ? `${r.anthropometry.abdomen} cm` : '-'}
-              />
-              <PrintField
-                label="Quadril"
-                value={r.anthropometry.hips ? `${r.anthropometry.hips} cm` : '-'}
-              />
-
-              <PrintField
-                label="Braço Direito (Relax / Contr)"
-                value={`${r.anthropometry.right_arm_relaxed || '-'} / ${r.anthropometry.right_arm_flexed || '-'} cm`}
-                className="print:col-span-2"
-              />
-              <PrintField
-                label="Braço Esquerdo (Relax / Contr)"
-                value={`${r.anthropometry.left_arm_relaxed || '-'} / ${r.anthropometry.left_arm_flexed || '-'} cm`}
-                className="print:col-span-2"
-              />
-              <PrintField
-                label="Antebraço Dir / Esq"
-                value={`${r.anthropometry.right_forearm || '-'} / ${r.anthropometry.left_forearm || '-'} cm`}
-                className="print:col-span-2"
-              />
-
-              <PrintField
-                label="Coxa Dir / Esq"
-                value={`${r.anthropometry.right_thigh || '-'} / ${r.anthropometry.left_thigh || '-'} cm`}
-                className="print:col-span-2"
-              />
-              <PrintField
-                label="Panturrilha Dir / Esq"
-                value={`${r.anthropometry.right_calf || '-'} / ${r.anthropometry.left_calf || '-'} cm`}
-                className="print:col-span-2"
-              />
-            </Section>
-          )}
-
-        {r.vo2_test && r.vo2_test.enabled && (
-          <Section title="Avaliação Cardiorrespiratória (VO2 Step)">
-            <PrintField label="Cadência (BPM)" value={r.vo2_test.bpm} />
-            <PrintField label="Batimentos em 15s" value={r.vo2_test.beats_15s} />
-            <PrintField
-              label="VO2 Máx Estimado"
-              value={r.vo2_test.vo2_max ? `${r.vo2_test.vo2_max} ml/kg/min` : '-'}
-            />
-            <PrintField label="Classificação" value={r.vo2_test.classification} />
-          </Section>
+        {vo2Test.enabled && (
+          <Card className="print:shadow-none print:border-border/50 md:col-span-2 print:col-span-2 break-inside-avoid">
+            <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+              <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+                Teste de VO² (Step Test)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5 py-3 print:py-1 print:px-2 flex flex-wrap gap-x-12 gap-y-2">
+              <p>
+                <strong>Batimentos (15s):</strong> {vo2Test.beats_15s || '-'}
+              </p>
+              <p>
+                <strong>VO² Máximo:</strong>{' '}
+                {vo2Test.vo2_max ? `${vo2Test.vo2_max} ml/kg/min` : '-'}
+              </p>
+              <p>
+                <strong>Classificação:</strong>{' '}
+                <span className="font-bold text-primary print:text-black">
+                  {vo2Test.classification || '-'}
+                </span>
+              </p>
+            </CardContent>
+          </Card>
         )}
 
-        <Section title="Links e Observações" className="print:block mb-0">
-          {data.links_avaliacao && data.links_avaliacao.length > 0 && (
-            <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 border-b border-border/50 pb-6 print:hidden">
-              <PrintField
-                label="Mapeamento de Sintomas"
-                value={
-                  data.links_avaliacao[0].mapeamento_sintomas_url ? (
-                    <a
-                      href={data.links_avaliacao[0].mapeamento_sintomas_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {data.links_avaliacao[0].mapeamento_sintomas_url}
-                    </a>
-                  ) : (
-                    '-'
-                  )
-                }
-              />
-              <PrintField
-                label="Mapeamento da Dor"
-                value={
-                  data.links_avaliacao[0].mapeamento_dor_url ? (
-                    <a
-                      href={data.links_avaliacao[0].mapeamento_dor_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {data.links_avaliacao[0].mapeamento_dor_url}
-                    </a>
-                  ) : (
-                    '-'
-                  )
-                }
-              />
-              <PrintField
-                label="BIA"
-                value={
-                  data.links_avaliacao[0].bia_url ? (
-                    <a
-                      href={data.links_avaliacao[0].bia_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {data.links_avaliacao[0].bia_url}
-                    </a>
-                  ) : (
-                    '-'
-                  )
-                }
-              />
-              <PrintField
-                label="My Score"
-                value={
-                  data.links_avaliacao[0].my_score_url ? (
-                    <a
-                      href={data.links_avaliacao[0].my_score_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {data.links_avaliacao[0].my_score_url}
-                    </a>
-                  ) : (
-                    '-'
-                  )
-                }
-              />
-            </div>
-          )}
-          <div className="col-span-full grid grid-cols-1 gap-6 print:gap-y-3">
-            <PrintField
-              label="Observações Finais do Avaliador"
-              value={r.final_observations}
-              className="print:col-span-full"
-            />
-            <PrintField
-              label="Observações do Professor"
-              value={r.professor_observations}
-              className="print:col-span-full"
-            />
-          </div>
-        </Section>
+        <Card className="print:shadow-none print:border-border/50 md:col-span-2 print:col-span-2 break-inside-avoid">
+          <CardHeader className="py-3 print:py-1 print:px-2 bg-muted/20">
+            <CardTitle className="text-base print:text-xs uppercase tracking-wider">
+              Observações do Avaliador
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-3 print:py-1 print:px-2">
+            <p className="whitespace-pre-wrap">
+              {respostas.final_observations || 'Nenhuma observação registrada.'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      <AcompanhamentoDialog
+        open={acompanhamentoOpen}
+        onOpenChange={setAcompanhamentoOpen}
+        avaliacaoId={data.id}
+        nomeCliente={data.nome_cliente}
+        evoId={data.evo_id}
+      />
+      <HistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        avaliacaoId={data.id}
+        nomeCliente={data.nome_cliente}
+        evoId={data.evo_id}
+      />
     </div>
   )
 }

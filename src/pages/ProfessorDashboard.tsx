@@ -129,7 +129,7 @@ export default function ProfessorDashboard() {
     window.open(url, '_blank')
     toast({
       title: 'WhatsApp Aberto',
-      description: 'A janela do WhatsApp foi aberta para envio.',
+      description: 'A janela do WhatsApp foi aberta no seu dispositivo.',
     })
   }
 
@@ -242,6 +242,9 @@ export default function ProfessorDashboard() {
                 ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
+              const isNotExecuted =
+                ev.is_pre_avaliacao || !ev.data_avaliacao || ev.status === 'pendente'
+
               const daysSinceEval = differenceInDays(today, evalDate)
               let reevalColorClass = ''
               let reevalDotClass = ''
@@ -269,7 +272,7 @@ export default function ProfessorDashboard() {
                   type: 'internal',
                   url: `/evaluation/${ev.id}`,
                   icon: FileText,
-                  label: 'Anamnese',
+                  label: 'Resumo da Avaliação',
                 },
                 {
                   type: 'external',
@@ -318,14 +321,14 @@ export default function ProfessorDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
+                    {isNotExecuted ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       format(evalDate, 'dd/MM/yyyy')
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao || !ev.data_reavaliacao ? (
+                    {isNotExecuted || !ev.data_reavaliacao ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div
@@ -369,7 +372,7 @@ export default function ProfessorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
+                    {isNotExecuted ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div className="flex items-center gap-2 font-medium">
@@ -385,7 +388,7 @@ export default function ProfessorDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap"
+                        className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap bg-secondary/30"
                         onClick={() =>
                           setAcompanhamentoEval({
                             id: ev.id,
@@ -426,7 +429,7 @@ export default function ProfessorDashboard() {
                               <MessageCircle className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
+                          <TooltipContent>Enviar links via WhatsApp Web</TooltipContent>
                         </Tooltip>
                       )}
 
