@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { FileText, Plus, UserPlus, Search, Loader2 } from 'lucide-react'
@@ -28,22 +28,9 @@ export default function Index() {
   const { toast } = useToast()
   const { profile, loading: authLoading } = useAuth()
 
-  if (authLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  if (!profile) return <Navigate to="/login" replace />
-
-  const userRoles = profile.roles || (profile.role ? [profile.role] : [])
-  const canCreateEval = userRoles.includes('avaliador') || userRoles.includes('coordenador')
-  const canCreatePre = userRoles.includes('professor')
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      setLoading(true)
       const data = await getEvaluations()
       setEvaluations(data)
     } catch (e: any) {
@@ -51,11 +38,15 @@ export default function Index() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (!authLoading && profile) {
+      loadData()
+    } else if (!authLoading && !profile) {
+      setLoading(false)
+    }
+  }, [authLoading, profile, loadData])
 
   const filtered = useMemo(() => {
     if (!search) return evaluations
@@ -67,12 +58,27 @@ export default function Index() {
     )
   }, [evaluations, search])
 
-  if (loading)
+  const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+  const canCreateEval = userRoles.includes('avaliador') || userRoles.includes('coordenador')
+  const canCreatePre = userRoles.includes('professor')
+
+  if (authLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
+  }
+
+  if (!profile) return <Navigate to="/login" replace />
+
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
