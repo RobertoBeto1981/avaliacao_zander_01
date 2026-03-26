@@ -41,14 +41,17 @@ const formatValue = (val: any) => {
 const Section = ({ title, children, className }: any) => (
   <div
     className={cn(
-      'rounded-xl border border-border bg-card text-card-foreground shadow-sm print:shadow-none print:border-border/50 break-inside-avoid',
+      'rounded-xl border border-border bg-card text-card-foreground shadow-sm break-inside-avoid mb-6',
+      'print:rounded-md print:border-gray-300 print:shadow-none print:mb-3 print:bg-transparent',
       className,
     )}
   >
-    <div className="px-6 py-4 border-b border-border/50 bg-muted/30 print:bg-transparent print:border-b-2 print:border-primary/20 print:px-2 print:py-2">
-      <h3 className="text-lg font-semibold text-primary">{title}</h3>
+    <div className="px-6 py-4 border-b border-border/50 bg-muted/30 print:bg-gray-100/50 print:border-gray-300 print:px-3 print:py-1.5">
+      <h3 className="text-lg font-semibold text-primary print:text-black print:text-[11px] print:font-bold print:uppercase print:tracking-wider">
+        {title}
+      </h3>
     </div>
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 print:px-2 print:py-4 print:gap-4">
+    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 print:px-3 print:py-2.5 print:grid-cols-4 print:gap-x-4 print:gap-y-3">
       {children}
     </div>
   </div>
@@ -64,10 +67,12 @@ const PrintField = ({
   className?: string
 }) => (
   <div className={cn('flex flex-col', className)}>
-    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 print:text-[8px] print:text-gray-500 print:mb-0.5 print:leading-tight">
       {label}
     </span>
-    <span className="font-medium text-sm text-foreground whitespace-pre-wrap">{value || '-'}</span>
+    <span className="font-medium text-sm text-foreground whitespace-pre-wrap print:text-[10px] print:leading-snug print:text-black">
+      {value || '-'}
+    </span>
   </div>
 )
 
@@ -149,12 +154,10 @@ export default function EvaluationDetails() {
         title: 'Gerando PDF',
         description: `Lembre-se de salvar o arquivo (${fileName}.pdf) e anexá-lo na conversa!`,
       })
+      window.open(url, '_blank')
       setTimeout(() => {
         handleGeneratePDF()
-        setTimeout(() => {
-          window.open(url, '_blank')
-        }, 500)
-      }, 500)
+      }, 800)
     } else {
       window.open(url, '_blank')
     }
@@ -179,16 +182,20 @@ export default function EvaluationDetails() {
   const evalDate = getValidDate(data.data_avaliacao, data.created_at)
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:space-y-4">
+    <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:space-y-0">
       <style>{`
         @media print {
-          @page { margin: 15mm; }
-          body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { margin: 10mm; size: A4 portrait; }
+          body { 
+            background: white; 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+          }
           .break-inside-avoid { break-inside: avoid; }
         }
       `}</style>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
             <ArrowLeft className="w-5 h-5" />
@@ -227,20 +234,32 @@ export default function EvaluationDetails() {
         </div>
       </div>
 
-      <div className="hidden print:flex flex-col mb-8 border-b-2 border-primary/20 pb-4">
-        <h1 className="text-3xl font-bold uppercase tracking-wider text-primary">
-          Relatório de Avaliação Física
-        </h1>
-        <h2 className="text-xl font-semibold mt-1">{data.nome_cliente}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          <strong>ID EVO:</strong> {data.evo_id || 'N/A'} &bull; <strong>Data:</strong>{' '}
-          {format(evalDate, 'dd/MM/yyyy')}
-        </p>
+      <div className="hidden print:flex flex-col mb-4 border-b-2 border-gray-800 pb-3">
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-black">
+              Relatório de Avaliação Física
+            </h1>
+            <h2 className="text-sm font-semibold mt-1 text-black">{data.nome_cliente}</h2>
+          </div>
+          <div className="text-right text-[10px] text-gray-600">
+            <p>
+              <strong>ID EVO:</strong> {data.evo_id || 'N/A'}
+            </p>
+            <p>
+              <strong>Data:</strong> {format(evalDate, 'dd/MM/yyyy')}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-8 print:space-y-6">
+      <div className="print:block">
         <Section title="Identificação">
-          <PrintField label="Nome do Cliente" value={data.nome_cliente} />
+          <PrintField
+            label="Nome do Cliente"
+            value={data.nome_cliente}
+            className="print:col-span-2"
+          />
           <PrintField label="ID EVO" value={data.evo_id} />
           <PrintField label="Telefone" value={data.telefone_cliente} />
           <PrintField label="Idade" value={age !== null ? `${age} anos` : '-'} />
@@ -249,7 +268,7 @@ export default function EvaluationDetails() {
           <PrintField
             label="Objetivos"
             value={data.objectives?.join(', ')}
-            className="md:col-span-2"
+            className="md:col-span-2 print:col-span-4"
           />
         </Section>
 
@@ -282,7 +301,7 @@ export default function EvaluationDetails() {
           <PrintField
             label="Intolerâncias"
             value={formatChoiceObj(r.intolerances)}
-            className="md:col-span-3"
+            className="md:col-span-3 print:col-span-2"
           />
         </Section>
 
@@ -290,9 +309,13 @@ export default function EvaluationDetails() {
           <PrintField
             label="Medicamentos Contínuos"
             value={formatChoiceObj(r.medications)}
-            className="md:col-span-2"
+            className="md:col-span-2 print:col-span-2"
           />
-          <PrintField label="Alergias" value={formatChoiceObj(r.allergies)} />
+          <PrintField
+            label="Alergias"
+            value={formatChoiceObj(r.allergies)}
+            className="print:col-span-2"
+          />
 
           <PrintField
             label="Pressão Arterial (mmHg)"
@@ -306,7 +329,11 @@ export default function EvaluationDetails() {
             label="Freq. Cardíaca (bpm)"
             value={r.hemodynamics?.heart_rate ? `${r.hemodynamics.heart_rate}` : '-'}
           />
-          <PrintField label="Exames Alterados" value={formatChoiceObj(r.health_exams)} />
+          <PrintField
+            label="Exames Alterados"
+            value={formatChoiceObj(r.health_exams)}
+            className="print:col-span-2"
+          />
 
           <PrintField label="Diabetes" value={r.diabetes ? 'Sim' : 'Não'} />
           <PrintField label="Hipertensão" value={r.hypertension ? 'Sim' : 'Não'} />
@@ -319,29 +346,45 @@ export default function EvaluationDetails() {
             label="Patologia Cardiovascular"
             value={formatChoiceObj(r.cardio_pathology)}
           />
-          <PrintField label="Cirurgias" value={formatChoiceObj(r.surgeries)} />
-          <PrintField label="Dores Articulares/Musculares" value={formatChoiceObj(r.pains)} />
+          <PrintField
+            label="Cirurgias"
+            value={formatChoiceObj(r.surgeries)}
+            className="print:col-span-2"
+          />
+          <PrintField
+            label="Dores Articulares/Musculares"
+            value={formatChoiceObj(r.pains)}
+            className="print:col-span-2"
+          />
 
-          <PrintField label="Plano de Saúde" value={formatChoiceObj(r.health_insurance)} />
-          <PrintField label="Contato de Emergência" value={r.emergency_contact} />
+          <PrintField
+            label="Plano de Saúde"
+            value={formatChoiceObj(r.health_insurance)}
+            className="print:col-span-2"
+          />
+          <PrintField
+            label="Contato de Emergência"
+            value={r.emergency_contact}
+            className="print:col-span-2"
+          />
         </Section>
 
         <Section title="Preferências de Treino">
           <PrintField
             label="Dias Disponíveis"
             value={formatValue(r.available_days)}
-            className="md:col-span-2"
+            className="md:col-span-2 print:col-span-2"
           />
           <PrintField label="Duração da Sessão" value={r.session_duration} />
           <PrintField label="Como conheceu a academia?" value={r.discovery_source} />
 
-          <div className="col-span-full border-t border-border/50 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="col-span-full border-t border-border/50 print:border-gray-300 pt-4 print:pt-2 grid grid-cols-1 sm:grid-cols-3 gap-6 print:grid-cols-3 print:gap-x-4 print:gap-y-2">
             <PrintField label="Gosta de Treinar" value={formatValue(r.enjoys_training)} />
             <PrintField label="Incomoda no Espelho" value={formatValue(r.dislikes_looking_at)} />
             <PrintField label="NÃO Gosta de Treinar" value={formatValue(r.dislikes_training)} />
           </div>
 
-          <div className="col-span-full border-t border-border/50 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="col-span-full border-t border-border/50 print:border-gray-300 pt-4 print:pt-2 grid grid-cols-1 sm:grid-cols-2 gap-6 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
             <PrintField label="Exercícios Favoritos" value={r.favorite_exercises} />
             <PrintField label="Exercícios Odiados" value={r.hated_exercises} />
           </div>
@@ -382,23 +425,28 @@ export default function EvaluationDetails() {
               <PrintField
                 label="Braço Direito (Relax / Contr)"
                 value={`${r.anthropometry.right_arm_relaxed || '-'} / ${r.anthropometry.right_arm_flexed || '-'} cm`}
+                className="print:col-span-2"
               />
               <PrintField
                 label="Braço Esquerdo (Relax / Contr)"
                 value={`${r.anthropometry.left_arm_relaxed || '-'} / ${r.anthropometry.left_arm_flexed || '-'} cm`}
+                className="print:col-span-2"
               />
               <PrintField
                 label="Antebraço Dir / Esq"
                 value={`${r.anthropometry.right_forearm || '-'} / ${r.anthropometry.left_forearm || '-'} cm`}
+                className="print:col-span-2"
               />
 
               <PrintField
                 label="Coxa Dir / Esq"
                 value={`${r.anthropometry.right_thigh || '-'} / ${r.anthropometry.left_thigh || '-'} cm`}
+                className="print:col-span-2"
               />
               <PrintField
                 label="Panturrilha Dir / Esq"
                 value={`${r.anthropometry.right_calf || '-'} / ${r.anthropometry.left_calf || '-'} cm`}
+                className="print:col-span-2"
               />
             </Section>
           )}
@@ -415,7 +463,7 @@ export default function EvaluationDetails() {
           </Section>
         )}
 
-        <Section title="Links e Observações" className="print:block">
+        <Section title="Links e Observações" className="print:block mb-0">
           {data.links_avaliacao && data.links_avaliacao.length > 0 && (
             <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 border-b border-border/50 pb-6 print:hidden">
               <PrintField
@@ -488,9 +536,17 @@ export default function EvaluationDetails() {
               />
             </div>
           )}
-          <div className="col-span-full grid grid-cols-1 gap-6">
-            <PrintField label="Observações Finais do Avaliador" value={r.final_observations} />
-            <PrintField label="Observações do Professor" value={r.professor_observations} />
+          <div className="col-span-full grid grid-cols-1 gap-6 print:gap-y-3">
+            <PrintField
+              label="Observações Finais do Avaliador"
+              value={r.final_observations}
+              className="print:col-span-full"
+            />
+            <PrintField
+              label="Observações do Professor"
+              value={r.professor_observations}
+              className="print:col-span-full"
+            />
           </div>
         </Section>
       </div>

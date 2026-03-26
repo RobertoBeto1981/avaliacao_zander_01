@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { FilePlus2, Search, User, Eye, AlertCircle, Repeat, Plus, Edit, Trash2 } from 'lucide-react'
 import { getEvaluations, deleteEvaluation } from '@/services/evaluations'
 import { useAuth } from '@/hooks/use-auth'
@@ -160,9 +159,11 @@ export default function Index() {
                   <TableCell>{ev.avaliador?.nome || '-'}</TableCell>
                   <TableCell>{ev.professor?.nome || '-'}</TableCell>
                   <TableCell>
-                    {ev.is_pre_avaliacao || !ev.data_avaliacao
-                      ? format(new Date(ev.created_at), 'dd/MM/yyyy')
-                      : format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')}
+                    {ev.is_pre_avaliacao || !ev.data_avaliacao ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                    )}
                   </TableCell>
                   <TableCell className="text-primary font-semibold">
                     {ev.is_pre_avaliacao || !ev.data_reavaliacao ? (

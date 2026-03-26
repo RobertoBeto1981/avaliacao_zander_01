@@ -12,11 +12,9 @@ import {
   History,
   Plus,
   MessageCircle,
-  Loader2,
   Edit,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
-import { sendWhatsAppLinks } from '@/services/whatsapp'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -61,7 +59,6 @@ export default function ProfessorDashboard() {
     evo_id?: string
   } | null>(null)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
-  const [sendingWa, setSendingWa] = useState<string | null>(null)
   const { toast } = useToast()
   const { profile } = useAuth()
 
@@ -103,7 +100,7 @@ export default function ProfessorDashboard() {
     }
   }
 
-  const handleSendWhatsApp = async (ev: any) => {
+  const handleSendWhatsApp = (ev: any) => {
     if (!ev.telefone_cliente) {
       toast({
         title: 'Atenção',
@@ -113,29 +110,27 @@ export default function ProfessorDashboard() {
       return
     }
 
-    setSendingWa(ev.id)
-    try {
-      const res = await sendWhatsAppLinks(ev.id)
-      if (res.simulated) {
-        toast({
-          title: 'Envio Simulado',
-          description: 'Configure as chaves do WhatsApp no Supabase para enviar mensagens reais.',
-        })
-      } else {
-        toast({
-          title: 'Sucesso',
-          description: 'Links enviados via WhatsApp com sucesso!',
-        })
-      }
-    } catch (e: any) {
-      toast({
-        title: 'Erro',
-        description: e.message || 'Falha ao enviar mensagem pelo WhatsApp',
-        variant: 'destructive',
-      })
-    } finally {
-      setSendingWa(null)
-    }
+    let phone = ev.telefone_cliente.replace(/\D/g, '')
+    if (!phone.startsWith('55')) phone = '55' + phone
+
+    const links = ev.links_avaliacao?.[0] || {}
+    const firstName = ev.nome_cliente.trim().split(' ')[0]
+
+    let text = `Olá *${firstName}*, tudo bem?\n\nAqui estão os links para a sua avaliação física:\n\n`
+    if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) text += `⚖️ *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
+
+    text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+    toast({
+      title: 'WhatsApp Aberto',
+      description: 'A janela do WhatsApp foi aberta para envio.',
+    })
   }
 
   const periodos = useMemo(
@@ -427,13 +422,8 @@ export default function ProfessorDashboard() {
                               size="sm"
                               className="h-8 w-8 p-0 shrink-0 text-accent hover:text-accent hover:bg-accent/20 border-accent/20"
                               onClick={() => handleSendWhatsApp(ev)}
-                              disabled={sendingWa === ev.id}
                             >
-                              {sendingWa === ev.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <MessageCircle className="w-4 h-4" />
-                              )}
+                              <MessageCircle className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Enviar links via WhatsApp</TooltipContent>
