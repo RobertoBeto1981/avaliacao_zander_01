@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { calculateDeadline } from '@/lib/holidays'
 
 const isValidUUID = (uuid: string) => {
   if (!uuid) return false
@@ -268,13 +269,83 @@ export const getClientPastMedications = async (clientName: string) => {
 }
 
 export const activateDesafioZander = async (id: string) => {
+  if (!isValidUUID(id)) throw new Error('ID de avaliação inválido')
+
+  const { data: ev, error: fetchErr } = await supabase
+    .from('avaliacoes')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchErr) throw fetchErr
+
+  let professor_id = ev.professor_id
+
+  if (!professor_id) {
+    const { data: allUsers } = await supabase.from('users').select('id, roles, role, ativo')
+    const activeProfs =
+      allUsers?.filter(
+        (u: any) => u.ativo && (u.roles?.includes('professor') || u.role === 'professor'),
+      ) || []
+
+    if (activeProfs.length > 0) {
+      const { data: pendingEvals } = await supabase
+        .from('avaliacoes')
+        .select('professor_id')
+        .in('status', ['pendente', 'em_progresso'])
+        .not('professor_id', 'is', null)
+
+      const workload: Record<string, number> = {}
+      activeProfs.forEach((p: any) => (workload[p.id] = 0))
+
+      pendingEvals?.forEach((e: any) => {
+        if (e.professor_id && workload[e.professor_id] !== undefined) {
+          workload[e.professor_id]++
+        }
+      })
+
+      activeProfs.sort((a: any, b: any) => workload[a.id] - workload[b.id])
+      professor_id = activeProfs[0].id
+    }
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const updates: any = {
+    desafio_zander_status: 'ativado',
+    status: 'pendente',
+    professor_id,
+    is_pre_avaliacao: false,
+  }
+
+  if (!ev.data_avaliacao) {
+    updates.data_avaliacao = todayStr
+  }
+
   const { data, error } = await supabase
     .from('avaliacoes')
-    .update({ desafio_zander_status: 'ativado' })
+    .update(updates)
     .eq('id', id)
     .select()
     .single()
+
   if (error) throw error
+
+  const { data: userData } = await supabase.auth.getUser()
+  const currentUserId = userData.user?.id
+
+  if (currentUserId) {
+    const deadlineDate = calculateDeadline(todayStr, 3)
+    await supabase.from('avaliacao_acompanhamentos').insert({
+      avaliacao_id: id,
+      autor_id: currentUserId,
+      observacao:
+        '🔥 Aluno aceitou o #DesafioZander! Entrar em contato em até 3 dias úteis para acompanhamento.',
+      prazo: deadlineDate.toISOString().split('T')[0],
+      concluido: false,
+    })
+  }
+
   window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return data
 }

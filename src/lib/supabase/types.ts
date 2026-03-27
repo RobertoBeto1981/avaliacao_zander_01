@@ -108,6 +108,7 @@ export type Database = {
           created_at: string
           data_avaliacao: string | null
           data_reavaliacao: string | null
+          desafio_zander_status: string
           evo_id: string | null
           id: string
           is_pre_avaliacao: boolean
@@ -124,6 +125,7 @@ export type Database = {
           created_at?: string
           data_avaliacao?: string | null
           data_reavaliacao?: string | null
+          desafio_zander_status?: string
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
@@ -140,6 +142,7 @@ export type Database = {
           created_at?: string
           data_avaliacao?: string | null
           data_reavaliacao?: string | null
+          desafio_zander_status?: string
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
@@ -803,6 +806,7 @@ export const Constants = {
 //   professor_id: uuid (nullable)
 //   evo_id: text (nullable)
 //   is_pre_avaliacao: boolean (not null, default: false)
+//   desafio_zander_status: text (not null, default: 'nenhum'::text)
 // Table: bulk_messages
 //   id: uuid (not null, default: gen_random_uuid())
 //   sender_id: uuid (not null)
