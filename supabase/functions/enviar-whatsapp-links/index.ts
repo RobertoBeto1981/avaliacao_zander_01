@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
     const lines = [
       `Olá *${firstName}*, tudo bem?`,
       ``,
-      `Aqui estão os links para a sua avaliação física:`,
+      `Abaixo estão os links da sua avaliação:`,
       ``,
     ]
 
@@ -76,7 +76,9 @@ Deno.serve(async (req: Request) => {
     if (links.my_score_url) lines.push(`📊 *My Score:* ${links.my_score_url}`)
 
     lines.push(``)
-    lines.push(`Por favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`)
+    lines.push(
+      `Muito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`,
+    )
 
     const message = lines.join('\n')
 

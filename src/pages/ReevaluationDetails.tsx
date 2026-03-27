@@ -61,8 +61,8 @@ export default function ReevaluationDetails() {
     if (!phone.startsWith('55')) phone = '55' + phone
 
     const fileName = getFileName()
-    const text = `Olá ${data.avaliacao.nome_cliente.split(' ')[0]}, segue o seu Relatório de Evolução!\n\n(Por favor, anexe o arquivo gerado: ${fileName}.pdf)`
-    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+    const text = `Olá *${data.avaliacao.nome_cliente.split(' ')[0]}*, tudo bem?\n\nSegue o seu Relatório de Evolução!\n\n(Por favor, anexe o arquivo gerado: ${fileName}.pdf)\n\nMuito obrigado por realizar sua reavaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
   }
 

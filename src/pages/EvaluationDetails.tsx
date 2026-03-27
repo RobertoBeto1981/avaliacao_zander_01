@@ -83,7 +83,7 @@ export default function EvaluationDetails() {
     const number = phone.startsWith('55') ? phone : `55${phone}`
     const links = data.links_avaliacao?.[0] || {}
 
-    let text = `Olá *${data.nome_cliente.split(' ')[0]}*, tudo bem?\n\nAqui estão os links para a sua avaliação física:\n\n`
+    let text = `Olá *${data.nome_cliente.split(' ')[0]}*, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n`
     if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
     if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
@@ -91,12 +91,9 @@ export default function EvaluationDetails() {
     if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
     if (links.relatorio_pdf_url) text += `📄 *Relatório PDF:* ${links.relatorio_pdf_url}\n`
 
-    text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
+    text += `\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
 
-    window.open(
-      `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(text)}`,
-      '_blank',
-    )
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   return (

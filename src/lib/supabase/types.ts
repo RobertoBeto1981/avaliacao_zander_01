@@ -497,6 +497,7 @@ export type Database = {
       }
       users: {
         Row: {
+          ativo: boolean
           email: string
           foto_url: string | null
           id: string
@@ -509,6 +510,7 @@ export type Database = {
           telefone: string | null
         }
         Insert: {
+          ativo?: boolean
           email: string
           foto_url?: string | null
           id: string
@@ -521,6 +523,7 @@ export type Database = {
           telefone?: string | null
         }
         Update: {
+          ativo?: boolean
           email?: string
           foto_url?: string | null
           id?: string
@@ -895,6 +898,7 @@ export const Constants = {
 //   pending_role: user_role (nullable)
 //   roles: _text (nullable, default: '{}'::text[])
 //   periodos: _text (nullable, default: '{}'::text[])
+//   ativo: boolean (not null, default: true)
 // Table: video_automations_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   dias_trigger: integer (not null)
@@ -1057,21 +1061,21 @@ export const Constants = {
 //   BEGIN
 //     -- Só distribui se for uma avaliação real (não pré-avaliação) e se não tiver professor
 //     IF NEW.is_pre_avaliacao = false AND NEW.professor_id IS NULL AND NEW.periodo_treino IS NOT NULL THEN
-//       -- Tenta encontrar um professor que tenha o período correspondente nos seus periodos
+//       -- Tenta encontrar um professor que tenha o período correspondente nos seus periodos E ESTEJA ATIVO
 //       SELECT u.id INTO selected_prof_id
 //       FROM public.users u
 //       LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//       WHERE 'professor' = ANY(u.roles) AND NEW.periodo_treino = ANY(u.periodos)
+//       WHERE 'professor' = ANY(u.roles) AND NEW.periodo_treino = ANY(u.periodos) AND u.ativo = true
 //       GROUP BY u.id
 //       ORDER BY COUNT(a.id) ASC
 //       LIMIT 1;
 //
-//       -- Se não encontrar por período, pega qualquer professor com menos avaliações
+//       -- Se não encontrar por período, pega qualquer professor ativo com menos avaliações
 //       IF selected_prof_id IS NULL THEN
 //         SELECT u.id INTO selected_prof_id
 //         FROM public.users u
 //         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//         WHERE 'professor' = ANY(u.roles)
+//         WHERE 'professor' = ANY(u.roles) AND u.ativo = true
 //         GROUP BY u.id
 //         ORDER BY COUNT(a.id) ASC
 //         LIMIT 1;
