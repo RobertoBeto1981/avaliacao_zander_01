@@ -238,21 +238,21 @@ export default function EvaluationDetails() {
         </Card>
       )}
 
-      <div className="print:block hidden mb-6 text-center border-b border-border/50 pb-4">
-        <h1 className="text-2xl font-bold uppercase text-foreground">
+      <div className="print:block hidden mb-6 text-center border-b print:border-primary/50 pb-4">
+        <h1 className="text-2xl font-bold uppercase print:text-black">
           Relatório de Avaliação Física
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Academia ZANDER</p>
+        <p className="text-sm mt-1 print:text-black">Academia ZANDER</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 print:block print:space-y-6 print:text-[13px] text-sm">
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Identificação
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
               <strong>Nome:</strong> {data.nome_cliente}
             </p>
@@ -280,13 +280,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Treinamento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
               <strong>Objetivos:</strong> {data.objectives?.join(', ') || '-'}
             </p>
@@ -308,13 +308,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Preferências de Treino
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
               <strong>Dias Disponíveis:</strong> {respostas.available_days?.join(', ') || '-'}
             </p>
@@ -344,13 +344,13 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Saúde e Estilo de Vida
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3">
+          <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
               <strong>Refeições/dia:</strong> {respostas.meals_per_day || '-'}
             </p>
@@ -390,14 +390,14 @@ export default function EvaluationDetails() {
           </CardContent>
         </Card>
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6 md:col-span-2">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Antropometria
             </CardTitle>
           </CardHeader>
-          <CardContent className="py-3 print:py-2 print:px-3">
-            <div className="grid grid-cols-2 gap-2">
+          <CardContent className="py-3 print:py-2 print:px-3 print:text-black">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-4 print:grid-cols-4">
               <p>
                 <strong>Peso:</strong> {anthropometry.weight ? `${anthropometry.weight} kg` : '-'}
               </p>
@@ -422,6 +422,30 @@ export default function EvaluationDetails() {
                 <strong>Quadril:</strong> {anthropometry.hips ? `${anthropometry.hips} cm` : '-'}
               </p>
               <p>
+                <strong>Braço Dir. (Rel):</strong>{' '}
+                {anthropometry.right_arm_relaxed ? `${anthropometry.right_arm_relaxed} cm` : '-'}
+              </p>
+              <p>
+                <strong>Braço Dir. (Con):</strong>{' '}
+                {anthropometry.right_arm_flexed ? `${anthropometry.right_arm_flexed} cm` : '-'}
+              </p>
+              <p>
+                <strong>Antebraço Dir.:</strong>{' '}
+                {anthropometry.right_forearm ? `${anthropometry.right_forearm} cm` : '-'}
+              </p>
+              <p>
+                <strong>Braço Esq. (Rel):</strong>{' '}
+                {anthropometry.left_arm_relaxed ? `${anthropometry.left_arm_relaxed} cm` : '-'}
+              </p>
+              <p>
+                <strong>Braço Esq. (Con):</strong>{' '}
+                {anthropometry.left_arm_flexed ? `${anthropometry.left_arm_flexed} cm` : '-'}
+              </p>
+              <p>
+                <strong>Antebraço Esq.:</strong>{' '}
+                {anthropometry.left_forearm ? `${anthropometry.left_forearm} cm` : '-'}
+              </p>
+              <p>
                 <strong>Coxa Dir.:</strong>{' '}
                 {anthropometry.right_thigh ? `${anthropometry.right_thigh} cm` : '-'}
               </p>
@@ -429,18 +453,26 @@ export default function EvaluationDetails() {
                 <strong>Coxa Esq.:</strong>{' '}
                 {anthropometry.left_thigh ? `${anthropometry.left_thigh} cm` : '-'}
               </p>
+              <p>
+                <strong>Panturrilha Dir.:</strong>{' '}
+                {anthropometry.right_calf ? `${anthropometry.right_calf} cm` : '-'}
+              </p>
+              <p>
+                <strong>Panturrilha Esq.:</strong>{' '}
+                {anthropometry.left_calf ? `${anthropometry.left_calf} cm` : '-'}
+              </p>
             </div>
           </CardContent>
         </Card>
 
         {vo2Test.enabled && (
-          <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:break-inside-avoid print:mb-6">
-            <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-              <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+          <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white md:col-span-2 print:break-inside-avoid print:mb-6">
+            <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+              <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
                 Teste de VO² (Step Test)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 flex flex-wrap gap-x-12 gap-y-2">
+            <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 flex flex-wrap gap-x-12 gap-y-2 print:text-black">
               <p>
                 <strong>Batimentos (15s):</strong> {vo2Test.beats_15s || '-'}
               </p>
@@ -458,13 +490,13 @@ export default function EvaluationDetails() {
           </Card>
         )}
 
-        <Card className="print:shadow-none print:border print:border-border/50 print:bg-transparent md:col-span-2 print:break-inside-avoid print:mb-6">
-          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-muted/10 border-b border-border/50">
-            <CardTitle className="text-base print:text-sm uppercase tracking-wider">
+        <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white md:col-span-2 print:break-inside-avoid print:mb-6">
+          <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
               Observações do Avaliador
             </CardTitle>
           </CardHeader>
-          <CardContent className="py-3 print:py-2 print:px-3">
+          <CardContent className="py-3 print:py-2 print:px-3 print:text-black">
             <p className="whitespace-pre-wrap">
               {respostas.final_observations || 'Nenhuma observação registrada.'}
             </p>

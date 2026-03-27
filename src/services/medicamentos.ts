@@ -52,10 +52,6 @@ const extractShortAction = (text: string): string => {
   cleanText = cleanText.replace(/\n/g, ' ')
   cleanText = cleanText.replace(/\s+/g, ' ').trim()
 
-  if (cleanText.length <= 40 && !cleanText.includes('.')) {
-    return cleanText.charAt(0).toUpperCase() + cleanText.slice(1)
-  }
-
   const lower = cleanText.toLowerCase()
 
   const markers = [
@@ -128,10 +124,12 @@ const extractShortAction = (text: string): string => {
     'ação ',
   ]
 
+  let extracted = ''
+
   for (const marker of markers) {
     const idx = lower.indexOf(marker)
     if (idx !== -1) {
-      let extracted = cleanText.substring(idx + marker.length)
+      extracted = cleanText.substring(idx + marker.length)
 
       extracted = extracted.split(/[,.;:]/)[0].trim()
 
@@ -145,51 +143,46 @@ const extractShortAction = (text: string): string => {
         continue
       }
 
-      if (extracted.length > 50) {
-        const conectivos = [' e ', ' que ', ' o qual ', ' a qual ', ' para ']
-        for (const con of conectivos) {
-          const cIdx = extracted.toLowerCase().indexOf(con)
-          if (cIdx > 10) {
-            extracted = extracted.substring(0, cIdx).trim()
-            break
-          }
-        }
-      }
-
-      if (extracted.length > 60) {
-        extracted = extracted.substring(0, 57).trim() + '...'
-      }
-
       if (marker === 'é um antidepressivo ') extracted = 'Antidepressivo ' + extracted
       else if (marker === 'é um anti-inflamatório ') extracted = 'Anti-inflamatório ' + extracted
       else if (marker === 'é um antibiótico ') extracted = 'Antibiótico ' + extracted
       else if (marker === 'é um analgésico ') extracted = 'Analgésico ' + extracted
 
-      return extracted.charAt(0).toUpperCase() + extracted.slice(1)
+      break
     }
   }
 
-  let sentence = cleanText.split('.')[0]
+  if (!extracted) {
+    extracted = cleanText.split('.')[0]
+  }
 
-  if (sentence.length > 60) {
-    sentence = sentence.split(',')[0]
-    if (sentence.length > 60) {
-      const conectivos = [' e ', ' que ', ' o qual ', ' a qual ', ' para ']
-      for (const con of conectivos) {
-        const cIdx = sentence.toLowerCase().indexOf(con)
-        if (cIdx > 15) {
-          sentence = sentence.substring(0, cIdx).trim()
-          break
-        }
+  // Agreesive shortening to guarantee it stays brief
+  if (extracted.length > 50) {
+    const keyTerms = [
+      'controle de',
+      'tratamento de',
+      'alívio de',
+      'anti-inflamatório',
+      'antibiótico',
+      'analgésico',
+      'antidepressivo',
+    ]
+    for (const term of keyTerms) {
+      const idx = extracted.toLowerCase().indexOf(term)
+      if (idx !== -1) {
+        const snippet = extracted.substring(idx).split(/[,.;]/)[0].trim()
+        if (snippet.length < 60) return snippet.charAt(0).toUpperCase() + snippet.slice(1)
       }
     }
+    const words = extracted.split(' ')
+    if (words.length > 6) {
+      extracted = words.slice(0, 6).join(' ') + '...'
+    } else {
+      extracted = extracted.substring(0, 47).trim() + '...'
+    }
   }
 
-  if (sentence.length > 60) {
-    sentence = sentence.substring(0, 57).trim() + '...'
-  }
-
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+  return extracted.charAt(0).toUpperCase() + extracted.slice(1)
 }
 
 export const searchMedicamentos = async (query: string) => {

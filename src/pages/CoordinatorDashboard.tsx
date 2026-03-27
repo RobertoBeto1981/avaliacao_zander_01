@@ -14,6 +14,7 @@ import {
   Edit,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
+import { getUsers } from '@/services/users'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -35,14 +36,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
 import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
+import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
@@ -62,14 +66,27 @@ export default function CoordinatorDashboard() {
       const data = await getEvaluations()
       setEvaluations(data)
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Erro', description: e.message })
-    } finally {
-      setLoading(false)
+      toast({ variant: 'destructive', title: 'Erro Avaliações', description: e.message })
     }
   }
 
+  const loadUsers = async () => {
+    try {
+      const data = await getUsers()
+      setUsers(data)
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro Usuários', description: e.message })
+    }
+  }
+
+  const initializeData = async () => {
+    setLoading(true)
+    await Promise.all([loadData(), loadUsers()])
+    setLoading(false)
+  }
+
   useEffect(() => {
-    loadData()
+    initializeData()
   }, [])
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -107,7 +124,7 @@ export default function CoordinatorDashboard() {
 
     text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
 
-    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
     toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
   }
@@ -135,333 +152,358 @@ export default function CoordinatorDashboard() {
         <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
       </div>
 
-      {evaluations.length > 0 && <DashboardCharts data={evaluations} />}
+      <Tabs defaultValue="overview">
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="team">Equipe e Colaboradores</TabsTrigger>
+        </TabsList>
 
-      {lateEvals.length > 0 && (
-        <Alert
-          variant="destructive"
-          className="mb-6 animate-pulse border-destructive/50 bg-destructive/10"
-        >
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="text-lg font-bold">Atenção: Avaliações Atrasadas!</AlertTitle>
-          <AlertDescription className="text-base">
-            O sistema registra <strong>{lateEvals.length}</strong>{' '}
-            {lateEvals.length === 1 ? 'avaliação' : 'avaliações'} com prazo de montagem de treino
-            expirado (mais de 3 dias úteis).
-          </AlertDescription>
-        </Alert>
-      )}
+        <TabsContent value="overview">
+          {evaluations.length > 0 && <DashboardCharts data={evaluations} />}
 
-      <div className="flex gap-4 mb-6">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filtrar por Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="em_progresso">Em Progresso</SelectItem>
-            <SelectItem value="concluido">Concluído</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          {lateEvals.length > 0 && (
+            <Alert
+              variant="destructive"
+              className="mb-6 animate-pulse border-destructive/50 bg-destructive/10"
+            >
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle className="text-lg font-bold">Atenção: Avaliações Atrasadas!</AlertTitle>
+              <AlertDescription className="text-base">
+                O sistema registra <strong>{lateEvals.length}</strong>{' '}
+                {lateEvals.length === 1 ? 'avaliação' : 'avaliações'} com prazo de montagem de
+                treino expirado (mais de 3 dias úteis).
+              </AlertDescription>
+            </Alert>
+          )}
 
-      <Card className="overflow-hidden border-border/50 shadow-sm">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="min-w-[220px]">Nome do Cliente</TableHead>
-              <TableHead className="whitespace-nowrap">Data Avaliação</TableHead>
-              <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
-              <TableHead className="whitespace-nowrap">Professor</TableHead>
-              <TableHead className="whitespace-nowrap">Período</TableHead>
-              <TableHead className="whitespace-nowrap">Status</TableHead>
-              <TableHead className="whitespace-nowrap">Prazo (Treino)</TableHead>
-              <TableHead className="whitespace-nowrap">Ações</TableHead>
-              <TableHead className="whitespace-nowrap text-right">Links</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((ev) => {
-              const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
-              const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
+          <div className="flex gap-4 mb-6">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                <SelectItem value="concluido">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-              const deadline = ev.data_avaliacao ? calculateDeadline(ev.data_avaliacao, 3) : null
-              const isLate =
-                !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
-              const links = ev.links_avaliacao?.[0] || {}
+          <Card className="overflow-hidden border-border/50 shadow-sm">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="min-w-[220px]">Nome do Cliente</TableHead>
+                  <TableHead className="whitespace-nowrap">Data Avaliação</TableHead>
+                  <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
+                  <TableHead className="whitespace-nowrap">Professor</TableHead>
+                  <TableHead className="whitespace-nowrap">Período</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Prazo (Treino)</TableHead>
+                  <TableHead className="whitespace-nowrap">Ações</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Links</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((ev) => {
+                  const today = startOfDay(new Date())
+                  const evalDate = ev.data_avaliacao
+                    ? new Date(ev.data_avaliacao + 'T12:00:00')
+                    : null
+                  const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
 
-              let reevalColorClass = ''
-              let reevalDotClass = ''
-              let isPulsing = false
+                  const deadline = ev.data_avaliacao
+                    ? calculateDeadline(ev.data_avaliacao, 3)
+                    : null
+                  const isLate =
+                    !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
+                  const links = ev.links_avaliacao?.[0] || {}
 
-              if (!isPre && ev.data_reavaliacao && evalDate) {
-                const daysSinceEval = differenceInDays(today, evalDate)
-                if (daysSinceEval <= 29) {
-                  reevalColorClass = 'text-primary'
-                  reevalDotClass = 'bg-primary'
-                } else if (daysSinceEval <= 59) {
-                  reevalColorClass = 'text-amber-500'
-                  reevalDotClass = 'bg-amber-500'
-                } else if (daysSinceEval <= 90) {
-                  reevalColorClass = 'text-destructive'
-                  reevalDotClass = 'bg-destructive'
-                } else {
-                  reevalColorClass = 'text-destructive font-bold'
-                  reevalDotClass = 'bg-destructive'
-                  isPulsing = true
-                }
-              }
+                  let reevalColorClass = ''
+                  let reevalDotClass = ''
+                  let isPulsing = false
 
-              const linkItems = [
-                {
-                  type: 'internal',
-                  url: `/evaluation/${ev.id}`,
-                  icon: FileText,
-                  label: 'Resumo da Avaliação',
-                },
-                {
-                  type: 'external',
-                  url: links.mapeamento_sintomas_url,
-                  icon: HeartPulse,
-                  label: 'Sintomas',
-                },
-                { type: 'external', url: links.mapeamento_dor_url, icon: Activity, label: 'Dor' },
-                { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
-                { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
-              ]
+                  if (!isPre && ev.data_reavaliacao && evalDate) {
+                    const daysSinceEval = differenceInDays(today, evalDate)
+                    if (daysSinceEval <= 29) {
+                      reevalColorClass = 'text-primary'
+                      reevalDotClass = 'bg-primary'
+                    } else if (daysSinceEval <= 59) {
+                      reevalColorClass = 'text-amber-500'
+                      reevalDotClass = 'bg-amber-500'
+                    } else if (daysSinceEval <= 90) {
+                      reevalColorClass = 'text-destructive'
+                      reevalDotClass = 'bg-destructive'
+                    } else {
+                      reevalColorClass = 'text-destructive font-bold'
+                      reevalDotClass = 'bg-destructive'
+                      isPulsing = true
+                    }
+                  }
 
-              return (
-                <TableRow
-                  key={ev.id}
-                  className={cn('hover:bg-muted/30', ev.is_pre_avaliacao && 'bg-primary/5')}
-                >
-                  <TableCell className="font-medium min-w-[220px]">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="line-clamp-2 leading-snug" title={ev.nome_cliente}>
-                        {ev.nome_cliente}
-                      </span>
-                      <div className="flex gap-1.5 items-center flex-wrap">
-                        {ev.is_pre_avaliacao && (
-                          <Badge
-                            variant="destructive"
-                            className="whitespace-nowrap text-[10px] px-2 py-0.5 border-none leading-tight flex items-center gap-1 w-fit"
-                          >
-                            <AlertCircle className="w-3 h-3" /> Pendente
-                          </Badge>
-                        )}
-                        {ev.evo_id && (
-                          <Badge
-                            variant="outline"
-                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-primary/30 text-primary/80 leading-tight"
-                          >
-                            EVO: {ev.evo_id}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {isPre ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : evalDate ? (
-                      format(evalDate, 'dd/MM/yyyy')
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {isPre || !ev.data_reavaliacao ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : (
-                      <div
-                        className={cn(
-                          'flex items-center gap-2',
-                          reevalColorClass,
-                          isPulsing && 'animate-pulse',
-                        )}
-                      >
-                        <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                        <span>
-                          {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
-                        </span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {ev.professor?.nome ? (
-                      <Badge
-                        variant="outline"
-                        className="font-normal bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
-                      >
-                        {ev.professor.nome}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm italic">Não atribuído</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{ev.periodo_treino || '-'}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={ev.status || 'pendente'}
-                      onValueChange={(val) => handleStatusChange(ev.id, val)}
+                  const linkItems = [
+                    {
+                      type: 'internal',
+                      url: `/evaluation/${ev.id}`,
+                      icon: FileText,
+                      label: 'Resumo da Avaliação',
+                    },
+                    {
+                      type: 'external',
+                      url: links.mapeamento_sintomas_url,
+                      icon: HeartPulse,
+                      label: 'Sintomas',
+                    },
+                    {
+                      type: 'external',
+                      url: links.mapeamento_dor_url,
+                      icon: Activity,
+                      label: 'Dor',
+                    },
+                    { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
+                    { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
+                  ]
+
+                  return (
+                    <TableRow
+                      key={ev.id}
+                      className={cn('hover:bg-muted/30', ev.is_pre_avaliacao && 'bg-primary/5')}
                     >
-                      <SelectTrigger
-                        className={cn(
-                          'w-[130px] h-8 text-xs font-semibold',
-                          (!ev.status || ev.status === 'pendente') &&
-                            'border-amber-500/30 text-amber-500 bg-amber-500/10',
-                          ev.status === 'em_progresso' &&
-                            'border-blue-500/30 text-blue-500 bg-blue-500/10',
-                          ev.status === 'concluido' &&
-                            'border-primary/30 text-primary bg-primary/10',
+                      <TableCell className="font-medium min-w-[220px]">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="line-clamp-2 leading-snug" title={ev.nome_cliente}>
+                            {ev.nome_cliente}
+                          </span>
+                          <div className="flex gap-1.5 items-center flex-wrap">
+                            {ev.is_pre_avaliacao && (
+                              <Badge
+                                variant="destructive"
+                                className="whitespace-nowrap text-[10px] px-2 py-0.5 border-none leading-tight flex items-center gap-1 w-fit"
+                              >
+                                <AlertCircle className="w-3 h-3" /> Pendente
+                              </Badge>
+                            )}
+                            {ev.evo_id && (
+                              <Badge
+                                variant="outline"
+                                className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-primary/30 text-primary/80 leading-tight"
+                              >
+                                EVO: {ev.evo_id}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {isPre ? (
+                          <span className="text-muted-foreground">-</span>
+                        ) : evalDate ? (
+                          format(evalDate, 'dd/MM/yyyy')
+                        ) : (
+                          '-'
                         )}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pendente">Pendente</SelectItem>
-                        <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                        <SelectItem value="concluido">Concluído</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {isPre || !deadline ? (
-                      <span className="text-muted-foreground">-</span>
-                    ) : (
-                      <div className="flex items-center gap-2 font-medium">
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
-                        />
-                        {format(deadline, 'dd/MM/yyyy')}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1.5 items-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap bg-secondary/30"
-                        onClick={() =>
-                          setAcompanhamentoEval({
-                            id: ev.id,
-                            nome: ev.nome_cliente,
-                            evo_id: ev.evo_id,
-                          })
-                        }
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" /> Anotações
-                      </Button>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
-                            asChild
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {isPre || !ev.data_reavaliacao ? (
+                          <span className="text-muted-foreground">-</span>
+                        ) : (
+                          <div
+                            className={cn(
+                              'flex items-center gap-2',
+                              reevalColorClass,
+                              isPulsing && 'animate-pulse',
+                            )}
                           >
-                            <Link to={`/evaluation/edit/${ev.id}`}>
-                              <Edit className="w-4 h-4" />
-                            </Link>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar Avaliação</TooltipContent>
-                      </Tooltip>
-                      {!ev.is_pre_avaliacao && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 shrink-0 text-accent hover:text-accent hover:bg-accent/20 border-accent/20"
-                              onClick={() => handleSendWhatsApp(ev)}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
-                        </Tooltip>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                            <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                            <span>
+                              {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {ev.professor?.nome ? (
+                          <Badge
+                            variant="outline"
+                            className="font-normal bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
+                          >
+                            {ev.professor.nome}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm italic">
+                            Não atribuído
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {ev.periodo_treino || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={ev.status || 'pendente'}
+                          onValueChange={(val) => handleStatusChange(ev.id, val)}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              'w-[130px] h-8 text-xs font-semibold',
+                              (!ev.status || ev.status === 'pendente') &&
+                                'border-amber-500/30 text-amber-500 bg-amber-500/10',
+                              ev.status === 'em_progresso' &&
+                                'border-blue-500/30 text-blue-500 bg-blue-500/10',
+                              ev.status === 'concluido' &&
+                                'border-primary/30 text-primary bg-primary/10',
+                            )}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendente">Pendente</SelectItem>
+                            <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                            <SelectItem value="concluido">Concluído</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {isPre || !deadline ? (
+                          <span className="text-muted-foreground">-</span>
+                        ) : (
+                          <div className="flex items-center gap-2 font-medium">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
+                            />
+                            {format(deadline, 'dd/MM/yyyy')}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1.5 items-center">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 shrink-0 text-muted-foreground border-border/50"
+                            className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap bg-secondary/30"
                             onClick={() =>
-                              setHistoryEval({
+                              setAcompanhamentoEval({
                                 id: ev.id,
                                 nome: ev.nome_cliente,
                                 evo_id: ev.evo_id,
                               })
                             }
                           >
-                            <History className="w-4 h-4" />
+                            <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" /> Anotações
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Ver Histórico</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-1 justify-end">
-                      {linkItems.map((item, idx) => {
-                        const Icon = item.icon
-                        if (!ev.is_pre_avaliacao && item.url) {
-                          return (
-                            <Tooltip key={idx}>
-                              <TooltipTrigger asChild>
-                                {item.type === 'internal' ? (
-                                  <Link
-                                    to={item.url}
-                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                  >
-                                    <Icon className="w-4 h-4" />
-                                  </Link>
-                                ) : (
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                  >
-                                    <Icon className="w-4 h-4" />
-                                  </a>
-                                )}
-                              </TooltipTrigger>
-                              <TooltipContent>{item.label}</TooltipContent>
-                            </Tooltip>
-                          )
-                        }
-                        return (
-                          <Tooltip key={idx}>
+                          <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="p-1.5 opacity-20 cursor-not-allowed">
-                                <Icon className="w-4 h-4" />
-                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
+                                asChild
+                              >
+                                <Link to={`/evaluation/edit/${ev.id}`}>
+                                  <Edit className="w-4 h-4" />
+                                </Link>
+                              </Button>
                             </TooltipTrigger>
-                            <TooltipContent>{item.label} (Indisponível)</TooltipContent>
+                            <TooltipContent>Editar Avaliação</TooltipContent>
                           </Tooltip>
-                        )
-                      })}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  Nenhuma avaliação encontrada.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                          {!ev.is_pre_avaliacao && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 shrink-0 text-accent hover:text-accent hover:bg-accent/20 border-accent/20"
+                                  onClick={() => handleSendWhatsApp(ev)}
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Enviar links via WhatsApp</TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 shrink-0 text-muted-foreground border-border/50"
+                                onClick={() =>
+                                  setHistoryEval({
+                                    id: ev.id,
+                                    nome: ev.nome_cliente,
+                                    evo_id: ev.evo_id,
+                                  })
+                                }
+                              >
+                                <History className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver Histórico</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          {linkItems.map((item, idx) => {
+                            const Icon = item.icon
+                            if (!ev.is_pre_avaliacao && item.url) {
+                              return (
+                                <Tooltip key={idx}>
+                                  <TooltipTrigger asChild>
+                                    {item.type === 'internal' ? (
+                                      <Link
+                                        to={item.url}
+                                        className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
+                                      >
+                                        <Icon className="w-4 h-4" />
+                                      </Link>
+                                    ) : (
+                                      <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
+                                      >
+                                        <Icon className="w-4 h-4" />
+                                      </a>
+                                    )}
+                                  </TooltipTrigger>
+                                  <TooltipContent>{item.label}</TooltipContent>
+                                </Tooltip>
+                              )
+                            }
+                            return (
+                              <Tooltip key={idx}>
+                                <TooltipTrigger asChild>
+                                  <div className="p-1.5 opacity-20 cursor-not-allowed">
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>{item.label} (Indisponível)</TooltipContent>
+                              </Tooltip>
+                            )
+                          })}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      Nenhuma avaliação encontrada.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+        <TabsContent value="team">
+          <UserManagementTab users={users} onUpdate={loadUsers} />
+        </TabsContent>
+      </Tabs>
 
       <AcompanhamentoDialog
         open={!!acompanhamentoEval}

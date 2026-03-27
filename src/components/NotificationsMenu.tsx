@@ -23,6 +23,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   const [alerts, setAlerts] = useState<any[]>([])
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'active' | 'archived'>('active')
+  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([])
 
   const loadNotifications = async () => {
     if (!user) return
@@ -115,7 +116,10 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   }, [open])
 
   const handleMarkAsRead = async (id: string) => {
-    if (id.startsWith('alert-') || id.startsWith('task-')) return
+    if (id.startsWith('alert-') || id.startsWith('task-')) {
+      setDismissedAlerts((prev) => [...prev, id])
+      return
+    }
     try {
       await markAsRead(id)
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
@@ -143,7 +147,10 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     }
   }
 
-  const activeItems = [...alerts, ...notifications.filter((n) => !n.is_archived)].sort((a, b) => {
+  const activeItems = [
+    ...alerts.map((a) => ({ ...a, is_read: dismissedAlerts.includes(a.id) })),
+    ...notifications.filter((n) => !n.is_archived),
+  ].sort((a, b) => {
     if (a.type === 'alert' && b.type !== 'alert') return -1
     if (b.type === 'alert' && a.type !== 'alert') return 1
 
@@ -238,13 +245,13 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                 <div
                   key={notif.id}
                   onClick={() => {
-                    if (!notif.is_read && notif.type !== 'alert') {
+                    if (!notif.is_read) {
                       handleMarkAsRead(notif.id)
                     }
                   }}
                   className={cn(
                     'flex items-start gap-3 p-4 border-b border-border transition-colors hover:bg-muted/50 group',
-                    !notif.is_read && notif.type !== 'alert' && 'cursor-pointer',
+                    !notif.is_read && 'cursor-pointer',
                     !notif.is_read ? 'bg-primary/5' : 'opacity-75',
                     notif.priority === 'high' && !notif.is_read
                       ? 'border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/20'
@@ -303,7 +310,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                     </p>
                   </div>
                   <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                    {!notif.is_read && notif.type !== 'alert' && (
+                    {!notif.is_read && (
                       <Button
                         variant="ghost"
                         size="icon"

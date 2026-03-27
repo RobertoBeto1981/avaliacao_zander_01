@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 
 export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate: () => void }) {
   const { toast } = useToast()
@@ -156,13 +157,14 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                 <TableHead>E-mail</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead className="text-center">Recebe Alunos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {regularUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhum colaborador encontrado.
                   </TableCell>
                 </TableRow>
@@ -181,6 +183,27 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                       </div>
                     </TableCell>
                     <TableCell>{u.telefone || '-'}</TableCell>
+                    <TableCell className="text-center">
+                      {u.roles?.includes('professor') || u.role === 'professor' ? (
+                        <Switch
+                          checked={u.ativo ?? true}
+                          onCheckedChange={async (val) => {
+                            try {
+                              await updateUser(u.id, { ativo: val })
+                              onUpdate()
+                              toast({
+                                title: 'Atualizado',
+                                description: 'Status de distribuição alterado.',
+                              })
+                            } catch (err: any) {
+                              toast({ variant: 'destructive', description: err.message })
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
                         <Button
