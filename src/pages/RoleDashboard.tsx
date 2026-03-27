@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { format, startOfDay, differenceInDays } from 'date-fns'
 import {
@@ -11,6 +11,7 @@ import {
   MessageSquare,
   History,
   Edit,
+  Loader2,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
@@ -40,7 +41,7 @@ import { useAuth } from '@/hooks/use-auth'
 
 export default function RoleDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
@@ -55,25 +56,28 @@ export default function RoleDashboard() {
   const { toast } = useToast()
   const { profile } = useAuth()
 
-  const loadData = async () => {
+  const profileId = profile?.id
+
+  const loadData = useCallback(async () => {
     try {
       const data = await getEvaluations()
-      // Show only evaluations assigned to this specific evaluator, unless they are a coordinator
       setEvaluations(
-        data.filter(
-          (ev: any) => ev.avaliador_id === profile?.id || profile?.role === 'coordenador',
-        ),
+        data.filter((ev: any) => ev.avaliador_id === profileId || profile?.role === 'coordenador'),
       )
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
-  }
+  }, [profileId, profile?.role, toast])
 
   useEffect(() => {
-    if (profile) loadData()
-  }, [profile])
+    if (profileId) {
+      loadData()
+    } else {
+      setInitialLoading(false)
+    }
+  }, [profileId, loadData])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -93,7 +97,13 @@ export default function RoleDashboard() {
     [evaluations, statusFilter],
   )
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+  if (initialLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">

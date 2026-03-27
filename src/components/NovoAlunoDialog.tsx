@@ -62,7 +62,7 @@ export function NovoAlunoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Novo Aluno (Pré-Avaliação)</DialogTitle>
+          <DialogTitle>Novo Aluno</DialogTitle>
           <DialogDescription>
             Se o ID EVO já existir, as informações serão sincronizadas automaticamente.
           </DialogDescription>

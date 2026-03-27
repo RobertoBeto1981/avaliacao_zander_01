@@ -41,7 +41,7 @@ function addBusinessDays(date: Date, days: number): Date {
 
 export default function Index() {
   const [evaluations, setEvaluations] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<any>(null)
@@ -50,23 +50,24 @@ export default function Index() {
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true)
       const data = await getEvaluations()
       setEvaluations(data)
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }, [toast])
 
+  const profileId = profile?.id
+
   useEffect(() => {
-    if (!authLoading && profile) {
+    if (!authLoading && profileId) {
       loadData()
-    } else if (!authLoading && !profile) {
-      setLoading(false)
+    } else if (!authLoading && !profileId) {
+      setInitialLoading(false)
     }
-  }, [authLoading, profile, loadData])
+  }, [authLoading, profileId, loadData])
 
   const filtered = useMemo(() => {
     if (!search) return evaluations
@@ -82,7 +83,7 @@ export default function Index() {
   const canCreateEval = userRoles.includes('avaliador') || userRoles.includes('coordenador')
   const canCreatePre = userRoles.includes('professor')
 
-  if (authLoading) {
+  if (authLoading || initialLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -91,14 +92,6 @@ export default function Index() {
   }
 
   if (!profile) return <Navigate to="/login" replace />
-
-  if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
@@ -113,7 +106,7 @@ export default function Index() {
           {canCreatePre && (
             <Button variant="outline" onClick={() => setIsNewStudentOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
-              Novo Aluno (Pré)
+              Novo Aluno
             </Button>
           )}
           {canCreateEval && (

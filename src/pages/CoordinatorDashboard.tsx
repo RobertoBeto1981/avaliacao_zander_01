@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
 import {
@@ -16,12 +16,16 @@ import {
   Trash2,
   Trophy,
   CheckCircle2,
+  Plus,
+  UserPlus,
+  Loader2,
 } from 'lucide-react'
 import {
   getEvaluations,
   updateEvaluationStatus,
   deleteEvaluation,
   activateDesafioZander,
+  markDesafioZanderSent,
 } from '@/services/evaluations'
 import { getUsers } from '@/services/users'
 import { calculateDeadline } from '@/lib/holidays'
@@ -61,11 +65,12 @@ import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
 import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
 import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
+import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
@@ -79,6 +84,7 @@ export default function CoordinatorDashboard() {
   } | null>(null)
 
   const [isExportOpen, setIsExportOpen] = useState(false)
+  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
   const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString())
 
@@ -102,15 +108,14 @@ export default function CoordinatorDashboard() {
     }
   }
 
-  const initializeData = async () => {
-    setLoading(true)
+  const initializeData = useCallback(async () => {
     await Promise.all([loadData(), loadUsers()])
-    setLoading(false)
-  }
+    setInitialLoading(false)
+  }, [])
 
   useEffect(() => {
     initializeData()
-  }, [])
+  }, [initializeData])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -145,9 +150,40 @@ export default function CoordinatorDashboard() {
         title: 'Desafio Ativado',
         description: 'Aluno adicionado à fila e redirecionado ao professor responsável.',
       })
-      loadData() // Recarrega os dados para atualizar as permissões e o professor da linha
+      loadData()
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro ao ativar desafio', description: e.message })
+    }
+  }
+
+  const handleSendDesafioWhatsApp = async (ev: any) => {
+    if (!ev.telefone_cliente) {
+      toast({
+        title: 'Atenção',
+        description: 'Cliente não possui telefone cadastrado.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    let phone = ev.telefone_cliente.replace(/\D/g, '')
+    if (!phone.startsWith('55')) phone = '55' + phone
+
+    const firstName = ev.nome_cliente.trim().split(' ')[0]
+
+    let text = `Fala, ${firstName}! 🚀 Você acaba de aceitar o #DesafioZander! Parabéns pela decisão. O foco agora é total na sua evolução: nosso time entrará em contato em breve para alinharmos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados incríveis. Vamos pra cima! 💪`
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+
+    try {
+      await markDesafioZanderSent(ev.id)
+      setEvaluations((prev) =>
+        prev.map((e) => (e.id === ev.id ? { ...e, desafio_zander_status: 'enviado' } : e)),
+      )
+      toast({ title: 'Sucesso', description: 'Mensagem do desafio enviada.' })
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message })
     }
   }
 
@@ -238,16 +274,39 @@ export default function CoordinatorDashboard() {
     })
   }, [evaluations])
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+  if (initialLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
-        <Button variant="outline" onClick={() => setIsExportOpen(true)}>
-          <Download className="w-4 h-4 mr-2" />
-          Exportar Relatório
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Visão geral de todos os alunos e avaliações.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setIsNewStudentOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Novo Aluno
+          </Button>
+          <Button asChild>
+            <Link to="/evaluation/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Avaliação
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => setIsExportOpen(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="overview">
@@ -292,14 +351,11 @@ export default function CoordinatorDashboard() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="min-w-[220px]">Nome do Cliente</TableHead>
-                  <TableHead className="whitespace-nowrap">Data Avaliação</TableHead>
-                  <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
-                  <TableHead className="whitespace-nowrap">Professor</TableHead>
-                  <TableHead className="whitespace-nowrap">Período</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="whitespace-nowrap">Prazo (Treino)</TableHead>
-                  <TableHead className="whitespace-nowrap">Ações</TableHead>
+                  <TableHead className="min-w-[220px]">Cliente</TableHead>
+                  <TableHead className="whitespace-nowrap">Datas (Aval. / Reaval.)</TableHead>
+                  <TableHead className="min-w-[150px]">Atendimento</TableHead>
+                  <TableHead className="min-w-[150px]">Treino</TableHead>
+                  <TableHead className="min-w-[280px]">Ações</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Links</TableHead>
                 </TableRow>
               </TableHeader>
@@ -393,89 +449,97 @@ export default function CoordinatorDashboard() {
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell className="whitespace-nowrap">
-                        {isPre ? (
-                          <span className="text-muted-foreground">-</span>
-                        ) : evalDate ? (
-                          format(evalDate, 'dd/MM/yyyy')
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {isPre || !ev.data_reavaliacao ? (
-                          <span className="text-muted-foreground">-</span>
-                        ) : (
-                          <div
-                            className={cn(
-                              'flex items-center gap-2',
-                              reevalColorClass,
-                              isPulsing && 'animate-pulse',
-                            )}
-                          >
-                            <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                            <span>
-                              {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
-                            </span>
+                        <div className="flex flex-col gap-1.5 text-sm">
+                          <div>
+                            <span className="text-muted-foreground mr-1">Aval:</span>
+                            {isPre ? '-' : evalDate ? format(evalDate, 'dd/MM/yyyy') : '-'}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {ev.professor?.nome ? (
-                          <Badge
-                            variant="outline"
-                            className="font-normal bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
-                          >
-                            {ev.professor.nome}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm italic">
-                            Não atribuído
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {ev.periodo_treino || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={ev.status || 'pendente'}
-                          onValueChange={(val) => handleStatusChange(ev.id, val)}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              'w-[130px] h-8 text-xs font-semibold',
-                              (!ev.status || ev.status === 'pendente') &&
-                                'border-amber-500/30 text-amber-500 bg-amber-500/10',
-                              ev.status === 'em_progresso' &&
-                                'border-blue-500/30 text-blue-500 bg-blue-500/10',
-                              ev.status === 'concluido' &&
-                                'border-primary/30 text-primary bg-primary/10',
+                          <div>
+                            <span className="text-muted-foreground mr-1">Reav:</span>
+                            {isPre || !ev.data_reavaliacao ? (
+                              '-'
+                            ) : (
+                              <span
+                                className={cn(
+                                  'font-medium inline-flex items-center gap-1.5',
+                                  reevalColorClass,
+                                  isPulsing && 'animate-pulse',
+                                )}
+                              >
+                                <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                                {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
+                              </span>
                             )}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendente">Pendente</SelectItem>
-                            <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                            <SelectItem value="concluido">Concluído</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {isPre || !deadline ? (
-                          <span className="text-muted-foreground">-</span>
-                        ) : (
-                          <div className="flex items-center gap-2 font-medium">
-                            <span
-                              className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
-                            />
-                            {format(deadline, 'dd/MM/yyyy')}
                           </div>
-                        )}
+                        </div>
                       </TableCell>
+
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col gap-1.5 text-sm">
+                          <div>
+                            <span className="text-muted-foreground mr-1">Prof:</span>
+                            {ev.professor?.nome ? (
+                              <span className="font-medium text-purple-700 dark:text-purple-400">
+                                {ev.professor.nome}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground italic">Não atribuído</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground mr-1">Período:</span>
+                            <span>{ev.periodo_treino || '-'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+
                       <TableCell>
-                        <div className="flex gap-1.5 items-center flex-wrap min-w-[240px]">
+                        <div className="flex flex-col gap-2">
+                          <Select
+                            value={ev.status || 'pendente'}
+                            onValueChange={(val) => handleStatusChange(ev.id, val)}
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                'w-[130px] h-8 text-xs font-semibold',
+                                (!ev.status || ev.status === 'pendente') &&
+                                  'border-amber-500/30 text-amber-500 bg-amber-500/10',
+                                ev.status === 'em_progresso' &&
+                                  'border-blue-500/30 text-blue-500 bg-blue-500/10',
+                                ev.status === 'concluido' &&
+                                  'border-primary/30 text-primary bg-primary/10',
+                              )}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendente">Pendente</SelectItem>
+                              <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                              <SelectItem value="concluido">Concluído</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="text-xs">
+                            <span className="text-muted-foreground mr-1">Prazo:</span>
+                            {isPre || !deadline ? (
+                              '-'
+                            ) : (
+                              <span
+                                className={cn(
+                                  'font-medium',
+                                  isLate && 'text-destructive animate-pulse',
+                                )}
+                              >
+                                {format(deadline, 'dd/MM/yyyy')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex gap-1.5 items-center flex-wrap max-w-[280px]">
                           <Button
                             variant="outline"
                             size="sm"
@@ -564,13 +628,15 @@ export default function CoordinatorDashboard() {
                             </Button>
                           )}
                           {ev.desafio_zander_status === 'ativado' && (
-                            <Badge
+                            <Button
                               variant="outline"
-                              className="h-8 font-semibold border-orange-500/50 text-orange-600 bg-orange-500/10 flex items-center px-2"
-                              title="Desafio Ativado (Pendente de Envio)"
+                              size="sm"
+                              className="h-8 text-xs px-2 font-semibold whitespace-nowrap border-orange-500/50 text-orange-600 bg-orange-500/10 hover:bg-orange-500/20"
+                              title="Enviar WhatsApp e Marcar como Concluído"
+                              onClick={() => handleSendDesafioWhatsApp(ev)}
                             >
-                              <Trophy className="w-3.5 h-3.5 mr-1.5" /> Pendente
-                            </Badge>
+                              <Trophy className="w-3.5 h-3.5 mr-1.5" /> Enviar Whats
+                            </Button>
                           )}
                           {ev.desafio_zander_status === 'enviado' && (
                             <Badge
@@ -578,7 +644,7 @@ export default function CoordinatorDashboard() {
                               className="h-8 font-semibold border-green-500/50 text-green-600 bg-green-500/10 flex items-center px-2"
                               title="Mensagem Enviada"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Aceito
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Desafio Aceito
                             </Badge>
                           )}
                         </div>
@@ -631,7 +697,7 @@ export default function CoordinatorDashboard() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Nenhuma avaliação encontrada.
                     </TableCell>
                   </TableRow>
@@ -704,6 +770,15 @@ export default function CoordinatorDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NovoAlunoDialog
+        open={isNewStudentOpen}
+        onOpenChange={setIsNewStudentOpen}
+        onSuccess={() => {
+          setIsNewStudentOpen(false)
+          loadData()
+        }}
+      />
 
       <AcompanhamentoDialog
         open={!!acompanhamentoEval}

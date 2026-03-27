@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
 import {
@@ -13,6 +13,7 @@ import {
   Plus,
   MessageCircle,
   Edit,
+  Loader2,
 } from 'lucide-react'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
@@ -45,7 +46,7 @@ import { useAuth } from '@/hooks/use-auth'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [periodoFilter, setPeriodoFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
@@ -65,23 +66,27 @@ export default function ProfessorDashboard() {
   const isCoordenador = profile?.role === 'coordenador'
   const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
 
-  const loadData = async () => {
+  const profileId = profile?.id
+
+  const loadData = useCallback(async () => {
     try {
       const data = await getEvaluations()
       // Filtra apenas os alunos que foram atribuídos a ESTE professor específico
-      setEvaluations(data.filter((ev: any) => ev.professor_id === profile?.id))
+      setEvaluations(data.filter((ev: any) => ev.professor_id === profileId))
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
-  }
+  }, [profileId, toast])
 
   useEffect(() => {
-    if (profile) {
+    if (profileId) {
       loadData()
+    } else {
+      setInitialLoading(false)
     }
-  }, [profile])
+  }, [profileId, loadData])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -148,7 +153,13 @@ export default function ProfessorDashboard() {
     })
   }, [evaluations])
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>
+  if (initialLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
