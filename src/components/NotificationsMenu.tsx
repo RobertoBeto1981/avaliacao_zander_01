@@ -25,6 +25,19 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([])
 
+  useEffect(() => {
+    if (user) {
+      try {
+        const saved = localStorage.getItem(`dismissed_alerts_${user.id}`)
+        if (saved) {
+          setDismissedAlerts(JSON.parse(saved))
+        }
+      } catch (e) {
+        console.error('Error parsing dismissed alerts', e)
+      }
+    }
+  }, [user])
+
   const loadNotifications = async () => {
     if (!user) return
     try {
@@ -36,13 +49,14 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
       if (profile?.role === 'professor') {
         const { data: evals } = await supabase
           .from('avaliacoes')
-          .select('id, nome_cliente, data_avaliacao')
+          .select('id, nome_cliente, data_avaliacao, created_at')
           .eq('professor_id', user.id)
           .neq('status', 'concluido')
 
         if (evals) {
           const today = startOfDay(new Date())
           const lateEvals = evals.filter((ev) => {
+            if (!ev.data_avaliacao) return false
             const deadline = calculateDeadline(ev.data_avaliacao, 3)
             return isAfter(today, deadline)
           })
@@ -50,24 +64,29 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
           generatedAlerts = lateEvals.map((ev) => ({
             id: `alert-${ev.id}`,
             title: 'Prazo Expirado!',
-            message: `A avaliação de ${ev.nome_cliente} está atrasada.`,
+            message: `A avaliação de ${ev.nome_cliente} está atrasada para a montagem de treino.`,
             type: 'alert',
             is_read: false,
-            created_at: new Date().toISOString(),
+            created_at: ev.created_at || new Date().toISOString(),
           }))
         }
       }
 
-      const pendingTasks = await getPendingAcompanhamentos(user.id)
-      const taskAlerts = pendingTasks.map((t: any) => {
-        const dateFormatted = new Date(t.prazo + 'T12:00:00').toLocaleDateString('pt-BR')
+      const pendingTasks = await getPendingAcompanhamentos()
+      const myPendingTasks = pendingTasks.filter((t: any) => t.autor_id === user.id)
+
+      const taskAlerts = myPendingTasks.map((t: any) => {
+        const dateFormatted = t.prazo
+          ? new Date(t.prazo + 'T12:00:00').toLocaleDateString('pt-BR')
+          : 'Sem prazo'
+
         return {
-          id: `task-${t.id}`,
+          id: `task-${t.id}-${t.prazo || 'sem-prazo'}`,
           title: 'Tarefa Pendente!',
           message: `Prazo: ${dateFormatted} - ${t.observacao.substring(0, 40)}${t.observacao.length > 40 ? '...' : ''} (Cliente: ${t.avaliacao?.nome_cliente || 'Desconhecido'})`,
           type: 'alert',
           is_read: false,
-          created_at: new Date().toISOString(),
+          created_at: t.created_at || new Date().toISOString(),
         }
       })
 
@@ -117,7 +136,14 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
 
   const handleMarkAsRead = async (id: string) => {
     if (id.startsWith('alert-') || id.startsWith('task-')) {
-      setDismissedAlerts((prev) => [...prev, id])
+      setDismissedAlerts((prev) => {
+        if (prev.includes(id)) return prev
+        const next = [...prev, id]
+        if (user) {
+          localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
+        }
+        return next
+      })
       return
     }
     try {

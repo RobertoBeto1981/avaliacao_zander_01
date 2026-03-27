@@ -12,8 +12,10 @@ import {
   History,
   MessageCircle,
   Edit,
+  Download,
+  Trash2,
 } from 'lucide-react'
-import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
+import { getEvaluations, updateEvaluationStatus, deleteEvaluation } from '@/services/evaluations'
 import { getUsers } from '@/services/users'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,15 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
@@ -59,6 +70,11 @@ export default function CoordinatorDashboard() {
     nome: string
     evo_id?: string
   } | null>(null)
+
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
+  const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString())
+
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -99,6 +115,64 @@ export default function CoordinatorDashboard() {
     }
   }
 
+  const handleDelete = async (id: string) => {
+    if (
+      !confirm(
+        'Tem certeza que deseja excluir este cliente e sua avaliação permanentemente? Esta ação não pode ser desfeita.',
+      )
+    )
+      return
+    try {
+      await deleteEvaluation(id)
+      setEvaluations((prev) => prev.filter((ev) => ev.id !== id))
+      toast({ title: 'Sucesso', description: 'Cliente e avaliação excluídos com sucesso.' })
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
+  const handleExportCSV = () => {
+    const filtered = evaluations.filter((ev) => {
+      if (!ev.data_avaliacao) return false
+      const date = new Date(ev.data_avaliacao + 'T12:00:00')
+      return (
+        date.getMonth() === parseInt(exportMonth) && date.getFullYear() === parseInt(exportYear)
+      )
+    })
+
+    if (filtered.length === 0) {
+      toast({
+        title: 'Nenhum dado',
+        description: 'Não há avaliações concluídas no período selecionado.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const headers = ['Nome do Cliente', 'Data da Avaliação', 'Nome do Avaliador']
+    const rows = filtered.map((ev) => [
+      ev.nome_cliente,
+      format(new Date(ev.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy'),
+      ev.avaliador?.nome || 'Não informado',
+    ])
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map((e) => e.map((f) => `"${f}"`).join(';')),
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `avaliacoes_${parseInt(exportMonth) + 1}_${exportYear}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setIsExportOpen(false)
+    toast({ title: 'Relatório Gerado', description: 'A planilha foi baixada com sucesso.' })
+  }
+
   const handleSendWhatsApp = (ev: any) => {
     if (!ev.telefone_cliente) {
       toast({
@@ -115,14 +189,14 @@ export default function CoordinatorDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
-    let text = `Olá *${firstName}*, tudo bem?\n\nAqui estão os links para a sua avaliação física:\n\n`
+    let text = `Olá, ${firstName}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n`
     if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
     if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
     if (links.bia_url) text += `⚖️ *BIA:* ${links.bia_url}\n`
     if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
 
-    text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
+    text += `\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
 
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
@@ -150,6 +224,10 @@ export default function CoordinatorDashboard() {
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
+        <Button variant="outline" onClick={() => setIsExportOpen(true)}>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar Relatório
+        </Button>
       </div>
 
       <Tabs defaultValue="overview">
@@ -441,6 +519,19 @@ export default function CoordinatorDashboard() {
                             </TooltipTrigger>
                             <TooltipContent>Ver Histórico</TooltipContent>
                           </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 shrink-0 text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => handleDelete(ev.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excluir Cliente e Avaliação</TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -504,6 +595,66 @@ export default function CoordinatorDashboard() {
           <UserManagementTab users={users} onUpdate={loadUsers} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Exportar Relatório Mensal</DialogTitle>
+            <DialogDescription>
+              Selecione o mês e o ano para gerar uma planilha em Excel/CSV com as avaliações
+              realizadas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Mês</Label>
+              <Select value={exportMonth} onValueChange={setExportMonth}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Janeiro</SelectItem>
+                  <SelectItem value="1">Fevereiro</SelectItem>
+                  <SelectItem value="2">Março</SelectItem>
+                  <SelectItem value="3">Abril</SelectItem>
+                  <SelectItem value="4">Maio</SelectItem>
+                  <SelectItem value="5">Junho</SelectItem>
+                  <SelectItem value="6">Julho</SelectItem>
+                  <SelectItem value="7">Agosto</SelectItem>
+                  <SelectItem value="8">Setembro</SelectItem>
+                  <SelectItem value="9">Outubro</SelectItem>
+                  <SelectItem value="10">Novembro</SelectItem>
+                  <SelectItem value="11">Dezembro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Ano</Label>
+              <Select value={exportYear} onValueChange={setExportYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...Array(5)].map((_, i) => {
+                    const y = (new Date().getFullYear() - i).toString()
+                    return (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleExportCSV}>Baixar Planilha</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AcompanhamentoDialog
         open={!!acompanhamentoEval}
