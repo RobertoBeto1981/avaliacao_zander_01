@@ -33,14 +33,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data, error } = await supabase.from('users').select('*').eq('id', userId).single()
         if (error) {
-          console.error('Error fetching profile:', error)
+          console.warn('Error fetching profile:', error.message)
         }
         if (mounted) {
           setProfile(data)
           setLoading(false)
         }
-      } catch (err) {
-        console.error('Exception fetching profile:', err)
+      } catch (err: any) {
+        console.warn('Exception fetching profile:', err.message)
         if (mounted) {
           setLoading(false)
         }
@@ -74,7 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          console.error('Supabase auth error:', error)
+          console.warn('Supabase auth warning:', error.message)
+          if (
+            error.message.includes('Refresh Token Not Found') ||
+            error.message.includes('Invalid Refresh Token')
+          ) {
+            supabase.auth.signOut().catch(() => {})
+          }
         }
         if (mounted) {
           setSession(session)
@@ -86,8 +92,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       })
-      .catch((err) => {
-        console.error('Supabase auth promise error:', err)
+      .catch((err: any) => {
+        console.warn('Supabase auth promise warning:', err.message)
         if (mounted) {
           setSession(null)
           setUser(null)
