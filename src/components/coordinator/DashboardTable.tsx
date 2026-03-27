@@ -96,7 +96,9 @@ export function DashboardTable({
                       )}
                     </TableCell>
                     <TableCell>
-                      {ev.professor?.nome || (
+                      {ev.professor?.nome ? (
+                        <span className="font-semibold text-foreground">{ev.professor.nome}</span>
+                      ) : (
                         <span className="text-muted-foreground italic">Não atribuído</span>
                       )}
                     </TableCell>

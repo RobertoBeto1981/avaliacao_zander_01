@@ -313,13 +313,10 @@ export const activateDesafioZander = async (id: string) => {
 
   const updates: any = {
     desafio_zander_status: 'ativado',
+    desafio_zander_ativado_em: new Date().toISOString(),
     status: 'pendente',
     professor_id,
     is_pre_avaliacao: false,
-  }
-
-  if (!ev.data_avaliacao) {
-    updates.data_avaliacao = todayStr
   }
 
   const { data, error } = await supabase
@@ -353,7 +350,10 @@ export const activateDesafioZander = async (id: string) => {
 export const markDesafioZanderSent = async (id: string) => {
   const { data, error } = await supabase
     .from('avaliacoes')
-    .update({ desafio_zander_status: 'enviado' })
+    .update({
+      desafio_zander_status: 'enviado',
+      desafio_zander_enviado_em: new Date().toISOString(),
+    })
     .eq('id', id)
     .select()
     .single()

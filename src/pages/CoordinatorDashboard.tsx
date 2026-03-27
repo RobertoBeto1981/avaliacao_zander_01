@@ -268,8 +268,12 @@ export default function CoordinatorDashboard() {
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
     return evaluations.filter((ev) => {
-      if (ev.status === 'concluido' || ev.is_pre_avaliacao || !ev.data_avaliacao) return false
-      const deadline = calculateDeadline(ev.data_avaliacao, 3)
+      if (ev.status === 'concluido' || ev.is_pre_avaliacao) return false
+      const deadlineBase =
+        ev.data_avaliacao ||
+        (ev.desafio_zander_ativado_em ? ev.desafio_zander_ativado_em.split('T')[0] : null)
+      if (!deadlineBase) return false
+      const deadline = calculateDeadline(deadlineBase, 3)
       return isAfter(today, deadline)
     })
   }, [evaluations])
@@ -365,11 +369,15 @@ export default function CoordinatorDashboard() {
                   const evalDate = ev.data_avaliacao
                     ? new Date(ev.data_avaliacao + 'T12:00:00')
                     : null
-                  const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
+                  const isPre = ev.is_pre_avaliacao
 
-                  const deadline = ev.data_avaliacao
-                    ? calculateDeadline(ev.data_avaliacao, 3)
-                    : null
+                  const deadlineBaseDate =
+                    ev.data_avaliacao ||
+                    (ev.desafio_zander_ativado_em
+                      ? ev.desafio_zander_ativado_em.split('T')[0]
+                      : null)
+                  const deadline = deadlineBaseDate ? calculateDeadline(deadlineBaseDate, 3) : null
+
                   const isLate =
                     !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
                   const links = ev.links_avaliacao?.[0] || {}
@@ -481,7 +489,7 @@ export default function CoordinatorDashboard() {
                           <div>
                             <span className="text-muted-foreground mr-1">Prof:</span>
                             {ev.professor?.nome ? (
-                              <span className="font-medium text-purple-700 dark:text-purple-400">
+                              <span className="font-semibold text-foreground">
                                 {ev.professor.nome}
                               </span>
                             ) : (

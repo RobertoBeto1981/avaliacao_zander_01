@@ -161,3 +161,14 @@ export const logVideoSent = async (
   if (error) throw error
   return data
 }
+
+export const getSentDesafiosHistory = async () => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .select('id, nome_cliente, evo_id, desafio_zander_enviado_em')
+    .eq('desafio_zander_status', 'enviado')
+    .not('desafio_zander_enviado_em', 'is', null)
+
+  if (error) throw error
+  return data || []
+}
