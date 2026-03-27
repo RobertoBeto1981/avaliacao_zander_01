@@ -14,8 +14,15 @@ import {
   Edit,
   Download,
   Trash2,
+  Trophy,
+  CheckCircle2,
 } from 'lucide-react'
-import { getEvaluations, updateEvaluationStatus, deleteEvaluation } from '@/services/evaluations'
+import {
+  getEvaluations,
+  updateEvaluationStatus,
+  deleteEvaluation,
+  activateDesafioZander,
+} from '@/services/evaluations'
 import { getUsers } from '@/services/users'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
@@ -128,6 +135,21 @@ export default function CoordinatorDashboard() {
       toast({ title: 'Sucesso', description: 'Cliente e avaliação excluídos com sucesso.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
+  const handleActivateDesafio = async (id: string) => {
+    try {
+      await activateDesafioZander(id)
+      setEvaluations((prev) =>
+        prev.map((ev) => (ev.id === id ? { ...ev, desafio_zander_status: 'ativado' } : ev)),
+      )
+      toast({
+        title: 'Desafio Ativado',
+        description: 'Aluno adicionado à fila de envios do WhatsApp.',
+      })
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro ao ativar desafio', description: e.message })
     }
   }
 
@@ -455,11 +477,11 @@ export default function CoordinatorDashboard() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1.5 items-center">
+                        <div className="flex gap-1.5 items-center flex-wrap min-w-[240px]">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-xs px-2 flex-1 font-medium whitespace-nowrap bg-secondary/30"
+                            className="h-8 text-xs px-2 font-medium whitespace-nowrap bg-secondary/30"
                             onClick={() =>
                               setAcompanhamentoEval({
                                 id: ev.id,
@@ -532,6 +554,37 @@ export default function CoordinatorDashboard() {
                             </TooltipTrigger>
                             <TooltipContent>Excluir Cliente e Avaliação</TooltipContent>
                           </Tooltip>
+
+                          {!ev.is_pre_avaliacao &&
+                            (!ev.desafio_zander_status ||
+                              ev.desafio_zander_status === 'nenhum') && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs px-2 font-bold whitespace-nowrap border-orange-500/30 text-orange-600 bg-orange-500/10 hover:bg-orange-500/20"
+                                onClick={() => handleActivateDesafio(ev.id)}
+                              >
+                                <Trophy className="w-3.5 h-3.5 mr-1.5" /> #DesafioZander
+                              </Button>
+                            )}
+                          {ev.desafio_zander_status === 'ativado' && !ev.is_pre_avaliacao && (
+                            <Badge
+                              variant="outline"
+                              className="h-8 font-semibold border-orange-500/50 text-orange-600 bg-orange-500/10 flex items-center px-2"
+                              title="Desafio Ativado (Pendente de Envio)"
+                            >
+                              <Trophy className="w-3.5 h-3.5 mr-1.5" /> Pendente
+                            </Badge>
+                          )}
+                          {ev.desafio_zander_status === 'enviado' && !ev.is_pre_avaliacao && (
+                            <Badge
+                              variant="outline"
+                              className="h-8 font-semibold border-green-500/50 text-green-600 bg-green-500/10 flex items-center px-2"
+                              title="Mensagem Enviada"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Aceito
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">

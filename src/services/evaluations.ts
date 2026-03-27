@@ -266,3 +266,38 @@ export const getClientPastMedications = async (clientName: string) => {
 
   return Array.from(allMeds)
 }
+
+export const activateDesafioZander = async (id: string) => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .update({ desafio_zander_status: 'ativado' })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+  return data
+}
+
+export const markDesafioZanderSent = async (id: string) => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .update({ desafio_zander_status: 'enviado' })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+  return data
+}
+
+export const getPendingDesafioZander = async () => {
+  const { data, error } = await supabase
+    .from('avaliacoes')
+    .select('id, nome_cliente, telefone_cliente, desafio_zander_status')
+    .eq('desafio_zander_status', 'ativado')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
