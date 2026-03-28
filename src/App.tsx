@@ -22,6 +22,46 @@ import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 import CoordinatorDashboard from './pages/CoordinatorDashboard'
 
+// Global error handlers to prevent app crash on Supabase invalid refresh token
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const msg = event.reason?.message || event.reason?.toString() || ''
+    if (
+      msg.includes('Refresh Token Not Found') ||
+      msg.includes('Invalid Refresh Token') ||
+      msg.includes('AuthApiError')
+    ) {
+      event.preventDefault()
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  })
+
+  const originalConsoleError = console.error
+  console.error = (...args: any[]) => {
+    const msg = args[0]
+    const isAuthError =
+      typeof msg === 'string' && (msg.includes('Refresh Token') || msg.includes('AuthApiError'))
+    const isObjAuthError =
+      msg &&
+      typeof msg === 'object' &&
+      msg.message &&
+      (msg.message.includes('Refresh Token') || msg.message.includes('AuthApiError'))
+
+    if (isAuthError || isObjAuthError) return
+
+    originalConsoleError.apply(console, args)
+  }
+}
+
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const { session, loading } = useAuth()
   if (loading) return null

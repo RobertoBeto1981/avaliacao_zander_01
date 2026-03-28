@@ -79,6 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             error.message.includes('Refresh Token Not Found') ||
             error.message.includes('Invalid Refresh Token')
           ) {
+            try {
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i)
+                if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                  localStorage.removeItem(key)
+                }
+              }
+            } catch (err) {
+              // ignore
+            }
             supabase.auth.signOut().catch(() => {})
           }
         }
