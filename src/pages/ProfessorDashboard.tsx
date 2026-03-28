@@ -230,7 +230,7 @@ export default function ProfessorDashboard() {
               <TableHead className="whitespace-nowrap">Reavaliação</TableHead>
               <TableHead className="whitespace-nowrap">Período de Treino</TableHead>
               <TableHead className="whitespace-nowrap">Treino</TableHead>
-              <TableHead className="whitespace-nowrap">Prazo</TableHead>
+              <TableHead className="whitespace-nowrap">Prazo (Treino)</TableHead>
               <TableHead className="whitespace-nowrap">Ações</TableHead>
               <TableHead className="whitespace-nowrap text-right">Links</TableHead>
             </TableRow>
@@ -310,6 +310,14 @@ export default function ProfessorDashboard() {
                             <AlertCircle className="w-3 h-3" /> Pendente
                           </Badge>
                         )}
+                        {ev.desafio_zander_status === 'ativo' && (
+                          <Badge
+                            variant="default"
+                            className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-none leading-tight bg-purple-600 hover:bg-purple-700 text-white w-fit"
+                          >
+                            #DesafioZander
+                          </Badge>
+                        )}
                         {ev.evo_id && (
                           <Badge
                             variant="outline"
@@ -378,11 +386,18 @@ export default function ProfessorDashboard() {
                     {isPre || !deadline ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
-                      <div className="flex items-center gap-2 font-medium">
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
-                        />
-                        {format(deadline, 'dd/MM/yyyy')}
+                      <div className="flex flex-col gap-1 items-start">
+                        <div className="flex items-center gap-2 font-medium">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
+                          />
+                          {format(deadline, 'dd/MM/yyyy')}
+                        </div>
+                        {ev.desafio_zander_status === 'ativo' && (
+                          <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                            #DesafioZander
+                          </span>
+                        )}
                       </div>
                     )}
                   </TableCell>

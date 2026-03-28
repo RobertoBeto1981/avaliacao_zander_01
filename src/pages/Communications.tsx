@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { sendBulkMessage, getSentMessagesStats } from '@/services/notifications'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
-import { Send, Users, Megaphone, CheckCheck, AlertTriangle } from 'lucide-react'
+import { Send, Users, Megaphone, CheckCheck, AlertTriangle, Paperclip } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function Communications() {
@@ -25,6 +26,7 @@ export default function Communications() {
   const [targetRoles, setTargetRoles] = useState<string[]>(['todos'])
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [isHighPriority, setIsHighPriority] = useState(false)
   const [sending, setSending] = useState(false)
   const [stats, setStats] = useState<any[]>([])
@@ -56,13 +58,44 @@ export default function Communications() {
 
     setSending(true)
     try {
-      await sendBulkMessage(targetRoles, title, message, isHighPriority ? 'high' : 'normal')
+      let fileUrl = null
+      let fileName = null
+
+      if (file) {
+        const fileExt = file.name.split('.').pop()
+        const filePath = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('communications')
+          .upload(filePath, file)
+
+        if (uploadError) {
+          throw new Error(`Erro ao enviar anexo: ${uploadError.message}`)
+        }
+
+        const { data } = supabase.storage.from('communications').getPublicUrl(filePath)
+        fileUrl = data.publicUrl
+        fileName = file.name
+      }
+
+      await sendBulkMessage(
+        targetRoles,
+        title,
+        message,
+        isHighPriority ? 'high' : 'normal',
+        fileUrl,
+        fileName,
+      )
+
       toast({
         title: 'Sucesso',
         description: 'Mensagem enviada com sucesso para os destinatários.',
       })
       setTitle('')
       setMessage('')
+      setFile(null)
+      const fileInput = document.getElementById('attachment') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
       setIsHighPriority(false)
       setTargetRoles(['todos'])
       loadStats()
@@ -192,6 +225,22 @@ export default function Communications() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="attachment" className="text-base flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" /> Anexo (Opcional)
+                  </Label>
+                  <Input
+                    id="attachment"
+                    type="file"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="cursor-pointer"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Você pode anexar PDFs, documentos, ou imagens para compartilhar com a equipe.
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                   <div className="space-y-0.5">
                     <Label className="text-base font-semibold flex items-center gap-2">
@@ -271,6 +320,11 @@ export default function Communications() {
                               </span>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
+                              {stat.file_url && (
+                                <Badge variant="secondary" className="text-xs" title="Contém anexo">
+                                  <Paperclip className="w-3 h-3 mr-1" /> Anexo
+                                </Badge>
+                              )}
                               {stat.priority === 'high' && (
                                 <Badge variant="destructive" className="text-xs">
                                   Urgente
@@ -290,9 +344,24 @@ export default function Communications() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 pb-4 border-t border-border/50">
-                          <div className="mb-6 bg-muted/30 p-4 rounded-md border text-sm text-foreground/90 whitespace-pre-wrap">
+                          <div className="mb-4 bg-muted/30 p-4 rounded-md border text-sm text-foreground/90 whitespace-pre-wrap">
                             {stat.message}
                           </div>
+
+                          {stat.file_url && (
+                            <div className="mb-6">
+                              <a
+                                href={stat.file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-3 py-2 rounded-md border border-primary/20 w-fit"
+                              >
+                                <Paperclip className="w-4 h-4" />
+                                Baixar Anexo: {stat.file_name || 'Documento'}
+                              </a>
+                            </div>
+                          )}
+
                           <h4 className="font-semibold text-sm mb-3">Confirmações de Leitura:</h4>
                           {totalCount === 0 ? (
                             <p className="text-sm text-muted-foreground">

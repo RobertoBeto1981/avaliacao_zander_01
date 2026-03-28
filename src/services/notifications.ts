@@ -39,12 +39,16 @@ export const sendBulkMessage = async (
   title: string,
   message: string,
   priority: string = 'normal',
+  fileUrl?: string | null,
+  fileName?: string | null,
 ) => {
   const { error } = await supabase.rpc('send_bulk_message', {
     p_target_roles: targetRoles,
     p_title: title,
     p_message: message,
     p_priority: priority,
+    p_file_url: fileUrl || null,
+    p_file_name: fileName || null,
   } as any)
   if (error) throw error
 }

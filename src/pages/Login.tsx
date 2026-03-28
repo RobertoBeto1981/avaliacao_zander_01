@@ -27,7 +27,10 @@ export default function Login() {
     const { error } = await signIn(email, password)
     setIsSubmitting(false)
     if (error) {
-      toast({ variant: 'destructive', title: 'Erro de Login', description: error.message })
+      const msg = error.message || ''
+      if (!msg.toLowerCase().includes('refresh token') && !msg.toLowerCase().includes('session')) {
+        toast({ variant: 'destructive', title: 'Erro de Login', description: msg })
+      }
     } else {
       navigate('/')
     }

@@ -77,6 +77,14 @@ export function DashboardTable({
                               Nova Avaliação Pendente
                             </Badge>
                           )}
+                          {ev.desafio_zander_status === 'ativo' && (
+                            <Badge
+                              variant="default"
+                              className="w-fit text-[10px] h-5 px-2 py-0 bg-purple-600 text-white hover:bg-purple-700 border-none flex items-center"
+                            >
+                              #DesafioZander
+                            </Badge>
+                          )}
                           {ev.evo_id && (
                             <Badge
                               variant="outline"
