@@ -146,15 +146,28 @@ export default function Index() {
           </TableHeader>
           <TableBody>
             {filtered.map((ev) => {
-              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T00:00:00') : null
-              const isDesafio = ev.desafio_zander_status === 'ativo'
-              let prazoTreino =
-                evalDate && !ev.is_pre_avaliacao ? addBusinessDays(evalDate, 3) : null
+              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
+              const isDesafio = ev.desafio_zander_status?.trim().toLowerCase() === 'ativo'
 
-              if (isDesafio && ev.desafio_zander_ativado_em) {
-                prazoTreino = addBusinessDays(new Date(ev.desafio_zander_ativado_em), 3)
-              } else if (isDesafio && ev.created_at) {
-                prazoTreino = addBusinessDays(new Date(ev.created_at), 3)
+              let prazoTreino: Date | null = null
+
+              if (isDesafio) {
+                const baseDate = ev.desafio_zander_ativado_em || ev.created_at || ev.data_avaliacao
+                if (baseDate) {
+                  const safeDate = baseDate.includes('T') ? baseDate : baseDate.replace(' ', 'T')
+                  const parsed = new Date(safeDate)
+                  if (!isNaN(parsed.getTime())) {
+                    prazoTreino = addBusinessDays(parsed, 3)
+                  } else {
+                    prazoTreino = addBusinessDays(new Date(), 3)
+                  }
+                } else {
+                  prazoTreino = addBusinessDays(new Date(), 3)
+                }
+              } else if (evalDate && !ev.is_pre_avaliacao) {
+                if (!isNaN(evalDate.getTime())) {
+                  prazoTreino = addBusinessDays(evalDate, 3)
+                }
               }
 
               const links = ev.links_avaliacao?.[0]

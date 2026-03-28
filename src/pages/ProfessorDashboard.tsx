@@ -149,22 +149,26 @@ export default function ProfessorDashboard() {
     return evaluations.filter((ev) => {
       if (ev.status === 'concluido') return false
 
-      const isDesafio = ev.desafio_zander_status === 'ativo'
+      const isDesafio = ev.desafio_zander_status?.trim().toLowerCase() === 'ativo'
 
       if (!isDesafio && (ev.is_pre_avaliacao || !ev.data_avaliacao)) return false
 
       let deadlineStr = ev.data_avaliacao
+      let deadline = null
+
       if (isDesafio) {
-        deadlineStr = ev.desafio_zander_ativado_em
-          ? ev.desafio_zander_ativado_em.split('T')[0]
-          : ev.created_at
-            ? ev.created_at.split('T')[0]
-            : null
+        const baseDate = ev.desafio_zander_ativado_em || ev.created_at || ev.data_avaliacao
+        if (baseDate) {
+          deadlineStr = baseDate.includes('T') ? baseDate.split('T')[0] : baseDate.split(' ')[0]
+          deadline = calculateDeadline(deadlineStr, 3)
+        } else {
+          deadline = calculateDeadline(new Date().toISOString().split('T')[0], 3)
+        }
+      } else if (deadlineStr) {
+        deadline = calculateDeadline(deadlineStr, 3)
       }
 
-      if (!deadlineStr) return false
-
-      const deadline = calculateDeadline(deadlineStr, 3)
+      if (!deadline) return false
       return isAfter(today, deadline)
     })
   }, [evaluations])
@@ -256,18 +260,24 @@ export default function ProfessorDashboard() {
               const today = startOfDay(new Date())
               const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
               const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
-              const isDesafio = ev.desafio_zander_status === 'ativo'
+              const isDesafio = ev.desafio_zander_status?.trim().toLowerCase() === 'ativo'
 
               let deadlineStr = ev.data_avaliacao
-              if (isDesafio) {
-                deadlineStr = ev.desafio_zander_ativado_em
-                  ? ev.desafio_zander_ativado_em.split('T')[0]
-                  : ev.created_at
-                    ? ev.created_at.split('T')[0]
-                    : null
-              }
+              let deadline = null
 
-              const deadline = deadlineStr ? calculateDeadline(deadlineStr, 3) : null
+              if (isDesafio) {
+                const baseDate = ev.desafio_zander_ativado_em || ev.created_at || ev.data_avaliacao
+                if (baseDate) {
+                  deadlineStr = baseDate.includes('T')
+                    ? baseDate.split('T')[0]
+                    : baseDate.split(' ')[0]
+                  deadline = calculateDeadline(deadlineStr, 3)
+                } else {
+                  deadline = calculateDeadline(new Date().toISOString().split('T')[0], 3)
+                }
+              } else if (deadlineStr) {
+                deadline = calculateDeadline(deadlineStr, 3)
+              }
               const isLate =
                 ((!isPre && deadline) || (isDesafio && deadline)) &&
                 deadline &&
@@ -339,7 +349,7 @@ export default function ProfessorDashboard() {
                             <AlertCircle className="w-3 h-3" /> Pendente
                           </Badge>
                         )}
-                        {ev.desafio_zander_status === 'ativo' && (
+                        {ev.desafio_zander_status?.trim().toLowerCase() === 'ativo' && (
                           <Badge
                             variant="default"
                             className="whitespace-nowrap text-[10px] px-1.5 py-0.5 border-none leading-tight bg-purple-600 hover:bg-purple-700 text-white w-fit"
@@ -415,16 +425,20 @@ export default function ProfessorDashboard() {
                     {(!isDesafio && isPre) || !deadline ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
-                      <div className="flex flex-col gap-1 items-start">
+                      <div className="flex flex-col gap-0.5 items-start">
                         <div className="flex items-center gap-2 font-medium">
                           <span
                             className={`w-2.5 h-2.5 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
                           />
                           {format(deadline, 'dd/MM/yyyy')}
                         </div>
-                        {isDesafio && (
+                        {isDesafio ? (
                           <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
                             #DesafioZander
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            3 dias úteis
                           </span>
                         )}
                       </div>
