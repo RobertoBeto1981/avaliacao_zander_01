@@ -1347,6 +1347,20 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION set_desafio_zander_activation_date()
+//   CREATE OR REPLACE FUNCTION public.set_desafio_zander_activation_date()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       IF NEW.desafio_zander_status = 'ativo' AND OLD.desafio_zander_status != 'ativo' THEN
+//           NEW.desafio_zander_ativado_em = NOW();
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 
 // --- TRIGGERS ---
 // Table: avaliacao_acompanhamentos
@@ -1356,6 +1370,7 @@ export const Constants = {
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT OR UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
 //   on_desafio_zander_activated: CREATE TRIGGER on_desafio_zander_activated AFTER UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_desafio_zander_activation()
+//   on_desafio_zander_set_date: CREATE TRIGGER on_desafio_zander_set_date BEFORE UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION set_desafio_zander_activation_date()
 // Table: users
 //   trg_prevent_role_update: CREATE TRIGGER trg_prevent_role_update BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION prevent_role_update()
 

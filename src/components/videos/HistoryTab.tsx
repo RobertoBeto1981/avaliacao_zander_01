@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Video, Trophy } from 'lucide-react'
 import { getScheduledVideos, getSentDesafiosHistory } from '@/services/videos'
 import { format, addDays } from 'date-fns'
+import { supabase } from '@/lib/supabase/client'
 
 export function HistoryTab() {
   const [historyItems, setHistoryItems] = useState<any[]>([])
@@ -69,6 +70,21 @@ export function HistoryTab() {
     }
 
     loadHistory()
+
+    // Configurando Supabase Realtime para atualizações em tempo real no histórico
+    const channel = supabase
+      .channel('history-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'videos_agendados' }, () => {
+        loadHistory()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avaliacoes' }, () => {
+        loadHistory()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   if (loading)

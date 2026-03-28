@@ -14,6 +14,7 @@ import { PlayCircle, MessageCircle, CheckCircle2, ListTodo, Send, Trophy } from 
 import { getPendingVideosForToday, logVideoSent } from '@/services/videos'
 import { getPendingDesafioZander, markDesafioZanderSent } from '@/services/evaluations'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase/client'
 
 export function TodayQueueTab() {
   const { toast } = useToast()
@@ -25,6 +26,21 @@ export function TodayQueueTab() {
 
   useEffect(() => {
     fetchQueue()
+
+    // Configurando Supabase Realtime para atualizações em tempo real na fila
+    const channel = supabase
+      .channel('queue-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'videos_agendados' }, () => {
+        fetchQueue()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avaliacoes' }, () => {
+        fetchQueue()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchQueue = async () => {
