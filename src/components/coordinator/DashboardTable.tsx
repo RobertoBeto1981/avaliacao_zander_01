@@ -14,6 +14,19 @@ import { Button } from '@/components/ui/button'
 import { ListFilter, AlertCircle, Edit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+function addWorkingDays(startDate: Date, days: number) {
+  const date = new Date(startDate)
+  let addedDays = 0
+  while (addedDays < days) {
+    date.setDate(date.getDate() + 1)
+    if (date.getDay() !== 0 && date.getDay() !== 6) {
+      // Skip Sunday(0) and Saturday(6)
+      addedDays++
+    }
+  }
+  return date
+}
+
 export function DashboardTable({
   data,
   onDelete,
@@ -37,6 +50,7 @@ export function DashboardTable({
               <TableHead>Data da Avaliação</TableHead>
               <TableHead>Professor Resp.</TableHead>
               <TableHead>Período</TableHead>
+              <TableHead>Prazo (Treino)</TableHead>
               <TableHead>Treino</TableHead>
               {!hideActions && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
@@ -45,7 +59,7 @@ export function DashboardTable({
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={hideActions ? 5 : 6}
+                  colSpan={hideActions ? 6 : 7}
                   className="text-center py-8 text-muted-foreground"
                 >
                   Nenhum registro encontrado com os filtros atuais.
@@ -111,6 +125,32 @@ export function DashboardTable({
                       )}
                     </TableCell>
                     <TableCell>{ev.periodo_treino || '-'}</TableCell>
+                    <TableCell>
+                      {ev.desafio_zander_status?.trim().toLowerCase() === 'ativo' ? (
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="font-semibold text-purple-700 dark:text-purple-400">
+                            {ev.desafio_zander_ativado_em
+                              ? format(
+                                  addWorkingDays(new Date(ev.desafio_zander_ativado_em), 3),
+                                  'dd/MM/yyyy',
+                                )
+                              : format(addWorkingDays(new Date(ev.created_at), 3), 'dd/MM/yyyy')}
+                          </span>
+                          <Badge className="w-fit text-[9px] h-4 px-1.5 py-0 bg-purple-600/10 text-purple-700 hover:bg-purple-600/20 dark:bg-purple-900/30 dark:text-purple-400 border-none flex items-center">
+                            #DesafioZander
+                          </Badge>
+                        </div>
+                      ) : ev.data_avaliacao && !isPre ? (
+                        <span className="font-medium text-foreground">
+                          {format(
+                            addWorkingDays(new Date(ev.data_avaliacao + 'T00:00:00'), 3),
+                            'dd/MM/yyyy',
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
