@@ -147,8 +147,24 @@ export default function ProfessorDashboard() {
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
     return evaluations.filter((ev) => {
-      if (ev.status === 'concluido' || ev.is_pre_avaliacao || !ev.data_avaliacao) return false
-      const deadline = calculateDeadline(ev.data_avaliacao, 3)
+      if (ev.status === 'concluido') return false
+
+      const isDesafio = ev.desafio_zander_status === 'ativo'
+
+      if (!isDesafio && (ev.is_pre_avaliacao || !ev.data_avaliacao)) return false
+
+      let deadlineStr = ev.data_avaliacao
+      if (isDesafio) {
+        deadlineStr = ev.desafio_zander_ativado_em
+          ? ev.desafio_zander_ativado_em.split('T')[0]
+          : ev.created_at
+            ? ev.created_at.split('T')[0]
+            : null
+      }
+
+      if (!deadlineStr) return false
+
+      const deadline = calculateDeadline(deadlineStr, 3)
       return isAfter(today, deadline)
     })
   }, [evaluations])
@@ -240,10 +256,23 @@ export default function ProfessorDashboard() {
               const today = startOfDay(new Date())
               const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
               const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
+              const isDesafio = ev.desafio_zander_status === 'ativo'
 
-              const deadline = ev.data_avaliacao ? calculateDeadline(ev.data_avaliacao, 3) : null
+              let deadlineStr = ev.data_avaliacao
+              if (isDesafio) {
+                deadlineStr = ev.desafio_zander_ativado_em
+                  ? ev.desafio_zander_ativado_em.split('T')[0]
+                  : ev.created_at
+                    ? ev.created_at.split('T')[0]
+                    : null
+              }
+
+              const deadline = deadlineStr ? calculateDeadline(deadlineStr, 3) : null
               const isLate =
-                !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
+                ((!isPre && deadline) || (isDesafio && deadline)) &&
+                deadline &&
+                isAfter(today, deadline) &&
+                ev.status !== 'concluido'
               const links = ev.links_avaliacao?.[0] || {}
 
               let reevalColorClass = ''
@@ -383,7 +412,7 @@ export default function ProfessorDashboard() {
                     </Select>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isPre || !deadline ? (
+                    {(!isDesafio && isPre) || !deadline ? (
                       <span className="text-muted-foreground">-</span>
                     ) : (
                       <div className="flex flex-col gap-1 items-start">
@@ -393,7 +422,7 @@ export default function ProfessorDashboard() {
                           />
                           {format(deadline, 'dd/MM/yyyy')}
                         </div>
-                        {ev.desafio_zander_status === 'ativo' && (
+                        {isDesafio && (
                           <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
                             #DesafioZander
                           </span>

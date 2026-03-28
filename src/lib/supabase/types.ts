@@ -180,6 +180,8 @@ export type Database = {
       bulk_messages: {
         Row: {
           created_at: string
+          file_name: string | null
+          file_url: string | null
           id: string
           message: string
           priority: string
@@ -189,6 +191,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           message: string
           priority?: string
@@ -198,6 +202,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           message?: string
           priority?: string
@@ -628,6 +634,8 @@ export type Database = {
       }
       send_bulk_message: {
         Args: {
+          p_file_name?: string
+          p_file_url?: string
           p_message: string
           p_priority?: string
           p_target_roles: string[]
@@ -823,6 +831,8 @@ export const Constants = {
 //   message: text (not null)
 //   priority: text (not null, default: 'normal'::text)
 //   created_at: timestamp with time zone (not null, default: now())
+//   file_url: text (nullable)
+//   file_name: text (nullable)
 // Table: evaluations
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_name: text (not null)
@@ -1238,6 +1248,26 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION notify_desafio_zander_activation()
+//   CREATE OR REPLACE FUNCTION public.notify_desafio_zander_activation()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       IF NEW.desafio_zander_status = 'ativo' AND OLD.desafio_zander_status != 'ativo' AND NEW.professor_id IS NOT NULL THEN
+//           INSERT INTO public.notifications (user_id, title, message, type)
+//           VALUES (
+//               NEW.professor_id,
+//               'Novo Aluno #DesafioZander',
+//               'O cliente ' || NEW.nome_cliente || ' foi marcado como participante do #DesafioZander. Por favor, priorize a montagem do treino.',
+//               'system'
+//           );
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION notify_professor_on_assignment()
 //   CREATE OR REPLACE FUNCTION public.notify_professor_on_assignment()
 //    RETURNS trigger
@@ -1285,35 +1315,35 @@ export const Constants = {
 //   END;
 //   $function$
 //
-// FUNCTION send_bulk_message(text[], text, text, text)
-//   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_roles text[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text)
+// FUNCTION send_bulk_message(text[], text, text, text, text, text)
+//   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_roles text[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text, p_file_url text DEFAULT NULL::text, p_file_name text DEFAULT NULL::text)
 //    RETURNS void
 //    LANGUAGE plpgsql
 //    SECURITY DEFINER
 //   AS $function$
 //   DECLARE
-//     v_sender_id UUID;
-//     v_bulk_id UUID;
+//       v_sender_id UUID;
+//       v_bulk_id UUID;
 //   BEGIN
-//     v_sender_id := auth.uid();
+//       v_sender_id := auth.uid();
 //
-//     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND 'coordenador' = ANY(roles)) THEN
-//       RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
-//     END IF;
+//       IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND 'coordenador' = ANY(roles)) THEN
+//         RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
+//       END IF;
 //
-//     INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority)
-//     VALUES (v_sender_id, array_to_string(p_target_roles, ', '), p_title, p_message, p_priority)
-//     RETURNING id INTO v_bulk_id;
+//       INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority, file_url, file_name)
+//       VALUES (v_sender_id, array_to_string(p_target_roles, ', '), p_title, p_message, p_priority, p_file_url, p_file_name)
+//       RETURNING id INTO v_bulk_id;
 //
-//     IF 'todos' = ANY(p_target_roles) THEN
-//       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
-//       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id;
-//     ELSE
-//       INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
-//       SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
-//       FROM public.users
-//       WHERE roles && p_target_roles AND id != v_sender_id;
-//     END IF;
+//       IF 'todos' = ANY(p_target_roles) THEN
+//         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id AND ativo = true;
+//       ELSE
+//         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
+//         FROM public.users
+//         WHERE roles && p_target_roles AND id != v_sender_id AND ativo = true;
+//       END IF;
 //   END;
 //   $function$
 //
@@ -1325,6 +1355,7 @@ export const Constants = {
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT OR UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
+//   on_desafio_zander_activated: CREATE TRIGGER on_desafio_zander_activated AFTER UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_desafio_zander_activation()
 // Table: users
 //   trg_prevent_role_update: CREATE TRIGGER trg_prevent_role_update BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION prevent_role_update()
 

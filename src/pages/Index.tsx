@@ -147,8 +147,16 @@ export default function Index() {
           <TableBody>
             {filtered.map((ev) => {
               const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T00:00:00') : null
-              const prazoTreino =
+              const isDesafio = ev.desafio_zander_status === 'ativo'
+              let prazoTreino =
                 evalDate && !ev.is_pre_avaliacao ? addBusinessDays(evalDate, 3) : null
+
+              if (isDesafio && ev.desafio_zander_ativado_em) {
+                prazoTreino = addBusinessDays(new Date(ev.desafio_zander_ativado_em), 3)
+              } else if (isDesafio && ev.created_at) {
+                prazoTreino = addBusinessDays(new Date(ev.created_at), 3)
+              }
+
               const links = ev.links_avaliacao?.[0]
               const hasLinks =
                 links &&
@@ -189,13 +197,19 @@ export default function Index() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {prazoTreino ? (
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5 items-start">
                         <span className="font-medium text-amber-600 dark:text-amber-500">
                           {format(prazoTreino, 'dd/MM/yyyy')}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-medium">
-                          3 dias úteis
-                        </span>
+                        {isDesafio ? (
+                          <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                            #DesafioZander
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            3 dias úteis
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-muted-foreground">-</span>
