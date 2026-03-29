@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import {
   ClipboardCheck,
   ActivitySquare,
   Utensils,
+  Menu,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -24,11 +26,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import NotificationsMenu from './NotificationsMenu'
 
 export default function Layout() {
   const { user, profile, loading, signOut } = useAuth()
   const location = useLocation()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname)
 
   const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
@@ -43,14 +53,176 @@ export default function Layout() {
       {!isAuthPage && (
         <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 no-print">
           <div className="container flex h-16 items-center justify-between">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
+              {user && (
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="md:hidden">
+                      <Menu className="w-5 h-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[260px] flex flex-col">
+                    <SheetTitle className="flex items-center gap-2 text-primary select-none mt-2">
+                      <Dumbbell size={24} strokeWidth={2.5} />
+                      <span className="font-extrabold text-xl tracking-tighter uppercase">
+                        ZANDER
+                      </span>
+                    </SheetTitle>
+                    <SheetDescription className="sr-only">Menu de navegação</SheetDescription>
+
+                    <nav className="flex flex-col gap-4 mt-8 flex-1">
+                      <Link
+                        to="/"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                          location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
+                        }`}
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Início
+                      </Link>
+
+                      {isProfessor && !isCoordenador && (
+                        <Link
+                          to="/professor"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                            location.pathname === '/professor'
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Dumbbell className="w-4 h-4" />
+                          Painel do Professor
+                        </Link>
+                      )}
+
+                      {isAvaliador && !isCoordenador && (
+                        <Link
+                          to="/avaliador"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                            location.pathname === '/avaliador'
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          <ClipboardCheck className="w-4 h-4" />
+                          Painel do Avaliador
+                        </Link>
+                      )}
+
+                      {isFisio && !isCoordenador && (
+                        <Link
+                          to="/fisioterapeuta"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                            location.pathname === '/fisioterapeuta'
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          <ActivitySquare className="w-4 h-4" />
+                          Painel Fisio
+                        </Link>
+                      )}
+
+                      {isNutri && !isCoordenador && (
+                        <Link
+                          to="/nutricionista"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                            location.pathname === '/nutricionista'
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Utensils className="w-4 h-4" />
+                          Painel Nutri
+                        </Link>
+                      )}
+
+                      {isCoordenador && (
+                        <>
+                          <Link
+                            to="/coordinator"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
+                              location.pathname === '/coordinator'
+                                ? 'text-primary'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Dashboard
+                          </Link>
+
+                          <div className="pl-3 py-2 border-l-2 border-border/50 flex flex-col gap-3 mt-2 mb-2">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                              Outros Painéis
+                            </span>
+                            <Link
+                              to="/professor"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="text-sm text-muted-foreground hover:text-primary"
+                            >
+                              Painel Professor
+                            </Link>
+                            <Link
+                              to="/avaliador"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="text-sm text-muted-foreground hover:text-primary"
+                            >
+                              Painel Avaliador
+                            </Link>
+                            <Link
+                              to="/fisioterapeuta"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="text-sm text-muted-foreground hover:text-primary"
+                            >
+                              Painel Fisio
+                            </Link>
+                            <Link
+                              to="/nutricionista"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="text-sm text-muted-foreground hover:text-primary"
+                            >
+                              Painel Nutri
+                            </Link>
+                          </div>
+
+                          <Link
+                            to="/communications"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            Comunicados
+                          </Link>
+                          <Link
+                            to="/videos"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/videos' ? 'text-primary' : 'text-muted-foreground'}`}
+                          >
+                            <Video className="w-4 h-4" />
+                            Vídeos
+                          </Link>
+                        </>
+                      )}
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              )}
+
               <Link to="/" className="flex items-center gap-2 text-primary select-none">
-                <Dumbbell size={28} strokeWidth={2.5} />
-                <span className="font-extrabold text-2xl tracking-tighter uppercase">ZANDER</span>
+                <Dumbbell size={28} strokeWidth={2.5} className="hidden sm:block" />
+                <span className="font-extrabold text-xl sm:text-2xl tracking-tighter uppercase">
+                  ZANDER
+                </span>
               </Link>
 
               {user && (
-                <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+                <nav className="hidden md:flex items-center gap-4 lg:gap-6 ml-2">
                   <Link
                     to="/"
                     className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${

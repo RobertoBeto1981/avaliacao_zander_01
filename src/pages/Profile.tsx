@@ -53,7 +53,7 @@ export default function Profile() {
         nome: profile.nome,
         telefone: profile.telefone,
         periodos: profile.periodos,
-        pending_role: profile.pending_role,
+        pending_roles: profile.pending_roles,
       })
       toast({ title: 'Sucesso', description: 'Perfil atualizado com sucesso.' })
     } catch (err: any) {
@@ -194,26 +194,39 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t border-border">
-              <Label>Solicitar Mudança de Cargo</Label>
-              <Select
-                value={profile?.pending_role || ''}
-                onValueChange={(v) => setProfile({ ...profile, pending_role: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um novo cargo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="avaliador">Avaliador</SelectItem>
-                  <SelectItem value="fisioterapeuta">Fisioterapeuta</SelectItem>
-                  <SelectItem value="nutricionista">Nutricionista</SelectItem>
-                </SelectContent>
-              </Select>
-              {profile?.pending_role && (
+            <div className="space-y-3 pt-4 border-t border-border">
+              <Label>Solicitar Adição de Cargos</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                {['professor', 'avaliador', 'fisioterapeuta', 'nutricionista'].map((role) => (
+                  <div key={role} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`pending-role-${role}`}
+                      checked={profile?.pending_roles?.includes(role)}
+                      onCheckedChange={(checked) => {
+                        const current = profile?.pending_roles || []
+                        if (checked) {
+                          setProfile({ ...profile, pending_roles: [...current, role] })
+                        } else {
+                          setProfile({
+                            ...profile,
+                            pending_roles: current.filter((x: string) => x !== role),
+                          })
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`pending-role-${role}`}
+                      className="cursor-pointer font-normal text-sm capitalize leading-none"
+                    >
+                      {role}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {profile?.pending_roles?.length > 0 && (
                 <p className="text-[11px] text-primary/80 font-medium mt-1">
-                  Sua solicitação para mudar para {profile.pending_role} está pendente de aprovação
-                  pela coordenação.
+                  Sua solicitação para os cargos ({profile.pending_roles.join(', ')}) está pendente
+                  de aprovação pela coordenação.
                 </p>
               )}
             </div>

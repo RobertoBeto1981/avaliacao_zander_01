@@ -334,6 +334,22 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         minute: '2-digit',
                       })}
                     </p>
+                    {notif.type !== 'alert' && view === 'active' && notif.is_read && (
+                      <div className="pt-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-6 text-xs px-2"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleArchive(notif.id)
+                          }}
+                        >
+                          <Archive className="h-3 w-3 mr-1.5" />
+                          Arquivar
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col items-center gap-2 flex-shrink-0">
                     {!notif.is_read && (
@@ -348,20 +364,6 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         title="Marcar como lida"
                       >
                         <Check className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {notif.type !== 'alert' && view === 'active' && notif.is_read && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleArchive(notif.id)
-                        }}
-                        title="Arquivar"
-                      >
-                        <Archive className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>

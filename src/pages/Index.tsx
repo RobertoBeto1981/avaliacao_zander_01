@@ -138,7 +138,7 @@ export default function Index() {
               <TableHead>Data Avaliação</TableHead>
               <TableHead>Prazo (Treino)</TableHead>
               <TableHead>Professor Resp.</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Treino</TableHead>
               <TableHead className="text-center">Links</TableHead>
               <TableHead className="text-center">Acomp.</TableHead>
               <TableHead className="text-right">Ação</TableHead>
