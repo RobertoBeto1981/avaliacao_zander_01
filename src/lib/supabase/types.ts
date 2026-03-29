@@ -421,6 +421,33 @@ export type Database = {
         }
         Relationships: []
       }
+      message_templates: {
+        Row: {
+          created_at: string
+          id: string
+          template: string
+          title: string
+          updated_at: string
+          variables: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          template: string
+          title: string
+          updated_at?: string
+          variables: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template?: string
+          title?: string
+          updated_at?: string
+          variables?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           bulk_message_id: string | null
@@ -894,6 +921,13 @@ export const Constants = {
 //   nome: text (not null)
 //   acao_principal: text (not null)
 //   verified: boolean (not null, default: false)
+// Table: message_templates
+//   id: text (not null)
+//   title: text (not null)
+//   template: text (not null)
+//   variables: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: notifications
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
@@ -969,6 +1003,8 @@ export const Constants = {
 // Table: medicamentos
 //   UNIQUE medicamentos_nome_key: UNIQUE (nome)
 //   PRIMARY KEY medicamentos_pkey: PRIMARY KEY (id)
+// Table: message_templates
+//   PRIMARY KEY message_templates_pkey: PRIMARY KEY (id)
 // Table: notifications
 //   FOREIGN KEY notifications_bulk_message_id_fkey: FOREIGN KEY (bulk_message_id) REFERENCES bulk_messages(id) ON DELETE CASCADE
 //   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
@@ -1042,6 +1078,14 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "authenticated_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: message_templates
+//   Policy "authenticated_select_templates" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "coordenador_insert_templates" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
+//   Policy "coordenador_update_templates" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
+//     WITH CHECK: true
 // Table: notifications
 //   Policy "System can insert notifications" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true

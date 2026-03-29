@@ -94,14 +94,14 @@ export function MessageTemplatesTab() {
                 variant={!isDirty ? 'secondary' : 'default'}
                 className={
                   !isDirty
-                    ? 'w-full relative z-20 bg-green-500/20 text-green-700 hover:bg-green-500/30'
-                    : 'w-full relative z-20'
+                    ? 'w-full relative z-20 bg-muted text-muted-foreground hover:bg-muted/80'
+                    : 'w-full relative z-20 bg-[#95c23d] text-black hover:bg-[#85b035]'
                 }
               >
                 {savingId === tpl.id
                   ? 'Salvando...'
                   : !isDirty
-                    ? 'Mensagem Salva'
+                    ? 'Configuração Salva'
                     : 'Salvar Mensagem'}
               </Button>
             </CardContent>

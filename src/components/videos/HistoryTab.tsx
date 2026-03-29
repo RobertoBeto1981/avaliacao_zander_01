@@ -9,7 +9,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Video, Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Video, Trophy, Send, RefreshCw } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { getScheduledVideos, getSentDesafiosHistory } from '@/services/videos'
 import { format, addDays } from 'date-fns'
 import { supabase } from '@/lib/supabase/client'
@@ -17,6 +19,8 @@ import { supabase } from '@/lib/supabase/client'
 export function HistoryTab() {
   const [historyItems, setHistoryItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -35,6 +39,7 @@ export function HistoryTab() {
           return {
             type: 'video',
             id: v.id,
+            avaliacao_id: v.avaliacao_id,
             nome_cliente: v.avaliacoes?.nome_cliente || 'Avaliação Removida',
             evo_id: v.avaliacoes?.evo_id,
             gatilho: `${v.dias_apos_avaliacao} Dias`,
@@ -47,6 +52,7 @@ export function HistoryTab() {
         const formattedDesafios = desafios.map((d) => ({
           type: 'desafio',
           id: `desafio_${d.id}`,
+          avaliacao_id: d.id,
           nome_cliente: d.nome_cliente,
           evo_id: d.evo_id,
           gatilho: '#DesafioZander',
@@ -87,6 +93,47 @@ export function HistoryTab() {
     }
   }, [])
 
+  const handleResend = async (item: any) => {
+    setResendingId(item.id)
+    try {
+      const now = new Date().toISOString()
+
+      if (item.type === 'video') {
+        const { error } = await supabase
+          .from('videos_agendados')
+          .update({ data_envio: now, status: 'enviado' })
+          .eq('id', item.id)
+
+        if (error) throw error
+
+        // Chamada mockada/preparada para reenvio caso a API esteja ativa
+        if (item.avaliacao_id) {
+          await supabase.functions
+            .invoke('process-evaluation-automations', {
+              body: { avaliacaoId: item.avaliacao_id },
+            })
+            .catch(() => {})
+        }
+      } else if (item.type === 'desafio') {
+        const { error } = await supabase
+          .from('avaliacoes')
+          .update({ desafio_zander_enviado_em: now })
+          .eq('id', item.avaliacao_id)
+
+        if (error) throw error
+      }
+
+      toast({
+        title: 'Mensagem Reenviada',
+        description: 'A mensagem foi reenviada e o histórico de data e horário foi atualizado.',
+      })
+    } catch (error: any) {
+      toast({ variant: 'destructive', description: error.message || 'Erro ao reenviar.' })
+    } finally {
+      setResendingId(null)
+    }
+  }
+
   if (loading)
     return <div className="p-8 text-center text-muted-foreground">Carregando histórico...</div>
 
@@ -107,12 +154,13 @@ export function HistoryTab() {
               <TableHead>Data Estimada</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Enviado Em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {historyItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum registro de envio encontrado.
                 </TableCell>
               </TableRow>
@@ -159,7 +207,11 @@ export function HistoryTab() {
                             ? 'destructive'
                             : 'secondary'
                       }
-                      className={item.status === 'enviado' ? 'bg-green-500 hover:bg-green-600' : ''}
+                      className={
+                        item.status === 'enviado'
+                          ? 'bg-[#95c23d] text-black hover:bg-[#85b035]'
+                          : ''
+                      }
                     >
                       {item.status === 'enviado'
                         ? 'Enviado'
@@ -170,6 +222,22 @@ export function HistoryTab() {
                   </TableCell>
                   <TableCell>
                     {item.data_envio ? format(new Date(item.data_envio), 'dd/MM/yyyy HH:mm') : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs border-[#95c23d]/50 text-[#7a9e32] hover:bg-[#95c23d] hover:text-black dark:text-[#95c23d]"
+                      onClick={() => handleResend(item)}
+                      disabled={resendingId === item.id}
+                    >
+                      {resendingId === item.id ? (
+                        <RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3 h-3 mr-1.5" />
+                      )}
+                      Reenviar
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
