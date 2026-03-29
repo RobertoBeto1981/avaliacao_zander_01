@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Video, Trophy, Send, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getScheduledVideos, getSentDesafiosHistory } from '@/services/videos'
+import { getScheduledVideos, getSentDesafiosHistory, getVideoConfigs } from '@/services/videos'
 import { format, addDays } from 'date-fns'
 import { supabase } from '@/lib/supabase/client'
 
@@ -41,6 +41,8 @@ export function HistoryTab() {
             id: v.id,
             avaliacao_id: v.avaliacao_id,
             nome_cliente: v.avaliacoes?.nome_cliente || 'Avaliação Removida',
+            telefone: v.avaliacoes?.telefone_cliente,
+            dias_apos_avaliacao: v.dias_apos_avaliacao,
             evo_id: v.avaliacoes?.evo_id,
             gatilho: `${v.dias_apos_avaliacao} Dias`,
             data_estimada: dataEstimada,
@@ -54,6 +56,7 @@ export function HistoryTab() {
           id: `desafio_${d.id}`,
           avaliacao_id: d.id,
           nome_cliente: d.nome_cliente,
+          telefone: d.telefone_cliente,
           evo_id: d.evo_id,
           gatilho: '#DesafioZander',
           data_estimada: d.desafio_zander_enviado_em ? new Date(d.desafio_zander_enviado_em) : null,
@@ -96,36 +99,62 @@ export function HistoryTab() {
   const handleResend = async (item: any) => {
     setResendingId(item.id)
     try {
-      const now = new Date().toISOString()
+      if (!item.telefone) {
+        throw new Error('Cliente sem telefone cadastrado.')
+      }
+
+      const phone = item.telefone.replace(/\D/g, '')
+      const firstName = item.nome_cliente.trim().split(' ')[0]
+      let waLink = ''
 
       if (item.type === 'video') {
+        const configs = await getVideoConfigs()
+        const config = configs.find((c) => c.dias_trigger === item.dias_apos_avaliacao)
+
+        if (!config) {
+          throw new Error('Configuração de gatilho não encontrada.')
+        }
+
+        const msgTpl = config.message_template || 'Olá {{nome}}, tudo bem?'
+        const videoUrl = config.video_url || ''
+
+        const message = msgTpl.replace(/{{nome}}/g, firstName).replace(/{{link_video}}/g, videoUrl)
+
+        if (videoUrl) {
+          navigator.clipboard.writeText(videoUrl).catch(() => {})
+          toast({
+            title: 'Vídeo copiado!',
+            description: 'O link do vídeo foi copiado. Cole no WhatsApp se necessário.',
+          })
+        }
+
+        waLink = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`
+
+        window.open(waLink, '_blank')
+
+        const now = new Date().toISOString()
         const { error } = await supabase
           .from('videos_agendados')
           .update({ data_envio: now, status: 'enviado' })
           .eq('id', item.id)
 
         if (error) throw error
-
-        // Chamada mockada/preparada para reenvio caso a API esteja ativa
-        if (item.avaliacao_id) {
-          await supabase.functions
-            .invoke('process-evaluation-automations', {
-              body: { avaliacaoId: item.avaliacao_id },
-            })
-            .catch(() => {})
-        }
       } else if (item.type === 'desafio') {
+        const now = new Date().toISOString()
         const { error } = await supabase
           .from('avaliacoes')
           .update({ desafio_zander_enviado_em: now })
           .eq('id', item.avaliacao_id)
 
         if (error) throw error
+
+        waLink = `https://wa.me/55${phone}?text=${encodeURIComponent(`Olá ${firstName}, reenvio do #DesafioZander!`)}`
+        window.open(waLink, '_blank')
       }
 
       toast({
-        title: 'Mensagem Reenviada',
-        description: 'A mensagem foi reenviada e o histórico de data e horário foi atualizado.',
+        title: 'WhatsApp Aberto',
+        description: 'A janela do WhatsApp foi aberta e o histórico foi atualizado.',
       })
     } catch (error: any) {
       toast({ variant: 'destructive', description: error.message || 'Erro ao reenviar.' })

@@ -23,6 +23,7 @@ export const getScheduledVideos = async () => {
       avaliacoes (
         id,
         nome_cliente,
+        telefone_cliente,
         data_avaliacao,
         evo_id
       )
@@ -165,7 +166,7 @@ export const logVideoSent = async (
 export const getSentDesafiosHistory = async () => {
   const { data, error } = await supabase
     .from('avaliacoes')
-    .select('id, nome_cliente, evo_id, desafio_zander_enviado_em')
+    .select('id, nome_cliente, telefone_cliente, evo_id, desafio_zander_enviado_em')
     .eq('desafio_zander_status', 'enviado')
     .not('desafio_zander_enviado_em', 'is', null)
 
