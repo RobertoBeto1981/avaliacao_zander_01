@@ -43,6 +43,7 @@ import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 
 export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -98,7 +99,7 @@ export default function ProfessorDashboard() {
     }
   }
 
-  const handleSendWhatsApp = (ev: any) => {
+  const handleSendWhatsApp = async (ev: any) => {
     if (!ev.telefone_cliente) {
       toast({
         title: 'Atenção',
@@ -114,21 +115,32 @@ export default function ProfessorDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
-    let text = `Olá *${firstName}*, tudo bem?\n\nAqui estão os links para a sua avaliação física:\n\n`
-    if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
-    if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) text += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
+    let linksStr = ''
+    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.mapeamento_sintomas_url)
+      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
 
-    text += `\nPor favor, preencha-os o quanto antes. Qualquer dúvida, estou à disposição!`
+    try {
+      const { data: tpl } = await supabase
+        .from('message_templates')
+        .select('template')
+        .eq('id', 'links_avaliacao')
+        .single()
+      let text =
+        tpl?.template ||
+        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
 
-    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
-    toast({
-      title: 'WhatsApp Aberto',
-      description: 'A janela do WhatsApp foi aberta.',
-    })
+      text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
+
+      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      window.open(url, '_blank')
+      toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const periodos = useMemo(

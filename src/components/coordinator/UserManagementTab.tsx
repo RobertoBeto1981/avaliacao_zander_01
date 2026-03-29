@@ -89,8 +89,35 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
     }
   }
 
-  const pendingUsers = users.filter((u) => u.pending_role)
-  const regularUsers = users.filter((u) => !u.pending_role)
+  const pendingUsers = users.filter((u) => u.pending_roles && u.pending_roles.length > 0)
+  const regularUsers = users.filter((u) => !u.pending_roles || u.pending_roles.length === 0)
+
+  const handleApproveRoles = async (
+    id: string,
+    newRoles: string[],
+    currentRoles: string[],
+    currentRoleStr: string,
+  ) => {
+    try {
+      const existing = currentRoles || (currentRoleStr ? [currentRoleStr] : [])
+      const merged = Array.from(new Set([...existing, ...newRoles]))
+      await updateUser(id, { roles: merged, pending_roles: [] })
+      toast({ title: 'Sucesso', description: 'Cargos aprovados com sucesso.' })
+      onUpdate()
+    } catch (e: any) {
+      toast({ variant: 'destructive', description: e.message })
+    }
+  }
+
+  const handleRejectRoles = async (id: string) => {
+    try {
+      await updateUser(id, { pending_roles: [] })
+      toast({ title: 'Sucesso', description: 'Solicitação recusada.' })
+      onUpdate()
+    } catch (e: any) {
+      toast({ variant: 'destructive', description: e.message })
+    }
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -104,8 +131,8 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Cargo Atual</TableHead>
-                <TableHead>Cargo Solicitado</TableHead>
+                <TableHead>Cargos Atuais</TableHead>
+                <TableHead>Cargos Solicitados</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -113,25 +140,27 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
               {pendingUsers.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.nome}</TableCell>
-                  <TableCell className="capitalize text-muted-foreground">{u.role}</TableCell>
+                  <TableCell className="capitalize text-muted-foreground">
+                    {(u.roles || [u.role]).join(', ')}
+                  </TableCell>
                   <TableCell className="capitalize font-bold text-primary">
-                    {u.pending_role}
+                    {u.pending_roles?.join(', ')}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="sm"
                       variant="outline"
                       className="mr-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
-                      onClick={() => handleReject(u.id)}
+                      onClick={() => handleRejectRoles(u.id)}
                     >
                       Recusar
                     </Button>
                     <Button
                       size="sm"
                       className="bg-amber-600 hover:bg-amber-700 text-white"
-                      onClick={() => handleApprove(u.id, u.pending_role)}
+                      onClick={() => handleApproveRoles(u.id, u.pending_roles, u.roles, u.role)}
                     >
-                      Aprovar Mudança
+                      Aprovar Inclusão
                     </Button>
                   </TableCell>
                 </TableRow>

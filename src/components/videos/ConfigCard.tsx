@@ -25,6 +25,14 @@ export function ConfigCard({
   )
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+
+  const handleChange = (setter: any, value: any) => {
+    setter(value)
+    setIsDirty(true)
+    setIsSaved(false)
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -42,6 +50,8 @@ export function ConfigCard({
     try {
       const url = await uploadVideoFile(file, triggerDays)
       setVideoUrl(url)
+      setIsDirty(true)
+      setIsSaved(false)
       toast({ title: 'Sucesso', description: 'Vídeo enviado com sucesso! Salve para aplicar.' })
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro no upload', description: err.message })
@@ -63,6 +73,8 @@ export function ConfigCard({
         title: 'Configuração salva',
         description: `Automação de ${triggerDays} dias atualizada.`,
       })
+      setIsDirty(false)
+      setIsSaved(true)
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message })
     } finally {
@@ -80,7 +92,11 @@ export function ConfigCard({
         </div>
         <div className="flex items-center space-x-2 z-20">
           <Label htmlFor={`active-${triggerDays}`}>{isActive ? 'Ativo' : 'Inativo'}</Label>
-          <Switch id={`active-${triggerDays}`} checked={isActive} onCheckedChange={setIsActive} />
+          <Switch
+            id={`active-${triggerDays}`}
+            checked={isActive}
+            onCheckedChange={(val) => handleChange(setIsActive, val)}
+          />
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
@@ -88,28 +104,15 @@ export function ConfigCard({
           <Label className="flex items-center gap-2">
             <UploadCloud className="w-4 h-4 text-primary" /> Vídeo para Envio
           </Label>
-          <div className="flex gap-4 items-center">
-            <Input
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
-              disabled={uploading || !isActive}
-              className="flex-1"
-            />
-            <span className="text-muted-foreground text-sm font-medium">OU</span>
-            <div className="flex-1 relative">
-              <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cole um link externo (Drive, YouTube)"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                disabled={!isActive}
-                className="pl-9"
-              />
-            </div>
-          </div>
+          <Input
+            type="file"
+            accept="video/*"
+            onChange={handleFileChange}
+            disabled={uploading || !isActive}
+            className="w-full"
+          />
           {videoUrl && (
-            <div className="text-sm flex items-center gap-2 text-blue-600 mt-2">
+            <div className="text-sm flex items-center gap-2 text-blue-600 mt-3 font-medium bg-blue-500/10 p-2 rounded-md">
               <PlayCircle className="w-4 h-4" />
               <a
                 href={videoUrl}
@@ -117,7 +120,7 @@ export function ConfigCard({
                 rel="noreferrer"
                 className="hover:underline truncate max-w-[400px]"
               >
-                {videoUrl}
+                Visualizar Vídeo Atual Salvo
               </a>
             </div>
           )}
@@ -127,25 +130,34 @@ export function ConfigCard({
           <Label>Mensagem do WhatsApp</Label>
           <Textarea
             value={messageTemplate}
-            onChange={(e) => setMessageTemplate(e.target.value)}
+            onChange={(e) => handleChange(setMessageTemplate, e.target.value)}
             disabled={!isActive}
             className="min-h-[100px] resize-none"
             placeholder="Escreva a mensagem..."
           />
           <p className="text-xs text-muted-foreground">
             Variáveis disponíveis: <code className="bg-muted px-1 rounded">{'{{nome}}'}</code>. O
-            vídeo enviado aparecerá automaticamente junto com esta mensagem. Se usar um link
-            externo, você pode incluir{' '}
-            <code className="bg-muted px-1 rounded">{'{{link_video}}'}</code>.
+            vídeo anexado será enviado automaticamente junto com esta mensagem.
           </p>
         </div>
 
         <Button
           onClick={handleSave}
-          disabled={saving || uploading}
-          className="w-full relative z-20"
+          disabled={saving || uploading || (!isDirty && !isSaved)}
+          variant={isSaved && !isDirty ? 'secondary' : 'default'}
+          className={
+            isSaved && !isDirty
+              ? 'w-full relative z-20 bg-green-500/20 text-green-700 hover:bg-green-500/30'
+              : 'w-full relative z-20'
+          }
         >
-          {saving ? 'Salvando...' : uploading ? 'Enviando Vídeo...' : 'Salvar Configuração'}
+          {saving
+            ? 'Salvando...'
+            : uploading
+              ? 'Enviando Vídeo...'
+              : isSaved && !isDirty
+                ? 'Configuração Salva'
+                : 'Salvar Configuração'}
         </Button>
       </CardContent>
     </Card>

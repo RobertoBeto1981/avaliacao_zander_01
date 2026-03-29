@@ -62,25 +62,24 @@ Deno.serve(async (req: Request) => {
 
     const firstName = avaliacao.nome_cliente.trim().split(' ')[0]
 
-    const lines = [
-      `Olá *${firstName}*, tudo bem?`,
-      ``,
-      `Abaixo estão os links da sua avaliação:`,
-      ``,
-    ]
+    const { data: tplData } = await supabaseClient
+      .from('message_templates')
+      .select('template')
+      .eq('id', 'links_avaliacao')
+      .single()
+    let text =
+      tplData?.template ||
+      `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
 
-    if (links.anamnese_url) lines.push(`📝 *Anamnese:* ${links.anamnese_url}`)
-    if (links.mapeamento_sintomas_url) lines.push(`🔍 *Sintomas:* ${links.mapeamento_sintomas_url}`)
-    if (links.mapeamento_dor_url) lines.push(`🎯 *Dor:* ${links.mapeamento_dor_url}`)
-    if (links.bia_url) lines.push(`⚖️ *BIA:* ${links.bia_url}`)
-    if (links.my_score_url) lines.push(`📊 *My Score:* ${links.my_score_url}`)
+    let linksStr = ''
+    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.mapeamento_sintomas_url)
+      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
 
-    lines.push(``)
-    lines.push(
-      `Muito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`,
-    )
-
-    const message = lines.join('\n')
+    const message = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
 
     const waToken = Deno.env.get('WHATSAPP_TOKEN')
     const waPhoneId = Deno.env.get('WHATSAPP_PHONE_ID')

@@ -64,6 +64,7 @@ import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { HistoryDialog } from '@/components/HistoryDialog'
 import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
+import { supabase } from '@/lib/supabase/client'
 import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 
@@ -171,12 +172,21 @@ export default function CoordinatorDashboard() {
 
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
-    let text = `Fala, ${firstName}! 🚀 Você acaba de aceitar o #DesafioZander! Parabéns pela decisão. O foco agora é total na sua evolução: nosso time entrará em contato em breve para alinharmos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados incríveis. Vamos pra cima! 💪`
-
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
-
     try {
+      const { data: tpl } = await supabase
+        .from('message_templates')
+        .select('template')
+        .eq('id', 'desafio_zander')
+        .single()
+      let text =
+        tpl?.template ||
+        `Fala, {{nome}}! 🚀 Você acaba de aceitar o #DesafioZander! Parabéns pela decisão. O foco agora é total na sua evolução: nosso time entrará em contato em breve para alinharmos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados incríveis. Vamos pra cima! 💪`
+
+      text = text.replace(/{{nome}}/g, firstName)
+
+      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      window.open(url, '_blank')
+
       await markDesafioZanderSent(ev.id)
       setEvaluations((prev) =>
         prev.map((e) => (e.id === ev.id ? { ...e, desafio_zander_status: 'enviado' } : e)),
@@ -229,7 +239,7 @@ export default function CoordinatorDashboard() {
     toast({ title: 'Relatório Gerado', description: 'A planilha foi baixada com sucesso.' })
   }
 
-  const handleSendWhatsApp = (ev: any) => {
+  const handleSendWhatsApp = async (ev: any) => {
     if (!ev.telefone_cliente) {
       toast({
         title: 'Atenção',
@@ -245,18 +255,32 @@ export default function CoordinatorDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
-    let text = `Olá, ${firstName}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n`
-    if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
-    if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) text += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) text += `📊 *My Score:* ${links.my_score_url}\n`
+    let linksStr = ''
+    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.mapeamento_sintomas_url)
+      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
 
-    text += `\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+    try {
+      const { data: tpl } = await supabase
+        .from('message_templates')
+        .select('template')
+        .eq('id', 'links_avaliacao')
+        .single()
+      let text =
+        tpl?.template ||
+        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
-    toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
+      text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
+
+      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      window.open(url, '_blank')
+      toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const filtered = useMemo(() => {

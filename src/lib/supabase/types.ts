@@ -518,6 +518,7 @@ export type Database = {
           id: string
           nome: string
           pending_role: Database['public']['Enums']['user_role'] | null
+          pending_roles: string[] | null
           periodo: string | null
           periodos: string[] | null
           role: Database['public']['Enums']['user_role']
@@ -531,6 +532,7 @@ export type Database = {
           id: string
           nome: string
           pending_role?: Database['public']['Enums']['user_role'] | null
+          pending_roles?: string[] | null
           periodo?: string | null
           periodos?: string[] | null
           role: Database['public']['Enums']['user_role']
@@ -544,6 +546,7 @@ export type Database = {
           id?: string
           nome?: string
           pending_role?: Database['public']['Enums']['user_role'] | null
+          pending_roles?: string[] | null
           periodo?: string | null
           periodos?: string[] | null
           role?: Database['public']['Enums']['user_role']
@@ -815,7 +818,7 @@ export const Constants = {
 //   periodo_treino: text (nullable)
 //   objectives: _text (nullable)
 //   respostas: jsonb (nullable)
-//   status: avaliacao_status (nullable, default: 'concluido'::avaliacao_status)
+//   status: avaliacao_status (nullable, default: 'pendente'::avaliacao_status)
 //   created_at: timestamp with time zone (not null, default: now())
 //   professor_id: uuid (nullable)
 //   evo_id: text (nullable)
@@ -921,6 +924,7 @@ export const Constants = {
 //   roles: _text (nullable, default: '{}'::text[])
 //   periodos: _text (nullable, default: '{}'::text[])
 //   ativo: boolean (not null, default: true)
+//   pending_roles: _text (nullable, default: '{}'::text[])
 // Table: video_automations_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   dias_trigger: integer (not null)

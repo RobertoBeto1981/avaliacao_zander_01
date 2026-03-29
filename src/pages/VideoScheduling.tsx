@@ -1,8 +1,9 @@
-import { PlaySquare, Settings, History, ListTodo } from 'lucide-react'
+import { PlaySquare, Settings, History, ListTodo, MessageSquare } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VideoConfigTab } from '@/components/videos/VideoConfigTab'
 import { HistoryTab } from '@/components/videos/HistoryTab'
 import { TodayQueueTab } from '@/components/videos/TodayQueueTab'
+import { MessageTemplatesTab } from '@/components/videos/MessageTemplatesTab'
 
 export default function VideoScheduling() {
   return (
@@ -20,7 +21,7 @@ export default function VideoScheduling() {
       </div>
 
       <Tabs defaultValue="queue" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 w-full max-w-2xl grid grid-cols-3">
+        <TabsList className="bg-muted/50 p-1 w-full max-w-3xl grid grid-cols-4">
           <TabsTrigger value="queue" className="flex items-center gap-2">
             <ListTodo className="w-4 h-4" />
             Fila do Dia
@@ -28,6 +29,10 @@ export default function VideoScheduling() {
           <TabsTrigger value="configs" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Gatilhos
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Mensagens
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="w-4 h-4" />
@@ -44,6 +49,13 @@ export default function VideoScheduling() {
           className="m-0 focus-visible:outline-none focus-visible:ring-0"
         >
           <VideoConfigTab />
+        </TabsContent>
+
+        <TabsContent
+          value="templates"
+          className="m-0 focus-visible:outline-none focus-visible:ring-0"
+        >
+          <MessageTemplatesTab />
         </TabsContent>
 
         <TabsContent
