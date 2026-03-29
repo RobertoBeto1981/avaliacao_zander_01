@@ -474,7 +474,7 @@ export default function ProfessorDashboard() {
                     </span>
                     {ev.professor?.nome || profile?.nome ? (
                       <Badge className="bg-[#95c23d] text-black hover:bg-[#95c23d]/90 border-none font-semibold px-2 py-0 w-fit h-5">
-                        {(ev.professor?.nome || profile?.nome).split(' ')[0]}
+                        {(ev.professor?.nome || profile?.nome)?.split(' ')[0]}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground font-medium">-</span>
