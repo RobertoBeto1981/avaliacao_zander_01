@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             } catch (err) {
               // ignore
             }
-            supabase.auth.signOut().catch(() => {})
+            supabase.auth.signOut({ scope: 'local' }).catch(() => {})
           } else {
             console.warn('Supabase auth warning:', error.message)
           }
@@ -139,8 +139,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        }
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+        return { error: null }
+      }
+
+      const { error } = await supabase.auth.signOut()
+
+      if (
+        error &&
+        (error.message?.includes('session_not_found') || error.message?.includes('does not exist'))
+      ) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        }
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+        return { error: null }
+      }
+
+      return { error }
+    } catch (err: any) {
+      return { error: err }
+    }
   }
 
   return (
