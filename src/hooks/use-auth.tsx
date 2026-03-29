@@ -140,37 +140,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { data } = await supabase.auth.getSession()
-      if (!data.session) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            localStorage.removeItem(key)
-          }
+      // Use local scope to prevent 403 errors if the session is already invalid on the server
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key)
         }
-        setSession(null)
-        setUser(null)
-        setProfile(null)
-        return { error: null }
       }
 
-      const { error } = await supabase.auth.signOut()
-
-      if (
-        error &&
-        (error.message?.includes('session_not_found') || error.message?.includes('does not exist'))
-      ) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            localStorage.removeItem(key)
-          }
-        }
-        setSession(null)
-        setUser(null)
-        setProfile(null)
-        return { error: null }
-      }
+      setSession(null)
+      setUser(null)
+      setProfile(null)
 
       return { error }
     } catch (err: any) {
