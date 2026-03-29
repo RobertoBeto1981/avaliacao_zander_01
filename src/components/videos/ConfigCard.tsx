@@ -145,11 +145,7 @@ export function ConfigCard({
           onClick={handleSave}
           disabled={saving || uploading || (!isDirty && !isSaved)}
           variant={isSaved && !isDirty ? 'secondary' : 'default'}
-          className={
-            isSaved && !isDirty
-              ? 'w-full relative z-20 bg-green-500/20 text-green-700 hover:bg-green-500/30'
-              : 'w-full relative z-20'
-          }
+          className="text-[#95c23d]"
         >
           {saving
             ? 'Salvando...'
