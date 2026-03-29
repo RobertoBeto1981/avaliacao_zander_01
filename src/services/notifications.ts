@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase/client'
 export const getNotifications = async (userId: string) => {
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select('*, bulk_messages(file_url, file_name)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(100)

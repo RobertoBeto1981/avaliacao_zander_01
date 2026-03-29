@@ -149,8 +149,8 @@ export default function Register() {
             {roles.includes('professor') && (
               <div className="space-y-3 animate-fade-in">
                 <Label>Períodos de Trabalho (Professor)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
-                  {['Manhã', 'Tarde', 'Noite'].map((p) => (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                  {['Manhã', 'Tarde', 'Noite', 'Horista'].map((p) => (
                     <div key={p} className="flex items-center space-x-3">
                       <Checkbox
                         id={`per-${p}`}

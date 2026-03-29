@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bell, Check, BellRing, Archive } from 'lucide-react'
+import { Bell, Check, BellRing, Archive, Megaphone, Paperclip } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { calculateDeadline } from '@/lib/holidays'
@@ -300,7 +300,11 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                             : 'bg-muted text-muted-foreground',
                         )}
                       >
-                        <Bell className="h-4 w-4" />
+                        {notif.type === 'message' ? (
+                          <Megaphone className="h-4 w-4" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
                       </div>
                     )}
                   </div>
@@ -323,9 +327,28 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground leading-snug break-words">
+                    <p className="text-xs text-muted-foreground leading-snug break-words whitespace-pre-wrap">
                       {notif.message}
                     </p>
+                    {notif.bulk_messages?.file_url && (
+                      <div className="pt-1.5 pb-0.5">
+                        <a
+                          href={notif.bulk_messages.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-2.5 py-1.5 rounded-md w-fit border border-primary/20"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Paperclip className="w-3.5 h-3.5" />
+                          <span
+                            className="truncate max-w-[150px]"
+                            title={notif.bulk_messages.file_name || 'Baixar Anexo'}
+                          >
+                            {notif.bulk_messages.file_name || 'Baixar Anexo'}
+                          </span>
+                        </a>
+                      </div>
+                    )}
                     <p className="text-[10px] text-muted-foreground/60 pt-1">
                       {new Date(notif.created_at).toLocaleDateString('pt-BR', {
                         day: '2-digit',
