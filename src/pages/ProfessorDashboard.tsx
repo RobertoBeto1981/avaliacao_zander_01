@@ -18,7 +18,7 @@ import {
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
