@@ -24,40 +24,44 @@ import CoordinatorDashboard from './pages/CoordinatorDashboard'
 
 // Global error handlers to prevent app crash on Supabase invalid refresh token
 if (typeof window !== 'undefined') {
+  const cleanSupabaseAuth = () => {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   window.addEventListener('unhandledrejection', (event) => {
     const msg = event.reason?.message || event.reason?.toString() || ''
-    if (
-      msg.includes('Refresh Token Not Found') ||
-      msg.includes('Invalid Refresh Token') ||
-      msg.includes('AuthApiError')
-    ) {
+    if (msg.includes('Refresh Token') || msg.includes('AuthApiError')) {
       event.preventDefault()
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            localStorage.removeItem(key)
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
+      cleanSupabaseAuth()
+    }
+  })
+
+  window.addEventListener('error', (event) => {
+    const msg = event.message || event.error?.message || ''
+    if (msg.includes('Refresh Token') || msg.includes('AuthApiError')) {
+      event.preventDefault()
+      cleanSupabaseAuth()
     }
   })
 
   const originalConsoleError = console.error
   console.error = (...args: any[]) => {
-    const msg = args[0]
-    const isAuthError =
-      typeof msg === 'string' && (msg.includes('Refresh Token') || msg.includes('AuthApiError'))
-    const isObjAuthError =
-      msg &&
-      typeof msg === 'object' &&
-      msg.message &&
-      (msg.message.includes('Refresh Token') || msg.message.includes('AuthApiError'))
-
-    if (isAuthError || isObjAuthError) return
-
+    const msgStr = args
+      .map((a) => (typeof a === 'string' ? a : a?.message || a?.toString() || ''))
+      .join(' ')
+    if (msgStr.includes('Refresh Token') || msgStr.includes('AuthApiError')) {
+      cleanSupabaseAuth()
+      return
+    }
     originalConsoleError.apply(console, args)
   }
 }

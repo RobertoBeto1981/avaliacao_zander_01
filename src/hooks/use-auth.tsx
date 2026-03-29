@@ -74,11 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          console.warn('Supabase auth warning:', error.message)
-          if (
-            error.message.includes('Refresh Token Not Found') ||
-            error.message.includes('Invalid Refresh Token')
-          ) {
+          if (error.message.includes('Refresh Token') || error.message.includes('AuthApiError')) {
             try {
               for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i)
@@ -90,6 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // ignore
             }
             supabase.auth.signOut().catch(() => {})
+          } else {
+            console.warn('Supabase auth warning:', error.message)
           }
         }
         if (mounted) {
