@@ -16,17 +16,23 @@ export default function ForgotPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const cleanEmail = email.trim()
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     setIsSubmitting(false)
     if (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: error.message })
+      let msg = error.message || ''
+      if (msg.includes('User not found')) {
+        msg = 'Usuário não encontrado com este e-mail.'
+      }
+      toast({ variant: 'destructive', title: 'Erro', description: msg })
     } else {
       toast({
         title: 'E-mail enviado',
-        description: 'Verifique sua caixa de entrada para redefinir a senha.',
+        description: 'Verifique sua caixa de entrada (e spam) para redefinir a senha.',
       })
+      setEmail('')
     }
   }
 
@@ -52,6 +58,9 @@ export default function ForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect="off"
               />
             </div>
             <Button type="submit" className="w-full font-bold" disabled={isSubmitting}>

@@ -24,10 +24,17 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    const { error } = await signIn(email, password)
+    const cleanEmail = email.trim()
+    const { error } = await signIn(cleanEmail, password)
     setIsSubmitting(false)
     if (error) {
-      const msg = error.message || ''
+      let msg = error.message || ''
+      if (msg.includes('Invalid login credentials')) {
+        msg = 'E-mail ou senha incorretos. Verifique se não há espaços em branco.'
+      } else if (msg.includes('Email not confirmed')) {
+        msg = 'Por favor, confirme seu e-mail antes de entrar.'
+      }
+
       if (!msg.toLowerCase().includes('refresh token') && !msg.toLowerCase().includes('session')) {
         toast({ variant: 'destructive', title: 'Erro de Login', description: msg })
       }
@@ -58,6 +65,9 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect="off"
               />
             </div>
             <div className="space-y-2">
@@ -92,6 +102,19 @@ export default function Login() {
               </Link>
             </div>
           </form>
+
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => {
+                localStorage.clear()
+                sessionStorage.clear()
+                window.location.reload()
+              }}
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground underline transition-colors"
+            >
+              Problemas para entrar? Limpar cache do aplicativo
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

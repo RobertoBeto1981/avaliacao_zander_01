@@ -43,9 +43,10 @@ export default function Register() {
     }
 
     setLoading(true)
+    const cleanEmail = email.trim()
     try {
-      const { error } = await signUp(email, password, {
-        nome,
+      const { error } = await signUp(cleanEmail, password, {
+        nome: nome.trim(),
         telefone,
         roles,
         role: roles[0],
@@ -58,9 +59,18 @@ export default function Register() {
       })
       navigate('/login')
     } catch (err: any) {
+      let msg = err.message || ''
+      if (msg.includes('User already registered')) {
+        msg = 'Este e-mail já está cadastrado.'
+      } else if (msg.includes('Password should be at least')) {
+        msg = 'A senha deve ter no mínimo 6 caracteres.'
+      } else if (msg.includes('email') && msg.includes('invalid')) {
+        msg = 'O e-mail informado é inválido. Verifique espaços em branco.'
+      }
+
       toast({
         title: 'Erro no cadastro',
-        description: err.message,
+        description: msg,
         variant: 'destructive',
       })
     } finally {
@@ -69,8 +79,8 @@ export default function Register() {
   }
 
   return (
-    <div className="container mx-auto max-w-md py-12 animate-fade-in">
-      <Card className="border-border/50 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-fade-in">
+      <Card className="w-full max-w-md border-border/50 shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
           <CardDescription>Cadastre-se para acessar o sistema Zander</CardDescription>
@@ -88,6 +98,9 @@ export default function Register() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect="off"
               />
             </div>
             <div className="space-y-2">
@@ -103,14 +116,14 @@ export default function Register() {
 
             <div className="space-y-3">
               <Label>Cargos / Funções</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
                 {[
                   { id: 'professor', label: 'Professor' },
                   { id: 'avaliador', label: 'Avaliador' },
                   { id: 'fisioterapeuta', label: 'Fisioterapeuta' },
                   { id: 'nutricionista', label: 'Nutricionista' },
                 ].map((r) => (
-                  <div key={r.id} className="flex items-center space-x-2">
+                  <div key={r.id} className="flex items-center space-x-3">
                     <Checkbox
                       id={r.id}
                       checked={roles.includes(r.id)}
@@ -136,9 +149,9 @@ export default function Register() {
             {roles.includes('professor') && (
               <div className="space-y-3 animate-fade-in">
                 <Label>Períodos de Trabalho (Professor)</Label>
-                <div className="grid grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
                   {['Manhã', 'Tarde', 'Noite'].map((p) => (
-                    <div key={p} className="flex items-center space-x-2">
+                    <div key={p} className="flex items-center space-x-3">
                       <Checkbox
                         id={`per-${p}`}
                         checked={periodos.includes(p)}

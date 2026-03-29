@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import AuthSuccess from './pages/AuthSuccess'
 import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import NewEvaluation from './pages/NewEvaluation'
 import EditEvaluation from './pages/EditEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
@@ -26,11 +27,16 @@ import CoordinatorDashboard from './pages/CoordinatorDashboard'
 if (typeof window !== 'undefined') {
   const cleanSupabaseAuth = () => {
     try {
+      let cleaned = false
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
           localStorage.removeItem(key)
+          cleaned = true
         }
+      }
+      if (cleaned && window.location.pathname !== '/login') {
+        window.location.href = '/login'
       }
     } catch (e) {
       // ignore
@@ -230,6 +236,7 @@ const AppRoutes = () => (
       <Route path="/register" element={<Register />} />
       <Route path="/auth-success" element={<AuthSuccess />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>

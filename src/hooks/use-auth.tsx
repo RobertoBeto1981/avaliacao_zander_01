@@ -76,11 +76,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (error) {
           if (error.message.includes('Refresh Token') || error.message.includes('AuthApiError')) {
             try {
+              let cleaned = false
               for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i)
                 if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
                   localStorage.removeItem(key)
+                  cleaned = true
                 }
+              }
+              if (cleaned && window.location.pathname !== '/login') {
+                window.location.href = '/login'
               }
             } catch (err) {
               // ignore
