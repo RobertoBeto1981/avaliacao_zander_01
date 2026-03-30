@@ -117,13 +117,20 @@ export default function ProfessorDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
+    const EMOJI_MEMO = '\uD83D\uDCDD'
+    const EMOJI_MAG = '\uD83D\uDD0D'
+    const EMOJI_TARGET = '\uD83C\uDFAF'
+    const EMOJI_SCALE = '\u2696\uFE0F'
+    const EMOJI_CHART = '\uD83D\uDCCA'
+    const EMOJI_HEART = '\uD83D\uDC99'
+
     let linksStr = ''
-    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.anamnese_url) linksStr += `${EMOJI_MEMO} *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url)
-      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
+      linksStr += `${EMOJI_MAG} *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `${EMOJI_TARGET} *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `${EMOJI_SCALE} *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `${EMOJI_CHART} *My Score:* ${links.my_score_url}\n`
 
     try {
       const { data: tpl } = await supabase
@@ -133,11 +140,11 @@ export default function ProfessorDashboard() {
         .single()
       let text =
         tpl?.template ||
-        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! ${EMOJI_HEART}`
 
       text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
 
-      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       window.open(url, '_blank')
       toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
     } catch (err) {
@@ -356,21 +363,24 @@ export default function ProfessorDashboard() {
                           {ev.nome_cliente}
                         </h3>
                         <div className="flex gap-1">
-                          {!ev.is_pre_avaliacao && isCoordenador && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-accent hover:bg-accent/20 hover:text-accent -mt-1 -mr-1"
-                                  onClick={() => handleSendWhatsApp(ev)}
-                                >
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Enviar links via WhatsApp</TooltipContent>
-                            </Tooltip>
-                          )}
+                          {!ev.is_pre_avaliacao &&
+                            (isCoordenador ||
+                              profile?.roles?.includes('avaliador') ||
+                              profile?.role === 'avaliador') && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-accent hover:bg-accent/20 hover:text-accent -mt-1 -mr-1"
+                                    onClick={() => handleSendWhatsApp(ev)}
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Enviar links via WhatsApp</TooltipContent>
+                              </Tooltip>
+                            )}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button

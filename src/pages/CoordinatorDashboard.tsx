@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Input } from '@/components/ui/input'
+import { Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -80,6 +82,7 @@ export default function CoordinatorDashboard() {
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
   const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString())
+  const [searchTerm, setSearchTerm] = useState('')
 
   const { toast } = useToast()
 
@@ -164,6 +167,9 @@ export default function CoordinatorDashboard() {
 
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
+    const EMOJI_ROCKET = '\uD83D\uDE80'
+    const EMOJI_MUSCLE = '\uD83D\uDCAA'
+
     try {
       const { data: tpl } = await supabase
         .from('message_templates')
@@ -172,11 +178,11 @@ export default function CoordinatorDashboard() {
         .single()
       let text =
         tpl?.template ||
-        `Fala, {{nome}}! 🚀 Você acaba de aceitar o #DesafioZander! Parabéns pela decisão. O foco agora é total na sua evolução: nosso time entrará em contato em breve para alinharmos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados incríveis. Vamos pra cima! 💪`
+        `Fala, {{nome}}! ${EMOJI_ROCKET} Você acaba de aceitar o #DesafioZander! Parabéns pela decisão. O foco agora é total na sua evolução: nosso time entrará em contato em breve para alinharmos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados incríveis. Vamos pra cima! ${EMOJI_MUSCLE}`
 
       text = text.replace(/{{nome}}/g, firstName)
 
-      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       window.open(url, '_blank')
 
       await markDesafioZanderSent(ev.id)
@@ -247,13 +253,20 @@ export default function CoordinatorDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
+    const EMOJI_MEMO = '\uD83D\uDCDD'
+    const EMOJI_MAG = '\uD83D\uDD0D'
+    const EMOJI_TARGET = '\uD83C\uDFAF'
+    const EMOJI_SCALE = '\u2696\uFE0F'
+    const EMOJI_CHART = '\uD83D\uDCCA'
+    const EMOJI_HEART = '\uD83D\uDC99'
+
     let linksStr = ''
-    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.anamnese_url) linksStr += `${EMOJI_MEMO} *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url)
-      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
+      linksStr += `${EMOJI_MAG} *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `${EMOJI_TARGET} *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `${EMOJI_SCALE} *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `${EMOJI_CHART} *My Score:* ${links.my_score_url}\n`
 
     try {
       const { data: tpl } = await supabase
@@ -263,11 +276,11 @@ export default function CoordinatorDashboard() {
         .single()
       let text =
         tpl?.template ||
-        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! ${EMOJI_HEART}`
 
       text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
 
-      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       window.open(url, '_blank')
       toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
     } catch (err) {
@@ -277,9 +290,14 @@ export default function CoordinatorDashboard() {
 
   const filtered = useMemo(() => {
     return evaluations.filter((ev) => {
-      return statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
+      const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
+      const matchSearch =
+        searchTerm === '' ||
+        ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ev.evo_id?.includes(searchTerm)
+      return matchStatus && matchSearch
     })
-  }, [evaluations, statusFilter])
+  }, [evaluations, statusFilter, searchTerm])
 
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
@@ -353,7 +371,16 @@ export default function CoordinatorDashboard() {
             </Alert>
           )}
 
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-4 mb-6 flex-wrap">
+            <div className="relative w-full sm:w-[300px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar aluno ou EVO..."
+                className="pl-9 bg-background"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filtrar por Status" />

@@ -44,12 +44,14 @@ import { HistoryDialog } from '@/components/HistoryDialog'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { InternalCommunications } from '@/components/InternalCommunications'
+import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 
 export default function RoleDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [periodoFilter, setPeriodoFilter] = useState<string>('all')
+  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -64,6 +66,14 @@ export default function RoleDashboard() {
   const { profile } = useAuth()
 
   const isCoordenador = profile?.role === 'coordenador' || profile?.roles?.includes('coordenador')
+  const isAvaliador = profile?.role === 'avaliador' || profile?.roles?.includes('avaliador')
+  const isFisioOrNutri =
+    profile?.roles?.includes('fisioterapeuta') ||
+    profile?.role === 'fisioterapeuta' ||
+    profile?.roles?.includes('nutricionista') ||
+    profile?.role === 'nutricionista'
+
+  const canSendWhatsApp = isCoordenador || isAvaliador
   const profileId = profile?.id
 
   const loadData = useCallback(async () => {
@@ -112,13 +122,20 @@ export default function RoleDashboard() {
     const links = ev.links_avaliacao?.[0] || {}
     const firstName = ev.nome_cliente.trim().split(' ')[0]
 
+    const EMOJI_MEMO = '\uD83D\uDCDD'
+    const EMOJI_MAG = '\uD83D\uDD0D'
+    const EMOJI_TARGET = '\uD83C\uDFAF'
+    const EMOJI_SCALE = '\u2696\uFE0F'
+    const EMOJI_CHART = '\uD83D\uDCCA'
+    const EMOJI_HEART = '\uD83D\uDC99'
+
     let linksStr = ''
-    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.anamnese_url) linksStr += `${EMOJI_MEMO} *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url)
-      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
+      linksStr += `${EMOJI_MAG} *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `${EMOJI_TARGET} *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `${EMOJI_SCALE} *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `${EMOJI_CHART} *My Score:* ${links.my_score_url}\n`
 
     try {
       const { data: tpl } = await supabase
@@ -128,11 +145,11 @@ export default function RoleDashboard() {
         .single()
       let text =
         tpl?.template ||
-        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! ${EMOJI_HEART}`
 
       text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
 
-      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       window.open(url, '_blank')
       toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
     } catch (err) {
@@ -199,9 +216,13 @@ export default function RoleDashboard() {
             Exibindo exclusivamente os alunos distribuídos para sua avaliação ou acompanhamento.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/evaluation/new">Nova Avaliação</Link>
-        </Button>
+        {isFisioOrNutri ? (
+          <Button onClick={() => setIsNewStudentOpen(true)}>Novo Aluno</Button>
+        ) : (
+          <Button asChild>
+            <Link to="/evaluation/new">Nova Avaliação</Link>
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="painel" className="w-full">
@@ -350,7 +371,7 @@ export default function RoleDashboard() {
                           {ev.nome_cliente}
                         </h3>
                         <div className="flex gap-1">
-                          {!ev.is_pre_avaliacao && isCoordenador && (
+                          {!ev.is_pre_avaliacao && canSendWhatsApp && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -497,6 +518,7 @@ export default function RoleDashboard() {
                         <Select
                           value={ev.status || 'pendente'}
                           onValueChange={(val) => handleStatusChange(ev.id, val)}
+                          disabled={isFisioOrNutri}
                         >
                           <SelectTrigger
                             className={cn(
@@ -585,21 +607,23 @@ export default function RoleDashboard() {
                         <Button variant="default" size="sm" className="h-8 text-xs flex-1" asChild>
                           <Link to={`/evaluation/${ev.id}`}>Ver Resumo</Link>
                         </Button>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
-                              asChild
-                            >
-                              <Link to={`/evaluation/edit/${ev.id}`}>
-                                <Edit className="w-4 h-4" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Editar Avaliação</TooltipContent>
-                        </Tooltip>
+                        {!isFisioOrNutri && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
+                                asChild
+                              >
+                                <Link to={`/evaluation/edit/${ev.id}`}>
+                                  <Edit className="w-4 h-4" />
+                                </Link>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar Avaliação</TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -633,6 +657,15 @@ export default function RoleDashboard() {
         avaliacaoId={historyEval?.id || ''}
         nomeCliente={historyEval?.nome || ''}
         evoId={historyEval?.evo_id}
+      />
+
+      <NovoAlunoDialog
+        open={isNewStudentOpen}
+        onOpenChange={setIsNewStudentOpen}
+        onSuccess={() => {
+          setIsNewStudentOpen(false)
+          loadData()
+        }}
       />
     </div>
   )
