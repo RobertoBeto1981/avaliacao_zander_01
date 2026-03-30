@@ -29,6 +29,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { format } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
+import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
+import { StudentCard } from '@/components/StudentCard'
 import { cn } from '@/lib/utils'
 
 export default function ProfessorDashboard() {
