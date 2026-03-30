@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
-import { createClient } from 'npm:@supabase/supabase-js'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 // Função para envio dos links da avaliação física via WhatsApp
 Deno.serve(async (req: Request) => {
