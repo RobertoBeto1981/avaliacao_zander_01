@@ -14,7 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, FileText, MessageSquare, Activity, Scale, Loader2, Edit } from 'lucide-react'
+import {
+  Search,
+  FileText,
+  MessageSquare,
+  Activity,
+  Scale,
+  Loader2,
+  Edit,
+  UserPlus,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'

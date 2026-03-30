@@ -114,6 +114,7 @@ export type Database = {
           evo_id: string | null
           id: string
           is_pre_avaliacao: boolean
+          nao_cliente: boolean
           nome_cliente: string
           objectives: string[] | null
           periodo_treino: string | null
@@ -133,6 +134,7 @@ export type Database = {
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
+          nao_cliente?: boolean
           nome_cliente: string
           objectives?: string[] | null
           periodo_treino?: string | null
@@ -152,6 +154,7 @@ export type Database = {
           evo_id?: string | null
           id?: string
           is_pre_avaliacao?: boolean
+          nao_cliente?: boolean
           nome_cliente?: string
           objectives?: string[] | null
           periodo_treino?: string | null
@@ -853,6 +856,7 @@ export const Constants = {
 //   desafio_zander_status: text (not null, default: 'nenhum'::text)
 //   desafio_zander_ativado_em: timestamp with time zone (nullable)
 //   desafio_zander_enviado_em: timestamp with time zone (nullable)
+//   nao_cliente: boolean (not null, default: false)
 // Table: bulk_messages
 //   id: uuid (not null, default: gen_random_uuid())
 //   sender_id: uuid (not null)
