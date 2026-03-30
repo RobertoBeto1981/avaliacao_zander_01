@@ -70,15 +70,15 @@ Deno.serve(async (req: Request) => {
       .single()
     let text =
       tplData?.template ||
-      `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! 💙`
+      `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! \uD83D\uDC99`
 
     let linksStr = ''
-    if (links.anamnese_url) linksStr += `📝 *Anamnese:* ${links.anamnese_url}\n`
+    if (links.anamnese_url) linksStr += `\uD83D\uDCDD *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url)
-      linksStr += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) linksStr += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) linksStr += `⚖️ *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) linksStr += `📊 *My Score:* ${links.my_score_url}\n`
+      linksStr += `\uD83D\uDD0D *Sintomas:* ${links.mapeamento_sintomas_url}\n`
+    if (links.mapeamento_dor_url) linksStr += `\uD83C\uDFAF *Dor:* ${links.mapeamento_dor_url}\n`
+    if (links.bia_url) linksStr += `\u2696\uFE0F *BIA:* ${links.bia_url}\n`
+    if (links.my_score_url) linksStr += `\uD83D\uDCCA *My Score:* ${links.my_score_url}\n`
 
     const message = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
 

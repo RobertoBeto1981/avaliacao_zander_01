@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getNotifications, markAsRead } from '@/services/notifications'
+import { getNotifications, markAsRead, archiveNotification } from '@/services/notifications'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,10 +9,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { MessageSquare, Paperclip } from 'lucide-react'
+import { MessageSquare, Paperclip, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
 
 export function InternalCommunications() {
   const { profile } = useAuth()
+  const { toast } = useToast()
   const [messages, setMessages] = useState<any[]>([])
 
   useEffect(() => {
@@ -27,6 +30,21 @@ export function InternalCommunications() {
       setMessages(data.filter((n: any) => n.type === 'message'))
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  const handleArchive = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await archiveNotification(id)
+      setMessages((prev) => prev.filter((m) => m.id !== id))
+      toast({ title: 'Mensagem apagada', description: 'O comunicado foi removido da sua caixa.' })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível apagar a mensagem.',
+      })
     }
   }
 
@@ -108,8 +126,8 @@ export function InternalCommunications() {
                   <div className="mb-4 bg-muted/30 p-4 rounded-md border text-sm text-foreground/90 whitespace-pre-wrap">
                     {msg.message}
                   </div>
-                  {msg.bulk_messages?.file_url && (
-                    <div className="mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+                    {msg.bulk_messages?.file_url ? (
                       <a
                         href={msg.bulk_messages.file_url}
                         target="_blank"
@@ -119,8 +137,19 @@ export function InternalCommunications() {
                         <Paperclip className="w-4 h-4" />
                         Baixar Anexo: {msg.bulk_messages.file_name || 'Documento'}
                       </a>
-                    </div>
-                  )}
+                    ) : (
+                      <div />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 w-fit"
+                      onClick={(e) => handleArchive(msg.id, e)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Apagar Mensagem
+                    </Button>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             ))}

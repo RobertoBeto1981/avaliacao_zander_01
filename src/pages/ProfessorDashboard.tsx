@@ -1,25 +1,12 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { format, isAfter, startOfDay, differenceInDays } from 'date-fns'
-import {
-  FileText,
-  HeartPulse,
-  Activity,
-  Scale,
-  Target,
-  AlertCircle,
-  MessageSquare,
-  History,
-  Plus,
-  MessageCircle,
-  Edit,
-  Loader2,
-} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
-import { calculateDeadline } from '@/lib/holidays'
+import { InternalCommunications } from '@/components/InternalCommunications'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -27,488 +14,151 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Search, FileText, MessageSquare, Activity, Scale, Loader2, Edit } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { format } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
-import { HistoryDialog } from '@/components/HistoryDialog'
-import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
-import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
-import { InternalCommunications } from '@/components/InternalCommunications'
+import { cn } from '@/lib/utils'
 
 export default function ProfessorDashboard() {
+  const { profile } = useAuth()
   const [evaluations, setEvaluations] = useState<any[]>([])
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [periodoFilter, setPeriodoFilter] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
     evo_id?: string
   } | null>(null)
-  const [historyEval, setHistoryEval] = useState<{
-    id: string
-    nome: string
-    evo_id?: string
-  } | null>(null)
-  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
   const { toast } = useToast()
-  const { profile } = useAuth()
 
-  const isCoordenador = profile?.role === 'coordenador'
-  const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
-
-  const profileId = profile?.id
-
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     try {
       const data = await getEvaluations()
-      // Filtra apenas os alunos que foram atribuídos a ESTE professor específico
-      setEvaluations(data.filter((ev: any) => ev.professor_id === profileId))
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Erro', description: e.message })
-    } finally {
-      setInitialLoading(false)
+      setEvaluations(data.filter((e: any) => e.professor_id === profile?.id))
+    } catch (err) {
+      console.error(err)
     }
-  }, [profileId, toast])
+    setLoading(false)
+  }
 
   useEffect(() => {
-    if (profileId) {
-      loadData()
-    } else {
-      setInitialLoading(false)
-    }
-  }, [profileId, loadData])
+    if (profile?.id) loadData()
+  }, [profile?.id])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
       await updateEvaluationStatus(id, status)
       setEvaluations((prev) => prev.map((ev) => (ev.id === id ? { ...ev, status } : ev)))
-      toast({ title: 'Sucesso', description: 'Status atualizado com sucesso.' })
+      toast({ title: 'Sucesso', description: 'Status atualizado.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     }
   }
 
-  const handleSendWhatsApp = async (ev: any) => {
-    if (!ev.telefone_cliente) {
-      toast({
-        title: 'Atenção',
-        description: 'Cliente não possui telefone cadastrado.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    let phone = ev.telefone_cliente.replace(/\D/g, '')
-    if (!phone.startsWith('55')) phone = '55' + phone
-
-    const links = ev.links_avaliacao?.[0] || {}
-    const firstName = ev.nome_cliente.trim().split(' ')[0]
-
-    const EMOJI_MEMO = '\uD83D\uDCDD'
-    const EMOJI_MAG = '\uD83D\uDD0D'
-    const EMOJI_TARGET = '\uD83C\uDFAF'
-    const EMOJI_SCALE = '\u2696\uFE0F'
-    const EMOJI_CHART = '\uD83D\uDCCA'
-    const EMOJI_HEART = '\uD83D\uDC99'
-
-    let linksStr = ''
-    if (links.anamnese_url) linksStr += `${EMOJI_MEMO} *Anamnese:* ${links.anamnese_url}\n`
-    if (links.mapeamento_sintomas_url)
-      linksStr += `${EMOJI_MAG} *Sintomas:* ${links.mapeamento_sintomas_url}\n`
-    if (links.mapeamento_dor_url) linksStr += `${EMOJI_TARGET} *Dor:* ${links.mapeamento_dor_url}\n`
-    if (links.bia_url) linksStr += `${EMOJI_SCALE} *BIA:* ${links.bia_url}\n`
-    if (links.my_score_url) linksStr += `${EMOJI_CHART} *My Score:* ${links.my_score_url}\n`
-
-    try {
-      const { data: tpl } = await supabase
-        .from('message_templates')
-        .select('template')
-        .eq('id', 'links_avaliacao')
-        .single()
-      let text =
-        tpl?.template ||
-        `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada! ${EMOJI_HEART}`
-
-      text = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
-
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-      window.open(url, '_blank')
-      toast({ title: 'WhatsApp Aberto', description: 'A janela do WhatsApp foi aberta.' })
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  const periodos = useMemo(
-    () => Array.from(new Set(evaluations.map((e) => e.periodo_treino).filter(Boolean))),
-    [evaluations],
-  )
-
   const filtered = useMemo(() => {
-    return evaluations.filter((ev) => {
-      const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
-      const matchPeriodo = periodoFilter === 'all' || ev.periodo_treino === periodoFilter
-      return matchStatus && matchPeriodo
-    })
-  }, [evaluations, statusFilter, periodoFilter])
-
-  const lateEvals = useMemo(() => {
-    const today = startOfDay(new Date())
-    return evaluations.filter((ev) => {
-      if (ev.status === 'concluido') return false
-
-      const isDesafio = ev.desafio_zander_status?.trim().toLowerCase() === 'ativo'
-
-      if (!isDesafio && (ev.is_pre_avaliacao || !ev.data_avaliacao)) return false
-
-      let deadlineStr = ev.data_avaliacao
-      let deadline = null
-
-      if (isDesafio) {
-        const baseDate = ev.desafio_zander_ativado_em || ev.created_at || ev.data_avaliacao
-        if (baseDate) {
-          deadlineStr = baseDate.includes('T') ? baseDate.split('T')[0] : baseDate.split(' ')[0]
-          deadline = calculateDeadline(deadlineStr, 3)
-        } else {
-          deadline = calculateDeadline(new Date().toISOString().split('T')[0], 3)
-        }
-      } else if (deadlineStr) {
-        deadline = calculateDeadline(deadlineStr, 3)
-      }
-
-      if (!deadline) return false
-      return isAfter(today, deadline)
-    })
-  }, [evaluations])
-
-  if (initialLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+    return evaluations.filter(
+      (ev) =>
+        ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ev.evo_id?.includes(searchTerm),
     )
-  }
+  }, [evaluations, searchTerm])
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Meu Painel de Professor</h1>
+          <h1 className="text-3xl font-bold">Painel do Professor</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Exibindo exclusivamente os alunos distribuídos para você montar o treino.
+            Acompanhe as montagens de treino e comunicados.
           </p>
         </div>
-        {isProfessor && (
-          <Button onClick={() => setIsNewStudentOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Aluno
-          </Button>
-        )}
       </div>
 
-      <Tabs defaultValue="painel" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8 h-12">
-          <TabsTrigger value="painel" className="text-base">
-            Painel de Avaliações
-          </TabsTrigger>
-          <TabsTrigger value="comunicados" className="text-base">
-            Comunicado Interno
-          </TabsTrigger>
+      <Tabs defaultValue="inicio">
+        <TabsList className="mb-6">
+          <TabsTrigger value="inicio">Início</TabsTrigger>
+          <TabsTrigger value="comunicados">Comunicado Interno</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="painel" className="space-y-6">
-          {lateEvals.length > 0 && (
-            <Alert
-              variant="destructive"
-              className="mb-6 animate-pulse border-destructive/50 bg-destructive/10"
-            >
-              <AlertCircle className="h-5 w-5" />
-              <AlertTitle className="text-lg font-bold">Atenção: Avaliações Atrasadas!</AlertTitle>
-              <AlertDescription className="text-base">
-                Você possui <strong>{lateEvals.length}</strong>{' '}
-                {lateEvals.length === 1 ? 'avaliação' : 'avaliações'} com prazo de montagem de
-                treino expirado (mais de 3 dias úteis). Por favor, priorize-as.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-4 mb-6">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por Treino" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Treinos</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                <SelectItem value="concluido">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Períodos</SelectItem>
-                {periodos.map((p: any) => (
-                  <SelectItem key={p} value={p}>
-                    {p}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <TabsContent value="inicio">
+          <div className="flex flex-wrap gap-4 mb-6 items-center">
+            <div className="relative w-full sm:w-[300px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar aluno ou EVO..."
+                className="pl-9 bg-background"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((ev) => {
-              const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
-              const isPre = ev.is_pre_avaliacao || !ev.data_avaliacao
-              const isDesafio = ev.desafio_zander_status?.trim().toLowerCase() === 'ativo'
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filtered.map((ev) => {
+                const links = ev.links_avaliacao?.[0] || {}
+                const evalDate = ev.data_avaliacao
+                  ? new Date(ev.data_avaliacao + 'T12:00:00')
+                  : null
 
-              let deadlineStr = ev.data_avaliacao
-              let deadline = null
-
-              if (isDesafio) {
-                const baseDate = ev.desafio_zander_ativado_em || ev.created_at || ev.data_avaliacao
-                if (baseDate) {
-                  deadlineStr = baseDate.includes('T')
-                    ? baseDate.split('T')[0]
-                    : baseDate.split(' ')[0]
-                  deadline = calculateDeadline(deadlineStr, 3)
-                } else {
-                  deadline = calculateDeadline(new Date().toISOString().split('T')[0], 3)
-                }
-              } else if (deadlineStr) {
-                deadline = calculateDeadline(deadlineStr, 3)
-              }
-              const isLate =
-                ((!isPre && deadline) || (isDesafio && deadline)) &&
-                deadline &&
-                isAfter(today, deadline) &&
-                ev.status !== 'concluido'
-              const links = ev.links_avaliacao?.[0] || {}
-
-              let reevalColorClass = ''
-              let reevalDotClass = ''
-              let isPulsing = false
-
-              if (!isPre && ev.data_reavaliacao && evalDate) {
-                const daysSinceEval = differenceInDays(today, evalDate)
-                if (daysSinceEval <= 29) {
-                  reevalColorClass = 'text-primary'
-                  reevalDotClass = 'bg-primary'
-                } else if (daysSinceEval <= 59) {
-                  reevalColorClass = 'text-amber-500'
-                  reevalDotClass = 'bg-amber-500'
-                } else if (daysSinceEval <= 90) {
-                  reevalColorClass = 'text-destructive'
-                  reevalDotClass = 'bg-destructive'
-                } else {
-                  reevalColorClass = 'text-destructive font-bold'
-                  reevalDotClass = 'bg-destructive'
-                  isPulsing = true
-                }
-              }
-
-              const linkItems = [
-                {
-                  type: 'internal',
-                  url: `/evaluation/${ev.id}`,
-                  icon: FileText,
-                  label: 'Resumo da Avaliação',
-                },
-                {
-                  type: 'external',
-                  url: links.mapeamento_sintomas_url,
-                  icon: HeartPulse,
-                  label: 'Mapeamento Sintomas',
-                },
-                {
-                  type: 'external',
-                  url: links.mapeamento_dor_url,
-                  icon: Activity,
-                  label: 'Mapeamento da Dor',
-                },
-                { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
-                { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
-              ]
-
-              return (
-                <Card
-                  key={ev.id}
-                  className={cn(
-                    'flex flex-col h-full transition-all hover:border-primary/50 overflow-hidden',
-                    ev.is_pre_avaliacao && 'bg-primary/5',
-                  )}
-                >
-                  <CardContent className="p-4 flex flex-col h-full gap-4">
-                    <div>
-                      <div className="flex justify-between items-start gap-2">
-                        <h3 className="font-bold text-base leading-tight" title={ev.nome_cliente}>
+                return (
+                  <Card
+                    key={ev.id}
+                    className="flex flex-col h-full hover:border-primary/50 transition-colors shadow-sm"
+                  >
+                    <CardHeader className="p-4 pb-2 border-b border-border/10 flex flex-row items-start justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <CardTitle
+                          className="text-base font-bold line-clamp-2"
+                          title={ev.nome_cliente}
+                        >
                           {ev.nome_cliente}
-                        </h3>
-                        <div className="flex gap-1">
-                          {!ev.is_pre_avaliacao &&
-                            (isCoordenador ||
-                              profile?.roles?.includes('avaliador') ||
-                              profile?.role === 'avaliador') && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-accent hover:bg-accent/20 hover:text-accent -mt-1 -mr-1"
-                                    onClick={() => handleSendWhatsApp(ev)}
-                                  >
-                                    <MessageCircle className="w-3.5 h-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Enviar links via WhatsApp</TooltipContent>
-                              </Tooltip>
-                            )}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground -mt-1 -mr-1"
-                                onClick={() =>
-                                  setHistoryEval({
-                                    id: ev.id,
-                                    nome: ev.nome_cliente,
-                                    evo_id: ev.evo_id,
-                                  })
-                                }
-                              >
-                                <History className="w-3.5 h-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Ver Histórico</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                      {ev.evo_id && (
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400 mt-1">
-                          EVO: {ev.evo_id}
-                        </div>
-                      )}
-                      <div className="flex gap-1.5 items-center flex-wrap mt-2">
-                        {ev.is_pre_avaliacao && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-2 py-0 border-none h-5 flex items-center gap-1 w-fit"
-                          >
-                            <AlertCircle className="w-3 h-3" /> Pendente
-                          </Badge>
-                        )}
-                        {isDesafio && (
-                          <Badge
-                            variant="default"
-                            className="text-[10px] px-1.5 py-0 border-none h-5 bg-purple-600 hover:bg-purple-700 text-white w-fit"
-                          >
-                            #DesafioZander
+                        </CardTitle>
+                        {ev.evo_id && (
+                          <Badge variant="outline" className="w-fit text-[10px]">
+                            EVO: {ev.evo_id}
                           </Badge>
                         )}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm mt-1">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Data Avaliação
-                        </span>
-                        <span className="font-medium">
-                          {evalDate ? format(evalDate, 'dd/MM/yyyy') : '-'}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Reavaliação
-                        </span>
-                        {isPre || !ev.data_reavaliacao ? (
-                          <span className="font-medium text-muted-foreground">-</span>
-                        ) : (
-                          <div
-                            className={cn(
-                              'flex items-center gap-1.5',
-                              reevalColorClass,
-                              isPulsing && 'animate-pulse',
-                            )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-primary hover:bg-primary/10 shrink-0 -mr-2 -mt-2"
+                            asChild
                           >
-                            <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                            <span className="font-medium">
-                              {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Período
+                            <Link to={`/evaluation/edit/${ev.id}`}>
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
+                    </CardHeader>
+                    <CardContent className="p-4 flex-grow text-sm flex flex-col gap-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground text-xs uppercase font-medium tracking-wider">
+                          Avaliação
                         </span>
-                        <span className="font-medium">{ev.periodo_treino || '-'}</span>
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Prazo (Treino)
+                        <span className="font-semibold">
+                          {ev.is_pre_avaliacao
+                            ? '-'
+                            : evalDate
+                              ? format(evalDate, 'dd/MM/yyyy')
+                              : '-'}
                         </span>
-                        {(!isDesafio && isPre) || !deadline ? (
-                          <span className="font-medium">-</span>
-                        ) : (
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5 font-medium">
-                              <span
-                                className={`w-2 h-2 rounded-full ${isLate ? 'bg-destructive animate-pulse' : 'bg-primary'}`}
-                              />
-                              {format(deadline, 'dd/MM/yyyy')}
-                            </div>
-                            {isDesafio ? (
-                              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
-                                #DesafioZander
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground font-medium">
-                                3 dias úteis
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Professor
-                        </span>
-                        {ev.professor?.nome || profile?.nome ? (
-                          <Badge className="bg-[#95c23d] text-black hover:bg-[#95c23d]/90 border-none font-semibold px-2 py-0 w-fit h-5">
-                            {(ev.professor?.nome || profile?.nome)?.split(' ')[0]}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground font-medium">-</span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Treino
+                      <div className="pt-2 border-t border-border/40 mt-auto">
+                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium block mb-1">
+                          Status do Treino
                         </span>
                         <Select
                           value={ev.status || 'pendente'}
@@ -516,13 +166,13 @@ export default function ProfessorDashboard() {
                         >
                           <SelectTrigger
                             className={cn(
-                              'w-full h-7 text-xs font-semibold px-2',
+                              'h-8 text-xs font-bold w-full',
                               (!ev.status || ev.status === 'pendente') &&
-                                'border-amber-500/30 text-amber-500 bg-amber-500/10',
+                                'border-amber-500/30 text-amber-600 bg-amber-500/10',
                               ev.status === 'em_progresso' &&
-                                'border-blue-500/30 text-blue-500 bg-blue-500/10',
+                                'border-blue-500/30 text-blue-600 bg-blue-500/10',
                               ev.status === 'concluido' &&
-                                'border-primary/30 text-primary bg-primary/10',
+                                'border-primary/40 text-primary bg-primary/10',
                             )}
                           >
                             <SelectValue />
@@ -534,59 +184,13 @@ export default function ProfessorDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-
-                    <div className="mt-auto pt-4 flex flex-col gap-3">
-                      <div className="flex items-center gap-1 bg-muted/30 p-1.5 rounded-md border border-border/50">
-                        <span className="text-[10px] font-semibold text-muted-foreground ml-1 mr-auto uppercase tracking-wider">
-                          Links
-                        </span>
-                        {linkItems.map((item, idx) => {
-                          const Icon = item.icon
-                          if (!ev.is_pre_avaliacao && item.url) {
-                            return (
-                              <Tooltip key={idx}>
-                                <TooltipTrigger asChild>
-                                  {item.type === 'internal' ? (
-                                    <Link
-                                      to={item.url}
-                                      className="p-1 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                    >
-                                      <Icon className="w-4 h-4" />
-                                    </Link>
-                                  ) : (
-                                    <a
-                                      href={item.url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="p-1 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                    >
-                                      <Icon className="w-4 h-4" />
-                                    </a>
-                                  )}
-                                </TooltipTrigger>
-                                <TooltipContent>{item.label}</TooltipContent>
-                              </Tooltip>
-                            )
-                          }
-                          return (
-                            <Tooltip key={idx}>
-                              <TooltipTrigger asChild>
-                                <div className="p-1 opacity-30 cursor-not-allowed">
-                                  <Icon className="w-4 h-4" />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>{item.label} (Indisponível)</TooltipContent>
-                            </Tooltip>
-                          )
-                        })}
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2">
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0 flex flex-col gap-3 bg-muted/10 border-t border-border/10">
+                      <div className="flex w-full pt-3">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs flex-1 font-medium bg-secondary/30"
+                          className="w-full text-xs bg-background shadow-sm"
                           onClick={() =>
                             setAcompanhamentoEval({
                               id: ev.id,
@@ -595,39 +199,72 @@ export default function ProfessorDashboard() {
                             })
                           }
                         >
-                          <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" />
-                          Anotações
+                          <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" /> Anotações e
+                          Acompanhamentos
                         </Button>
-                        <Button variant="default" size="sm" className="h-8 text-xs flex-1" asChild>
-                          <Link to={`/evaluation/${ev.id}`}>Ver Resumo</Link>
-                        </Button>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 shrink-0 text-primary hover:text-primary hover:bg-primary/20 border-primary/20"
-                              asChild
-                            >
-                              <Link to={`/evaluation/edit/${ev.id}`}>
-                                <Edit className="w-4 h-4" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Editar Avaliação</TooltipContent>
-                        </Tooltip>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-            {filtered.length === 0 && (
-              <div className="col-span-full flex justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                Nenhuma avaliação atribuída a você no momento.
-              </div>
-            )}
-          </div>
+                      <div className="flex justify-center gap-1 pt-2">
+                        {ev.is_pre_avaliacao ? (
+                          <span className="text-xs text-muted-foreground font-medium py-1.5">
+                            Avaliação pendente
+                          </span>
+                        ) : (
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  to={`/evaluation/${ev.id}`}
+                                  className="p-1.5 hover:bg-primary/20 rounded text-primary transition-colors"
+                                >
+                                  <FileText className="w-5 h-5" />
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver Resumo</TooltipContent>
+                            </Tooltip>
+                            {links.mapeamento_sintomas_url && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={links.mapeamento_sintomas_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1.5 hover:bg-primary/20 rounded text-primary transition-colors"
+                                  >
+                                    <Activity className="w-5 h-5" />
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>Sintomas</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {links.bia_url && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={links.bia_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1.5 hover:bg-primary/20 rounded text-primary transition-colors"
+                                  >
+                                    <Scale className="w-5 h-5" />
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>BIA</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                )
+              })}
+              {filtered.length === 0 && (
+                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                  Nenhum aluno atribuído a você.
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="comunicados">
@@ -637,30 +274,11 @@ export default function ProfessorDashboard() {
 
       <AcompanhamentoDialog
         open={!!acompanhamentoEval}
-        onOpenChange={(open) => !open && setAcompanhamentoEval(null)}
+        onOpenChange={(o) => !o && setAcompanhamentoEval(null)}
         avaliacaoId={acompanhamentoEval?.id || ''}
         nomeCliente={acompanhamentoEval?.nome || ''}
         evoId={acompanhamentoEval?.evo_id}
       />
-
-      <HistoryDialog
-        open={!!historyEval}
-        onOpenChange={(open) => !open && setHistoryEval(null)}
-        avaliacaoId={historyEval?.id || ''}
-        nomeCliente={historyEval?.nome || ''}
-        evoId={historyEval?.evo_id}
-      />
-
-      {isProfessor && (
-        <NovoAlunoDialog
-          open={isNewStudentOpen}
-          onOpenChange={setIsNewStudentOpen}
-          onSuccess={() => {
-            setIsNewStudentOpen(false)
-            loadData()
-          }}
-        />
-      )}
     </div>
   )
 }

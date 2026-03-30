@@ -36,12 +36,13 @@ export default function ResetPassword() {
           if (!data.session) {
             toast({
               variant: 'destructive',
-              title: 'Link inválido ou expirado',
-              description: 'Por favor, solicite a redefinição de senha novamente.',
+              title: 'Sessão não detectada',
+              description:
+                'Se você já redefiniu sua senha, faça login. Caso contrário, solicite um novo link.',
             })
-            navigate('/forgot-password')
+            navigate('/login')
           }
-        }, 2000)
+        }, 3000)
 
         return () => subscription.unsubscribe()
       }
@@ -92,6 +93,9 @@ export default function ResetPassword() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground text-center mb-4">
+              Digite abaixo a sua nova senha de acesso.
+            </div>
             <div className="space-y-2">
               <Label htmlFor="password">Nova Senha</Label>
               <div className="relative">

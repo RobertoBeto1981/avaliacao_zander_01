@@ -5,32 +5,22 @@ export const getNotifications = async (userId: string) => {
     .from('notifications')
     .select('*, bulk_messages(file_url, file_name)')
     .eq('user_id', userId)
+    .eq('is_archived', false)
     .order('created_at', { ascending: false })
-    .limit(100)
+
   if (error) throw error
   return data || []
 }
 
 export const markAsRead = async (id: string) => {
   const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id)
+
   if (error) throw error
 }
 
 export const archiveNotification = async (id: string) => {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ is_archived: true } as any)
-    .eq('id', id)
-  if (error) throw error
-}
+  const { error } = await supabase.from('notifications').update({ is_archived: true }).eq('id', id)
 
-export const archiveAllReadNotifications = async (userId: string) => {
-  const { error } = (await supabase
-    .from('notifications')
-    .update({ is_archived: true } as any)
-    .eq('user_id', userId)
-    .eq('is_read', true)
-    .eq('is_archived', false)) as any
   if (error) throw error
 }
 
@@ -38,7 +28,7 @@ export const sendBulkMessage = async (
   targetRoles: string[],
   title: string,
   message: string,
-  priority: string = 'normal',
+  priority: string,
   fileUrl?: string | null,
   fileName?: string | null,
 ) => {
@@ -47,27 +37,17 @@ export const sendBulkMessage = async (
     p_title: title,
     p_message: message,
     p_priority: priority,
-    p_file_url: fileUrl || null,
-    p_file_name: fileName || null,
-  } as any)
+    p_file_url: fileUrl,
+    p_file_name: fileName,
+  })
+
   if (error) throw error
 }
 
 export const getSentMessagesStats = async () => {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('bulk_messages')
-    .select(`
-      *,
-      notifications (
-        id,
-        is_read,
-        users (
-          id,
-          nome,
-          foto_url
-        )
-      )
-    `)
+    .select('*, notifications(id, is_read, user_id, users(nome, foto_url))')
     .order('created_at', { ascending: false })
 
   if (error) throw error

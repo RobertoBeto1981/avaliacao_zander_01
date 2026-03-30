@@ -987,9 +987,9 @@ export const Constants = {
 //   PRIMARY KEY avaliacao_history_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY avaliacao_history_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 // Table: avaliacoes
-//   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE CASCADE
+//   FOREIGN KEY avaliacoes_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES users(id) ON DELETE SET NULL
 //   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY avaliacoes_professor_id_fkey: FOREIGN KEY (professor_id) REFERENCES users(id)
+//   FOREIGN KEY avaliacoes_professor_id_fkey: FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE SET NULL
 // Table: bulk_messages
 //   PRIMARY KEY bulk_messages_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY bulk_messages_sender_id_fkey: FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
@@ -1169,10 +1169,54 @@ export const Constants = {
 //    LANGUAGE plpgsql
 //    SECURITY DEFINER
 //   AS $function$
+//   DECLARE
+//     v_av RECORD;
+//     selected_prof_id UUID;
 //   BEGIN
 //     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND 'coordenador' = ANY(roles)) THEN
 //       RAISE EXCEPTION 'Apenas coordenadores podem excluir usuários do sistema.';
 //     END IF;
+//
+//     -- Redistribute professor's avaliacoes
+//     FOR v_av IN SELECT * FROM public.avaliacoes WHERE professor_id = target_user_id AND status IN ('pendente', 'em_progresso') LOOP
+//       selected_prof_id := NULL;
+//
+//       -- Tenta encontrar professor pelo mesmo periodo
+//       IF v_av.periodo_treino IS NOT NULL THEN
+//         SELECT u.id INTO selected_prof_id
+//         FROM public.users u
+//         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
+//         WHERE 'professor' = ANY(u.roles)
+//           AND v_av.periodo_treino = ANY(u.periodos)
+//           AND u.ativo = true
+//           AND u.id != target_user_id
+//         GROUP BY u.id
+//         ORDER BY COUNT(a.id) ASC
+//         LIMIT 1;
+//       END IF;
+//
+//       -- Se não encontrar no mesmo periodo, busca o com menor carga
+//       IF selected_prof_id IS NULL THEN
+//         SELECT u.id INTO selected_prof_id
+//         FROM public.users u
+//         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
+//         WHERE 'professor' = ANY(u.roles)
+//           AND u.ativo = true
+//           AND u.id != target_user_id
+//         GROUP BY u.id
+//         ORDER BY COUNT(a.id) ASC
+//         LIMIT 1;
+//       END IF;
+//
+//       -- Atualiza
+//       IF selected_prof_id IS NOT NULL THEN
+//         UPDATE public.avaliacoes SET professor_id = selected_prof_id WHERE id = v_av.id;
+//       ELSE
+//         UPDATE public.avaliacoes SET professor_id = NULL WHERE id = v_av.id;
+//       END IF;
+//     END LOOP;
+//
+//     -- Remove from auth.users (cascades to public.users but preserves evaluations)
 //     DELETE FROM auth.users WHERE id = target_user_id;
 //   END;
 //   $function$
