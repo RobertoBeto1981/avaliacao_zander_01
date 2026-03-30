@@ -24,6 +24,16 @@ export const archiveNotification = async (id: string) => {
   if (error) throw error
 }
 
+export const archiveAllReadNotifications = async (userId: string) => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_archived: true })
+    .eq('user_id', userId)
+    .eq('is_read', true)
+
+  if (error) throw error
+}
+
 export const sendBulkMessage = async (
   targetRoles: string[],
   title: string,
