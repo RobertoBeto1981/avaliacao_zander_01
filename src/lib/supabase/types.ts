@@ -1340,6 +1340,47 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION log_new_client_history()
+//   CREATE OR REPLACE FUNCTION public.log_new_client_history()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//     DECLARE
+//       v_role text;
+//       v_nome text;
+//       v_first_name text;
+//       current_user_id UUID := auth.uid();
+//     BEGIN
+//       IF current_user_id IS NOT NULL THEN
+//         SELECT role::text, nome INTO v_role, v_nome
+//         FROM public.users
+//         WHERE id = current_user_id;
+//
+//         v_first_name := split_part(v_nome, ' ', 1);
+//
+//         INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//         VALUES (
+//           NEW.id,
+//           current_user_id,
+//           'CREATED',
+//           'Cliente adicionado pelo ' || COALESCE(v_role, 'sistema') || ' ' || COALESCE(v_first_name, ''),
+//           jsonb_build_object('is_pre_avaliacao', NEW.is_pre_avaliacao)
+//         );
+//       ELSE
+//         INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
+//         VALUES (
+//           NEW.id,
+//           NULL,
+//           'CREATED',
+//           'Cliente adicionado pelo sistema',
+//           jsonb_build_object('is_pre_avaliacao', NEW.is_pre_avaliacao)
+//         );
+//       END IF;
+//       RETURN NEW;
+//     END;
+//     $function$
+//
 // FUNCTION notify_desafio_zander_activation()
 //   CREATE OR REPLACE FUNCTION public.notify_desafio_zander_activation()
 //    RETURNS trigger
@@ -1460,6 +1501,7 @@ export const Constants = {
 // Table: avaliacoes
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT OR UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
+//   on_avaliacao_created_log: CREATE TRIGGER on_avaliacao_created_log AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_new_client_history()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
 //   on_desafio_zander_activated: CREATE TRIGGER on_desafio_zander_activated AFTER UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_desafio_zander_activation()
 //   on_desafio_zander_set_date: CREATE TRIGGER on_desafio_zander_set_date BEFORE UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION set_desafio_zander_activation_date()

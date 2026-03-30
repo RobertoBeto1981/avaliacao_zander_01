@@ -10,6 +10,8 @@ import { evaluationSchema, EvaluationFormValues } from '@/schemas/evaluation'
 import { createEvaluation } from '@/services/evaluations'
 import { triggerPostSaveAutomation } from '@/services/automation'
 import { IdentificationFields } from './eval-sections/Identification'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { TrainingHistoryFields } from './eval-sections/TrainingHistory'
 import { CurrentLifestyleFields } from './eval-sections/CurrentLifestyle'
 import { HealthFields } from './eval-sections/Health'
@@ -22,6 +24,7 @@ export default function NewEvaluation() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [existingId, setExistingId] = useState<string | null>(null)
+  const [isNaoCliente, setIsNaoCliente] = useState(false)
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -116,7 +119,7 @@ export default function NewEvaluation() {
       } = data
 
       const avaliacao = {
-        evo_id,
+        evo_id: isNaoCliente ? null : evo_id,
         nome_cliente,
         telefone_cliente,
         data_avaliacao: format(data_avaliacao, 'yyyy-MM-dd'),
@@ -124,6 +127,10 @@ export default function NewEvaluation() {
         periodo_treino,
         objectives,
         respostas: rest,
+      }
+
+      if (isNaoCliente) {
+        ;(avaliacao as any).nao_cliente = true
       }
 
       const links = {
@@ -163,6 +170,22 @@ export default function NewEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+          <div className="bg-muted/30 p-4 rounded-lg border border-border flex items-center space-x-3">
+            <Checkbox
+              id="nao_cliente"
+              checked={isNaoCliente}
+              onCheckedChange={(checked) => {
+                setIsNaoCliente(!!checked)
+                if (checked) {
+                  form.setValue('evo_id', '')
+                }
+              }}
+            />
+            <Label htmlFor="nao_cliente" className="font-bold cursor-pointer text-base">
+              Não Cliente (Aluno externo / Não matriculado)
+            </Label>
+          </div>
+
           <IdentificationFields setExistingId={handleSetExistingId} />
           <TrainingHistoryFields />
           <CurrentLifestyleFields />
