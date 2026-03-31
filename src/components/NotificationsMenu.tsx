@@ -173,6 +173,27 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     }
   }
 
+  const handleMarkAllAsRead = async () => {
+    if (!user) return
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+
+      const newDismissed = alerts.map((a) => a.id)
+      setDismissedAlerts((prev) => {
+        const next = Array.from(new Set([...prev, ...newDismissed]))
+        localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
+        return next
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const activeItems = [
     ...alerts.map((a) => ({ ...a, is_read: dismissedAlerts.includes(a.id) })),
     ...notifications.filter((n) => !n.is_archived),
@@ -235,9 +256,22 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
               Arquivadas
             </Button>
           </div>
-          {view === 'active' &&
-            activeItems.some((n) => n.is_read && !n.is_archived && n.type !== 'alert') && (
-              <div className="px-4 pb-2 flex justify-end">
+          {view === 'active' && (
+            <div className="px-4 pb-2 flex justify-between items-center">
+              {unreadCount > 0 ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground p-0 hover:text-primary"
+                  onClick={handleMarkAllAsRead}
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Marcar Todas Lidas
+                </Button>
+              ) : (
+                <div />
+              )}
+              {activeItems.some((n) => n.is_read && !n.is_archived && n.type !== 'alert') && (
                 <Button
                   variant="link"
                   size="sm"
@@ -247,8 +281,9 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                   <Archive className="w-3 h-3 mr-1" />
                   Limpar Lidas
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
+          )}
         </div>
         <ScrollArea className="h-[350px]">
           {displayItems.length === 0 ? (

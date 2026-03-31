@@ -27,6 +27,11 @@ import {
   activateDesafioZander,
   markDesafioZanderSent,
 } from '@/services/evaluations'
+import {
+  getPendingProfessorRequests,
+  respondProfessorRequest,
+  updateAvaliacaoProfessor,
+} from '@/services/professor_requests'
 import { getUsers } from '@/services/users'
 import { calculateDeadline } from '@/lib/holidays'
 import { Button } from '@/components/ui/button'
@@ -67,6 +72,7 @@ export default function CoordinatorDashboard() {
   const [users, setUsers] = useState<any[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [professorRequests, setProfessorRequests] = useState<any[]>([])
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -104,8 +110,17 @@ export default function CoordinatorDashboard() {
     }
   }
 
+  const loadRequests = async () => {
+    try {
+      const data = await getPendingProfessorRequests()
+      setProfessorRequests(data)
+    } catch (e: any) {
+      console.error(e)
+    }
+  }
+
   const initializeData = useCallback(async () => {
-    await Promise.all([loadData(), loadUsers()])
+    await Promise.all([loadData(), loadUsers(), loadRequests()])
     setInitialLoading(false)
   }, [])
 
@@ -118,6 +133,45 @@ export default function CoordinatorDashboard() {
       await updateEvaluationStatus(id, status)
       setEvaluations((prev) => prev.map((ev) => (ev.id === id ? { ...ev, status } : ev)))
       toast({ title: 'Sucesso', description: 'Status atualizado com sucesso.' })
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
+  const handleProfessorChange = async (avaliacaoId: string, profId: string) => {
+    try {
+      const val = profId === 'unassigned' ? null : profId
+      await updateAvaliacaoProfessor(avaliacaoId, val)
+      setEvaluations((prev) =>
+        prev.map((ev) =>
+          ev.id === avaliacaoId
+            ? {
+                ...ev,
+                professor_id: val,
+                professor: val ? users.find((u) => u.id === val) : null,
+              }
+            : ev,
+        ),
+      )
+      toast({ title: 'Sucesso', description: 'Professor atualizado com sucesso.' })
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
+  const handleRespondRequest = async (
+    reqId: string,
+    status: 'aprovado' | 'rejeitado',
+    evId: string,
+    profId: string,
+  ) => {
+    try {
+      await respondProfessorRequest(reqId, status, evId, profId)
+      setProfessorRequests((prev) => prev.filter((r) => r.id !== reqId))
+      if (status === 'aprovado') {
+        loadData()
+      }
+      toast({ title: 'Sucesso', description: `Solicitação ${status}.` })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     }
@@ -356,6 +410,60 @@ export default function CoordinatorDashboard() {
         <TabsContent value="overview">
           {evaluations.length > 0 && <DashboardCharts data={evaluations} />}
 
+          {professorRequests.length > 0 && (
+            <Alert className="mb-6 border-purple-500/50 bg-purple-500/10">
+              <UserPlus className="h-5 w-5 text-purple-500" />
+              <AlertTitle className="text-lg font-bold text-purple-700 dark:text-purple-400">
+                Solicitações de Professores
+              </AlertTitle>
+              <AlertDescription className="mt-2 flex flex-col gap-2">
+                {professorRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between bg-background p-3 rounded-md border gap-3"
+                  >
+                    <span className="text-sm">
+                      O professor <strong>{req.professor?.nome}</strong> deseja assumir o aluno{' '}
+                      <strong>{req.avaliacao?.nome_cliente}</strong>.
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                        onClick={() =>
+                          handleRespondRequest(
+                            req.id,
+                            'aprovado',
+                            req.avaliacao_id,
+                            req.professor_id,
+                          )
+                        }
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() =>
+                          handleRespondRequest(
+                            req.id,
+                            'rejeitado',
+                            req.avaliacao_id,
+                            req.professor_id,
+                          )
+                        }
+                      >
+                        Rejeitar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {lateEvals.length > 0 && (
             <Alert
               variant="destructive"
@@ -432,12 +540,6 @@ export default function CoordinatorDashboard() {
               }
 
               const linkItems = [
-                {
-                  type: 'internal',
-                  url: `/evaluation/${ev.id}`,
-                  icon: FileText,
-                  label: 'Resumo da Avaliação',
-                },
                 {
                   type: 'external',
                   url: links.mapeamento_sintomas_url,
@@ -558,18 +660,26 @@ export default function CoordinatorDashboard() {
                         <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
                           Professor
                         </span>
-                        {ev.professor?.nome ? (
-                          <span
-                            className="font-semibold text-foreground line-clamp-1"
-                            title={ev.professor.nome}
-                          >
-                            {ev.professor.nome}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground italic font-medium">
-                            Não atribuído
-                          </span>
-                        )}
+                        <Select
+                          value={ev.professor_id || 'unassigned'}
+                          onValueChange={(val) => handleProfessorChange(ev.id, val)}
+                        >
+                          <SelectTrigger className="h-7 text-xs font-semibold px-2 w-full border-dashed bg-transparent">
+                            <SelectValue placeholder="Não atribuído" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unassigned" className="text-muted-foreground italic">
+                              Não atribuído
+                            </SelectItem>
+                            {users
+                              .filter((u) => u.roles?.includes('professor'))
+                              .map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="flex flex-col gap-0.5">
@@ -636,7 +746,7 @@ export default function CoordinatorDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 h-8 text-xs font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors"
+                        className="flex-[1.2] h-8 text-xs font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors px-0"
                         onClick={() =>
                           setAcompanhamentoEval({
                             id: ev.id,
@@ -645,7 +755,13 @@ export default function CoordinatorDashboard() {
                           })
                         }
                       >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-primary" /> Anotações
+                        <MessageSquare className="w-3.5 h-3.5 mr-1 text-primary" /> Anot.
+                      </Button>
+                      <Button
+                        className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-xs h-8 px-0 shadow-sm"
+                        asChild
+                      >
+                        <Link to={`/evaluation/${ev.id}`}>Avaliação</Link>
                       </Button>
                       <Tooltip>
                         <TooltipTrigger asChild>

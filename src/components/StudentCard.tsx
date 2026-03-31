@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,39 +10,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Clock,
-  MessageSquare,
-  Edit,
-  Activity,
-  Scale,
-  FileText,
-  HeartPulse,
-  Target,
-} from 'lucide-react'
+import { Clock, MessageSquare, Edit, Activity, Scale, HeartPulse, Target } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { requestProfessorChange } from '@/services/professor_requests'
+import { useToast } from '@/hooks/use-toast'
 
 interface StudentCardProps {
   ev: any
   currentUserRoles: string[]
   currentUserId: string
+  professors?: any[]
   onStatusChange: (id: string, status: string) => void
   onAnotacoesClick: (ev: any) => void
   onHistoricoClick: (ev: any) => void
+  onProfessorChange?: (id: string, profId: string) => void
 }
 
 export function StudentCard({
   ev,
   currentUserRoles,
   currentUserId,
+  professors,
   onStatusChange,
   onAnotacoesClick,
   onHistoricoClick,
+  onProfessorChange,
 }: StudentCardProps) {
   const isCoordenador = currentUserRoles.includes('coordenador')
   const isProfessor = currentUserRoles.includes('professor')
   const isAvaliador = currentUserRoles.includes('avaliador')
+  const { toast } = useToast()
+  const [isRequesting, setIsRequesting] = useState(false)
 
   // Regra: Professor edita apenas situação "TREINO" se o aluno foi distribuído para ele
   const canEditTreino = isCoordenador || (isProfessor && ev.professor_id === currentUserId)
@@ -60,6 +60,22 @@ export function StudentCard({
   let prazoTreino = null
   if (evalDate) {
     prazoTreino = addDays(evalDate, 3)
+  }
+
+  const handleSolicitar = async () => {
+    try {
+      setIsRequesting(true)
+      await requestProfessorChange(ev.id, currentUserId)
+      toast({ title: 'Solicitação enviada', description: 'O coordenador foi notificado.' })
+    } catch (e: any) {
+      if (e.code === '23505') {
+        toast({ title: 'Aviso', description: 'Você já solicitou este aluno.' })
+      } else {
+        toast({ variant: 'destructive', title: 'Erro', description: e.message })
+      }
+    } finally {
+      setIsRequesting(false)
+    }
   }
 
   return (
@@ -113,7 +129,24 @@ export function StudentCard({
             <span className="text-zinc-400 text-[10px] font-bold tracking-wider block mb-1.5">
               PROFESSOR
             </span>
-            {ev.professor ? (
+            {isCoordenador ? (
+              <Select
+                value={ev.professor_id || 'unassigned'}
+                onValueChange={(val) => onProfessorChange && onProfessorChange(ev.id, val)}
+              >
+                <SelectTrigger className="h-6 text-[11px] font-bold w-full rounded-md border-zinc-700 bg-zinc-800 text-white">
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">-</SelectItem>
+                  {professors?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : ev.professor ? (
               <span className="bg-[#84cc16] text-zinc-900 px-2.5 py-0.5 text-xs font-bold rounded-full">
                 {ev.professor.nome?.split(' ')[0]}
               </span>
@@ -177,14 +210,19 @@ export function StudentCard({
       </CardContent>
 
       <CardFooter className="p-4 pt-2 flex flex-col gap-3">
+        {isProfessor && ev.professor_id !== currentUserId && (
+          <Button
+            variant="outline"
+            className="w-full text-xs font-bold h-8 border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20"
+            onClick={handleSolicitar}
+            disabled={isRequesting}
+          >
+            {isRequesting ? 'Solicitando...' : 'Solicitar Aluno'}
+          </Button>
+        )}
         <div className="flex items-center justify-between w-full bg-zinc-800/50 p-2 rounded-md border border-zinc-700/50">
           <span className="text-[10px] font-bold text-zinc-400 tracking-widest pl-2">LINKS</span>
           <div className="flex items-center gap-1.5 pr-1">
-            <LinkIcon
-              href={links.anamnese_url}
-              icon={<FileText className="w-4 h-4" />}
-              tooltip="Anamnese"
-            />
             <LinkIcon
               href={links.mapeamento_sintomas_url}
               icon={<HeartPulse className="w-4 h-4" />}
@@ -218,7 +256,7 @@ export function StudentCard({
             className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-xs h-9 px-0"
             asChild
           >
-            <Link to={`/evaluation/${ev.id}`}>Ver Resumo</Link>
+            <Link to={`/evaluation/${ev.id}`}>Avaliação</Link>
           </Button>
 
           <Button
