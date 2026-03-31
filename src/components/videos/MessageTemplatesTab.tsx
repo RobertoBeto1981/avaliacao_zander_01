@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, SmilePlus } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export function MessageTemplatesTab() {
   const [templates, setTemplates] = useState<any[]>([])
@@ -83,11 +84,86 @@ export function MessageTemplatesTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <Textarea
-                value={tpl.template}
-                onChange={(e) => handleChange(tpl.id, e.target.value)}
-                className="min-h-[150px] resize-none"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  id={`template-${tpl.id}`}
+                  value={tpl.template}
+                  onChange={(e) => handleChange(tpl.id, e.target.value)}
+                  className="min-h-[150px] resize-none"
+                />
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        className="h-8 border-border/50 text-muted-foreground hover:text-foreground"
+                      >
+                        <SmilePlus className="w-4 h-4 mr-2" />
+                        Inserir Emoji
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[280px] p-2 grid grid-cols-7 gap-1" align="start">
+                      {[
+                        '😀',
+                        '😂',
+                        '🥰',
+                        '😎',
+                        '🤔',
+                        '🙌',
+                        '👍',
+                        '💪',
+                        '🔥',
+                        '🚀',
+                        '💙',
+                        '✅',
+                        '🎯',
+                        '🏋️‍♂️',
+                        '🏃‍♀️',
+                        '📝',
+                        '🩺',
+                        '⚖️',
+                        '📊',
+                        '📌',
+                        '⚠️',
+                        '🎉',
+                        '🏆',
+                        '⭐',
+                        '🤝',
+                        '😉',
+                        '😁',
+                        '🚨',
+                      ].map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => {
+                            const textarea = document.getElementById(
+                              `template-${tpl.id}`,
+                            ) as HTMLTextAreaElement
+                            if (textarea) {
+                              const start = textarea.selectionStart
+                              const end = textarea.selectionEnd
+                              const text = tpl.template
+                              const newText = text.substring(0, start) + e + text.substring(end)
+                              handleChange(tpl.id, newText)
+                              setTimeout(() => {
+                                textarea.focus()
+                                textarea.setSelectionRange(start + e.length, start + e.length)
+                              }, 10)
+                            } else {
+                              handleChange(tpl.id, tpl.template + e)
+                            }
+                          }}
+                          className="hover:bg-muted p-1.5 rounded text-lg flex items-center justify-center transition-colors"
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
               <Button
                 onClick={() => handleSave(tpl.id, tpl.template)}
                 disabled={savingId === tpl.id || !isDirty}

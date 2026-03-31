@@ -112,7 +112,9 @@ export function HealthFields() {
   const appendMedToList = (nome: string, acao: string) => {
     const currentList = getValues('medications.list') || ''
     const formattedNome = nome.toUpperCase()
-    const addition = `${formattedNome} - ${acao}`
+    // Garante que o formato será exatamente "NOME DO MEDICAMENTO - Função principal"
+    const cleanAcao = acao.split(' ').slice(0, 4).join(' ').trim()
+    const addition = `${formattedNome} - ${cleanAcao}`
 
     if (currentList.includes(addition)) return
 
@@ -148,7 +150,8 @@ export function HealthFields() {
     if (!manualAcao) return
     setIsLearning(true)
     try {
-      const shortAcao = manualAcao.split(' ').slice(0, 5).join(' ')
+      // Limita estritamente para não ter texto corrido
+      const shortAcao = manualAcao.split(' ').slice(0, 4).join(' ')
       const newMed = await addMedicamento(medQuery, shortAcao, false)
       appendMedToList(newMed.nome, newMed.acao_principal)
       toast({

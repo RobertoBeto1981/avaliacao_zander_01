@@ -1,30 +1,102 @@
 import { supabase } from '@/lib/supabase/client'
 
-const COMMON_MEDS: Record<string, string> = {
-  glifage: 'Controle de diabetes',
-  losartana: 'Controle de pressão alta',
-  omeprazol: 'Protetor gástrico',
-  dorflex: 'Relaxante muscular',
-  rivotril: 'Ansiolítico / Sedativo',
-  simvastatina: 'Controle de colesterol',
-  pantoprazol: 'Protetor gástrico',
-  atenolol: 'Controle de pressão alta',
-  metformina: 'Controle de diabetes',
-  roacutan: 'Tratamento de acne severa',
-  dipirona: 'Analgésico e antitérmico',
-  paracetamol: 'Analgésico e antitérmico',
-  ibuprofeno: 'Anti-inflamatório e analgésico',
+const ANVISA_MEDS: Record<string, string> = {
+  // Principais referências ANVISA e uso comum no Brasil
+  losartana: 'Controle da Pressão Arterial',
+  'losartana potássica': 'Controle da Pressão Arterial',
+  glifage: 'Controle de Diabetes',
+  metformina: 'Controle de Diabetes',
+  omeprazol: 'Protetor Gástrico',
+  pantoprazol: 'Protetor Gástrico',
+  dorflex: 'Relaxante Muscular',
+  rivotril: 'Ansiolítico',
+  clonazepam: 'Ansiolítico',
+  simvastatina: 'Redução de Colesterol',
+  rosuvastatina: 'Redução de Colesterol',
+  atenolol: 'Controle da Pressão Arterial',
+  roacutan: 'Tratamento de Acne',
+  isotretinoína: 'Tratamento de Acne',
+  dipirona: 'Analgésico e Antitérmico',
+  paracetamol: 'Analgésico e Antitérmico',
+  ibuprofeno: 'Anti-inflamatório',
+  nimesulida: 'Anti-inflamatório',
   azitromicina: 'Antibiótico',
   amoxicilina: 'Antibiótico',
-  levotiroxina: 'Reposição hormonal da tireoide',
-  puran: 'Reposição hormonal da tireoide',
+  cefalexina: 'Antibiótico',
+  levotiroxina: 'Reposição Hormonal da Tireoide',
+  puran: 'Reposição Hormonal da Tireoide',
+  'puran t4': 'Reposição Hormonal da Tireoide',
   escitalopram: 'Antidepressivo',
   sertralina: 'Antidepressivo',
   fluoxetina: 'Antidepressivo',
   xarelto: 'Anticoagulante',
-  ozempic: 'Controle de diabetes e peso',
+  rivaroxabana: 'Anticoagulante',
+  ozempic: 'Controle de Diabetes e Peso',
+  semaglutida: 'Controle de Diabetes e Peso',
   venvanse: 'Tratamento de TDAH',
+  lisdexanfetamina: 'Tratamento de TDAH',
   ritalina: 'Tratamento de TDAH',
+  metilfenidato: 'Tratamento de TDAH',
+  concor: 'Controle da Pressão Arterial',
+  bisoprolol: 'Controle da Pressão Arterial',
+  selozok: 'Controle da Pressão Arterial',
+  aradois: 'Controle da Pressão Arterial',
+  diovan: 'Controle da Pressão Arterial',
+  valsartana: 'Controle da Pressão Arterial',
+  forxiga: 'Controle de Diabetes',
+  dapagliflozina: 'Controle de Diabetes',
+  jardiance: 'Controle de Diabetes',
+  empagliflozina: 'Controle de Diabetes',
+  aerolin: 'Tratamento Respiratório',
+  salbutamol: 'Tratamento Respiratório',
+  alenia: 'Tratamento Respiratório',
+  buscopan: 'Antiespasmódico',
+  escopolamina: 'Antiespasmódico',
+  tylenol: 'Analgésico',
+  advil: 'Anti-inflamatório',
+  viagra: 'Vasodilatador',
+  cialis: 'Vasodilatador',
+  tadalafila: 'Vasodilatador',
+  sildenafila: 'Vasodilatador',
+  desloratadina: 'Antialérgico',
+  loratadina: 'Antialérgico',
+  allegra: 'Antialérgico',
+  fexofenadina: 'Antialérgico',
+  polaramine: 'Antialérgico',
+  dexclorfeniramina: 'Antialérgico',
+  prednisona: 'Corticoide',
+  dexametasona: 'Corticoide',
+  hidrocortisona: 'Corticoide',
+  espironolactona: 'Diurético',
+  furosemida: 'Diurético',
+  lasix: 'Diurético',
+  hidroclorotiazida: 'Diurético',
+  alprazolam: 'Ansiolítico',
+  enalapril: 'Controle da Pressão Arterial',
+  captopril: 'Controle da Pressão Arterial',
+  anlodipino: 'Controle da Pressão Arterial',
+  sinvastatina: 'Redução de Colesterol',
+  atorvastatina: 'Redução de Colesterol',
+  ezetimiba: 'Redução de Colesterol',
+  levofloxacino: 'Antibiótico',
+  ciprofloxacino: 'Antibiótico',
+  moxifloxacino: 'Antibiótico',
+  amitriptilina: 'Antidepressivo',
+  nortriptilina: 'Antidepressivo',
+  venlafaxina: 'Antidepressivo',
+  desvenlafaxina: 'Antidepressivo',
+  duloxetina: 'Antidepressivo',
+  pregabalina: 'Dor Neuropática',
+  gabapentina: 'Dor Neuropática',
+  topiramato: 'Anticonvulsivante',
+  'ácido valproico': 'Anticonvulsivante',
+  carbamazepina: 'Anticonvulsivante',
+  fenitoína: 'Anticonvulsivante',
+  fenobarbital: 'Anticonvulsivante',
+  'ácido fólico': 'Suplemento Vitamínico',
+  'sulfato ferroso': 'Suplemento Mineral',
+  'vitamina d': 'Suplemento Vitamínico',
+  'vitamina b12': 'Suplemento Vitamínico',
 }
 
 const translateToPT = async (text: string): Promise<string> => {
@@ -45,14 +117,15 @@ const translateToPT = async (text: string): Promise<string> => {
 }
 
 const extractShortAction = (text: string): string => {
-  if (!text) return ''
+  if (!text) return 'Ação a ser definida'
 
   const lower = text.toLowerCase()
 
-  // Dicionário científico rigoroso para mapeamento exato
+  // Dicionário científico rigoroso para mapeamento exato da função principal
   const actionDictionary: Record<string, string> = {
     hipertensão: 'Controle da Pressão Arterial',
     'pressão arterial': 'Controle da Pressão Arterial',
+    'pressão alta': 'Controle da Pressão Arterial',
     diabetes: 'Controle de Diabetes',
     glicemia: 'Controle de Diabetes',
     colesterol: 'Redução de Colesterol',
@@ -63,6 +136,7 @@ const extractShortAction = (text: string): string => {
     antiinflamatório: 'Anti-inflamatório',
     antibiótico: 'Antibiótico',
     bacteri: 'Antibiótico',
+    infecção: 'Tratamento de Infecção',
     analgésico: 'Analgésico',
     dor: 'Analgésico',
     depressão: 'Antidepressivo',
@@ -83,6 +157,8 @@ const extractShortAction = (text: string): string => {
     tdah: 'Tratamento de TDAH',
     obesidade: 'Auxiliar na Perda de Peso',
     emagrecimento: 'Auxiliar na Perda de Peso',
+    corticoide: 'Corticoide',
+    diurético: 'Diurético',
   }
 
   for (const [key, value] of Object.entries(actionDictionary)) {
@@ -91,52 +167,23 @@ const extractShortAction = (text: string): string => {
     }
   }
 
-  // Fallback: extrai a primeira frase curta
-  let cleanText = text
+  // Fallback extremamente estrito: Pega as 2 ou 3 primeiras palavras limpas
+  const cleanText = text
     .replace(/\[.*?\]/g, ' ')
     .replace(/\(.*?\)/g, ' ')
-    .replace(/\n/g, ' ')
+    .replace(/[^a-zA-ZÀ-ÿ\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 
-  const markers = [
-    'indicado para o tratamento de ',
-    'indicada para o tratamento de ',
-    'utilizado no tratamento de ',
-    'utilizado para ',
-    'serve para ',
-    'tratamento de ',
-    'controle de ',
-    'alívio de ',
-    'prevenção de ',
-    'ação ',
-  ]
-
-  let extracted = ''
-  for (const marker of markers) {
-    const idx = cleanText.toLowerCase().indexOf(marker)
-    if (idx !== -1) {
-      extracted = cleanText
-        .substring(idx + marker.length)
-        .split(/[,.;:]/)[0]
-        .trim()
-      break
+  const words = cleanText.split(' ')
+  if (words.length > 0) {
+    const extracted = words.slice(0, 3).join(' ')
+    if (extracted.length > 3) {
+      return extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase()
     }
   }
 
-  if (!extracted) {
-    extracted = cleanText.split('.')[0].trim()
-  }
-
-  // Limite estrito a 5 palavras para manter no formato resumido e limpo
-  const words = extracted.split(' ')
-  if (words.length > 5) {
-    extracted = words.slice(0, 5).join(' ')
-  }
-
-  if (extracted.length < 3) return 'Ação não identificada'
-
-  return extracted.charAt(0).toUpperCase() + extracted.slice(1)
+  return 'Ação a ser definida'
 }
 
 export const searchMedicamentos = async (query: string) => {
@@ -181,10 +228,13 @@ export const learnMedicamento = async (
 ): Promise<{ action: string; verified: boolean } | null> => {
   try {
     const lowerName = nome.toLowerCase().trim()
-    if (COMMON_MEDS[lowerName]) {
-      return { action: COMMON_MEDS[lowerName], verified: true }
+
+    // 1. Prioridade Absoluta: Base Validada ANVISA (Mock em Código)
+    if (ANVISA_MEDS[lowerName]) {
+      return { action: ANVISA_MEDS[lowerName], verified: true }
     }
 
+    // 2. Busca OpenFDA
     try {
       const fdaData = await safeFetchJSON(
         `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(
@@ -194,7 +244,6 @@ export const learnMedicamento = async (
 
       if (fdaData && fdaData.results && fdaData.results.length > 0) {
         const result = fdaData.results[0]
-
         let rawAction = result.openfda?.pharm_class_epc?.[0] || result.openfda?.pharm_class_moa?.[0]
 
         if (!rawAction) {
@@ -204,13 +253,16 @@ export const learnMedicamento = async (
         if (rawAction) {
           let acao = await translateToPT(rawAction)
           acao = extractShortAction(acao)
-          if (acao) return { action: acao, verified: true }
+          if (acao !== 'Ação a ser definida') {
+            return { action: acao, verified: true }
+          }
         }
       }
     } catch (err) {
       console.error('Erro ao buscar no OpenFDA', err)
     }
 
+    // 3. Busca Wikipedia
     try {
       const searchData = await safeFetchJSON(
         `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
@@ -230,7 +282,9 @@ export const learnMedicamento = async (
           !wikiData.title?.toLowerCase().includes('desambiguação')
         ) {
           const acao = extractShortAction(wikiData.extract)
-          if (acao) return { action: acao, verified: true }
+          if (acao !== 'Ação a ser definida') {
+            return { action: acao, verified: true }
+          }
         }
       }
     } catch (err) {
@@ -247,9 +301,12 @@ export const addMedicamento = async (
   acao_principal: string,
   verified: boolean = false,
 ) => {
+  // Força uma última checagem de tamanho para evitar textos corridos na base
+  const cleanAcao = acao_principal.split(' ').slice(0, 4).join(' ').trim()
+
   const { data, error } = await supabase
     .from('medicamentos')
-    .insert({ nome: nome.toUpperCase(), acao_principal, verified })
+    .insert({ nome: nome.toUpperCase(), acao_principal: cleanAcao, verified })
     .select()
     .single()
 

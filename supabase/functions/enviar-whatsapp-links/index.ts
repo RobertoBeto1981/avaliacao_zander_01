@@ -82,6 +82,7 @@ Deno.serve(async (req: Request) => {
 
     const message = text
       .replace(/\{\{\s*nome\s*\}\}/gi, firstName)
+      .replace(/\{\{\s*nome_cliente\s*\}\}/gi, avaliacao.nome_cliente.trim())
       .replace(/\{\{\s*links\s*\}\}/gi, linksStr.trim())
 
     const waToken = Deno.env.get('WHATSAPP_TOKEN')

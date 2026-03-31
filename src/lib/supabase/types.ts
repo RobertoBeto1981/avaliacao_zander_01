@@ -1517,6 +1517,7 @@ export const Constants = {
 //   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
 // Table: avaliacoes
 //   CREATE INDEX idx_avaliacoes_evo_id ON public.avaliacoes USING btree (evo_id)
+//   CREATE UNIQUE INDEX idx_unique_active_evo ON public.avaliacoes USING btree (evo_id) WHERE ((evo_id IS NOT NULL) AND (status = ANY (ARRAY['pendente'::avaliacao_status, 'em_progresso'::avaliacao_status])))
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
 // Table: video_automations_config
