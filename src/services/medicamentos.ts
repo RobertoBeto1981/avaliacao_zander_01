@@ -47,140 +47,94 @@ const translateToPT = async (text: string): Promise<string> => {
 const extractShortAction = (text: string): string => {
   if (!text) return ''
 
-  let cleanText = text.replace(/\[.*?\]/g, ' ').trim()
-  cleanText = cleanText.replace(/\(.*?\)/g, ' ')
-  cleanText = cleanText.replace(/\n/g, ' ')
-  cleanText = cleanText.replace(/\s+/g, ' ').trim()
+  const lower = text.toLowerCase()
 
-  const lower = cleanText.toLowerCase()
+  // Dicionário científico rigoroso para mapeamento exato
+  const actionDictionary: Record<string, string> = {
+    hipertensão: 'Controle da Pressão Arterial',
+    'pressão arterial': 'Controle da Pressão Arterial',
+    diabetes: 'Controle de Diabetes',
+    glicemia: 'Controle de Diabetes',
+    colesterol: 'Redução de Colesterol',
+    úlcera: 'Protetor Gástrico',
+    gástric: 'Protetor Gástrico',
+    refluxo: 'Protetor Gástrico',
+    'anti-inflamatório': 'Anti-inflamatório',
+    antiinflamatório: 'Anti-inflamatório',
+    antibiótico: 'Antibiótico',
+    bacteri: 'Antibiótico',
+    analgésico: 'Analgésico',
+    dor: 'Analgésico',
+    depressão: 'Antidepressivo',
+    ansiedade: 'Ansiolítico',
+    ansiolítico: 'Ansiolítico',
+    tireoide: 'Reposição Hormonal da Tireoide',
+    asma: 'Tratamento Respiratório',
+    broncodilatador: 'Tratamento Respiratório',
+    alergia: 'Antialérgico',
+    antialérgico: 'Antialérgico',
+    coágulo: 'Anticoagulante',
+    trombose: 'Anticoagulante',
+    anticoagulante: 'Anticoagulante',
+    'relaxante muscular': 'Relaxante Muscular',
+    múscul: 'Relaxante Muscular',
+    convuls: 'Anticonvulsivante',
+    epilepsia: 'Anticonvulsivante',
+    tdah: 'Tratamento de TDAH',
+    obesidade: 'Auxiliar na Perda de Peso',
+    emagrecimento: 'Auxiliar na Perda de Peso',
+  }
+
+  for (const [key, value] of Object.entries(actionDictionary)) {
+    if (lower.includes(key)) {
+      return value
+    }
+  }
+
+  // Fallback: extrai a primeira frase curta
+  let cleanText = text
+    .replace(/\[.*?\]/g, ' ')
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   const markers = [
     'indicado para o tratamento de ',
     'indicada para o tratamento de ',
-    'indicado para o tratamento do ',
-    'indicada para o tratamento do ',
-    'indicado para o tratamento da ',
-    'indicada para o tratamento da ',
-    'indicados para o tratamento de ',
-    'indicados para o tratamento do ',
-    'indicados para o tratamento da ',
     'utilizado no tratamento de ',
-    'utilizado no tratamento da ',
-    'utilizado no tratamento do ',
-    'utilizada no tratamento de ',
-    'utilizada no tratamento da ',
-    'utilizada no tratamento do ',
-    'usado no tratamento de ',
-    'usada no tratamento de ',
-    'usado para o tratamento de ',
-    'usada para o tratamento de ',
-    'indicado para o ',
-    'indicada para o ',
-    'indicado para a ',
-    'indicada para a ',
-    'indicados para ',
-    'indicadas para ',
-    'indicado para ',
-    'indicada para ',
     'utilizado para ',
-    'utilizada para ',
-    'usado para ',
-    'usada para ',
     'serve para ',
-    'atua inibindo ',
-    'atua reduzindo ',
-    'atua no combate ',
-    'atua como ',
     'tratamento de ',
-    'tratamento da ',
-    'tratamento do ',
     'controle de ',
-    'controle da ',
-    'controle do ',
     'alívio de ',
-    'alívio da ',
-    'alívio do ',
     'prevenção de ',
-    'prevenção da ',
-    'prevenção do ',
-    'é um medicamento da classe dos ',
-    'é um medicamento da classe das ',
-    'é uma medicação da classe dos ',
-    'é uma medicação da classe das ',
-    'pertence à classe dos ',
-    'pertence à classe das ',
-    'pertence a classe dos ',
-    'pertence a classe das ',
-    'pertence à família dos ',
-    'pertence à família das ',
-    'é um antidepressivo ',
-    'é um anti-inflamatório ',
-    'é um antibiótico ',
-    'é um analgésico ',
-    'é um ',
-    'é uma ',
-    'são um ',
-    'são uma ',
     'ação ',
   ]
 
   let extracted = ''
-
   for (const marker of markers) {
-    const idx = lower.indexOf(marker)
+    const idx = cleanText.toLowerCase().indexOf(marker)
     if (idx !== -1) {
-      extracted = cleanText.substring(idx + marker.length)
-
-      extracted = extracted.split(/[,.;:]/)[0].trim()
-
-      const cleanExtracted = extracted.toLowerCase()
-      if (
-        !extracted ||
-        cleanExtracted === 'medicamento' ||
-        cleanExtracted === 'fármaco' ||
-        cleanExtracted === 'remédio'
-      ) {
-        continue
-      }
-
-      if (marker === 'é um antidepressivo ') extracted = 'Antidepressivo ' + extracted
-      else if (marker === 'é um anti-inflamatório ') extracted = 'Anti-inflamatório ' + extracted
-      else if (marker === 'é um antibiótico ') extracted = 'Antibiótico ' + extracted
-      else if (marker === 'é um analgésico ') extracted = 'Analgésico ' + extracted
-
+      extracted = cleanText
+        .substring(idx + marker.length)
+        .split(/[,.;:]/)[0]
+        .trim()
       break
     }
   }
 
   if (!extracted) {
-    extracted = cleanText.split('.')[0]
+    extracted = cleanText.split('.')[0].trim()
   }
 
-  // Agreesive shortening to guarantee it stays brief
-  if (extracted.length > 50) {
-    const keyTerms = [
-      'controle de',
-      'tratamento de',
-      'alívio de',
-      'anti-inflamatório',
-      'antibiótico',
-      'analgésico',
-      'antidepressivo',
-    ]
-    for (const term of keyTerms) {
-      const idx = extracted.toLowerCase().indexOf(term)
-      if (idx !== -1) {
-        const snippet = extracted.substring(idx).split(/[,.;]/)[0].trim()
-        if (snippet.length < 60) return snippet.charAt(0).toUpperCase() + snippet.slice(1)
-      }
-    }
-    const words = extracted.split(' ')
-    if (words.length > 6) {
-      extracted = words.slice(0, 6).join(' ') + '...'
-    } else {
-      extracted = extracted.substring(0, 47).trim() + '...'
-    }
+  // Limite estrito a 5 palavras para manter no formato resumido e limpo
+  const words = extracted.split(' ')
+  if (words.length > 5) {
+    extracted = words.slice(0, 5).join(' ')
   }
+
+  if (extracted.length < 3) return 'Ação não identificada'
 
   return extracted.charAt(0).toUpperCase() + extracted.slice(1)
 }

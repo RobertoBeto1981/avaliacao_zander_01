@@ -80,7 +80,9 @@ Deno.serve(async (req: Request) => {
     if (links.bia_url) linksStr += `\u2696\uFE0F *BIA:* ${links.bia_url}\n`
     if (links.my_score_url) linksStr += `\uD83D\uDCCA *My Score:* ${links.my_score_url}\n`
 
-    const message = text.replace(/{{nome}}/g, firstName).replace(/{{links}}/g, linksStr.trim())
+    const message = text
+      .replace(/\{\{\s*nome\s*\}\}/gi, firstName)
+      .replace(/\{\{\s*links\s*\}\}/gi, linksStr.trim())
 
     const waToken = Deno.env.get('WHATSAPP_TOKEN')
     const waPhoneId = Deno.env.get('WHATSAPP_PHONE_ID')
@@ -89,7 +91,7 @@ Deno.serve(async (req: Request) => {
       console.warn('WhatsApp credentials not set. Simulating success.')
       return new Response(
         JSON.stringify({ success: true, simulated: true, message: 'Simulado com sucesso' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } },
       )
     }
 
@@ -97,7 +99,7 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${waToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify({
         messaging_product: 'whatsapp',

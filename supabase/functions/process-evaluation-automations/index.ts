@@ -82,12 +82,12 @@ Deno.serve(async (req: Request) => {
         message:
           'Automação simulada concluída com sucesso. Infraestrutura pronta para integração real com WhatsApp Business API.',
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } },
     )
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
     })
   }
 })
