@@ -1142,6 +1142,8 @@ export const Constants = {
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 //     WITH CHECK: true
 // Table: notifications
+//   Policy "Coordinators can view all notifications" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 //   Policy "System can insert notifications" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "Users can update their own notifications" (UPDATE, PERMISSIVE) roles={authenticated}
@@ -1556,12 +1558,12 @@ export const Constants = {
 //
 //       IF 'todos' = ANY(p_target_roles) THEN
 //         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
-//         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id AND ativo = true;
+//         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id;
 //       ELSE
 //         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
 //         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
 //         FROM public.users
-//         WHERE roles && p_target_roles AND id != v_sender_id AND ativo = true;
+//         WHERE roles && p_target_roles AND id != v_sender_id;
 //       END IF;
 //   END;
 //   $function$

@@ -11,9 +11,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Clock, MessageSquare, Edit, Activity, Scale, HeartPulse, Target } from 'lucide-react'
-import { format, addDays } from 'date-fns'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { requestProfessorChange } from '@/services/professor_requests'
+import { calculateDeadline } from '@/lib/holidays'
 import { useToast } from '@/hooks/use-toast'
 
 interface StudentCardProps {
@@ -56,10 +57,9 @@ export function StudentCard({
   const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
   const reevalDate = ev.data_reavaliacao ? new Date(ev.data_reavaliacao + 'T12:00:00') : null
 
-  // Simulação de cálculo de prazo (+3 dias úteis) para refletir o design solicitado
   let prazoTreino = null
-  if (evalDate) {
-    prazoTreino = addDays(evalDate, 3)
+  if (ev.data_avaliacao) {
+    prazoTreino = calculateDeadline(ev.data_avaliacao, 3)
   }
 
   const handleSolicitar = async () => {
