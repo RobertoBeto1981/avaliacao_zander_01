@@ -4,7 +4,6 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import Layout from './components/Layout'
-import Index from './pages/Index'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AuthSuccess from './pages/AuthSuccess'
@@ -97,6 +96,21 @@ const RoleGuard = ({
   return children
 }
 
+const RootRedirect = () => {
+  const { profile, loading } = useAuth()
+  if (loading) return null
+
+  const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+
+  if (userRoles.includes('coordenador')) return <Navigate to="/coordinator" replace />
+  if (userRoles.includes('professor')) return <Navigate to="/professor" replace />
+  if (userRoles.includes('avaliador')) return <Navigate to="/avaliador" replace />
+  if (userRoles.includes('fisioterapeuta')) return <Navigate to="/fisioterapeuta" replace />
+  if (userRoles.includes('nutricionista')) return <Navigate to="/nutricionista" replace />
+
+  return <Navigate to="/profile" replace />
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -104,7 +118,7 @@ const AppRoutes = () => (
         path="/"
         element={
           <PrivateRoute>
-            <Index />
+            <RootRedirect />
           </PrivateRoute>
         }
       />

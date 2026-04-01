@@ -71,17 +71,6 @@ export default function Layout() {
                     <SheetDescription className="sr-only">Menu de navegação</SheetDescription>
 
                     <nav className="flex flex-col gap-4 mt-8 flex-1">
-                      <Link
-                        to="/"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${
-                          location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
-                        }`}
-                      >
-                        <LayoutDashboard className="w-4 h-4" />
-                        Início
-                      </Link>
-
                       {isProfessor && !isCoordenador && (
                         <Link
                           to="/professor"
@@ -223,16 +212,6 @@ export default function Layout() {
 
               {user && (
                 <nav className="hidden md:flex items-center gap-4 lg:gap-6 ml-2">
-                  <Link
-                    to="/"
-                    className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
-                      location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
-                    Início
-                  </Link>
-
                   {isProfessor && !isCoordenador && (
                     <Link
                       to="/professor"
