@@ -27,8 +27,15 @@ export default function EditEvaluation() {
   const [loading, setLoading] = useState(true)
   const { profile } = useAuth()
 
-  const isProfessor = profile?.role === 'professor'
-  const isAvaliador = profile?.role === 'avaliador'
+  const userRoles = profile?.roles || (profile?.role ? [profile.role] : [])
+  const isCoordenador = userRoles.includes('coordenador')
+  const isAvaliadorOrHigher =
+    userRoles.includes('avaliador') ||
+    userRoles.includes('nutricionista') ||
+    userRoles.includes('fisioterapeuta')
+
+  const isProfessorMode = userRoles.includes('professor') && !isCoordenador && !isAvaliadorOrHigher
+  const isAvaliadorMode = isAvaliadorOrHigher && !isCoordenador
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -147,8 +154,20 @@ export default function EditEvaluation() {
     loadData()
   }, [id, form, navigate, toast])
 
+  const onInvalid = (errors: any) => {
+    console.error('Form validation errors:', errors)
+    toast({
+      variant: 'destructive',
+      title: 'Atenção',
+      description: 'Verifique os campos em vermelho não preenchidos corretamente.',
+    })
+  }
+
   const onSubmit = async (data: EvaluationFormValues) => {
     try {
+      const originalEval = await getEvaluationById(id!)
+      const originalRespostas = originalEval?.respostas || {}
+
       const {
         evo_id,
         nome_cliente,
@@ -161,7 +180,7 @@ export default function EditEvaluation() {
         ...rest
       } = data
 
-      const respostasToSave: any = { ...rest }
+      const respostasToSave: any = { ...originalRespostas, ...rest }
       if (respostasToSave.target_date && isValid(respostasToSave.target_date)) {
         respostasToSave.target_date = format(respostasToSave.target_date, 'yyyy-MM-dd')
       } else {
@@ -231,7 +250,7 @@ export default function EditEvaluation() {
         </Button>
       </div>
 
-      {isProfessor && (
+      {isProfessorMode && (
         <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 flex items-start gap-3 shadow-sm">
           <Info className="w-5 h-5 shrink-0 mt-0.5" />
           <p className="text-sm">
@@ -242,7 +261,7 @@ export default function EditEvaluation() {
         </div>
       )}
 
-      {isAvaliador && (
+      {isAvaliadorMode && (
         <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-200 flex items-start gap-3 shadow-sm">
           <Info className="w-5 h-5 shrink-0 mt-0.5" />
           <p className="text-sm">
@@ -254,18 +273,18 @@ export default function EditEvaluation() {
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-          <fieldset disabled={isProfessor} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8 pb-20">
+          <fieldset disabled={isProfessorMode} className="space-y-8">
             <IdentificationFields />
             <TrainingHistoryFields />
             <CurrentLifestyleFields />
             <HealthFields />
             <TrainingFields />
-            <AnthropometryFields disabled={isProfessor} />
-            <VO2TestFields disabled={isProfessor} />
+            <AnthropometryFields disabled={isProfessorMode} />
+            <VO2TestFields disabled={isProfessorMode} />
           </fieldset>
 
-          <LinksFields isProfessor={isProfessor} isAvaliador={isAvaliador} />
+          <LinksFields isProfessor={isProfessorMode} isAvaliador={isAvaliadorMode} />
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
             <Button

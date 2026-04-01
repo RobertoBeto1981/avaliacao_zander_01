@@ -86,7 +86,7 @@ export const updateEvaluationFull = async (id: string, avaliacao: any, links: an
 
   if (error) throw error
 
-  if (links && Object.values(links).some((v) => v)) {
+  if (links) {
     const { data: existingLinks } = await supabase
       .from('links_avaliacao')
       .select('id')
@@ -100,7 +100,7 @@ export const updateEvaluationFull = async (id: string, avaliacao: any, links: an
         .update(links)
         .eq('id', existingLinks.id)
       if (linksError) throw linksError
-    } else {
+    } else if (Object.values(links).some((v) => v)) {
       const { error: linksError } = await supabase.from('links_avaliacao').insert({
         ...links,
         avaliacao_id: id,
