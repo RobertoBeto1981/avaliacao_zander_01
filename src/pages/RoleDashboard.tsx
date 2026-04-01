@@ -132,7 +132,7 @@ export default function RoleDashboard() {
                 />
               ))}
               {filtered.length === 0 && (
-                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed border-zinc-700/50 rounded-xl">
                   Nenhum aluno encontrado.
                 </div>
               )}

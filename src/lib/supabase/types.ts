@@ -505,6 +505,45 @@ export type Database = {
           },
         ]
       }
+      professor_change_requests: {
+        Row: {
+          avaliacao_id: string
+          created_at: string
+          id: string
+          professor_id: string
+          status: string
+        }
+        Insert: {
+          avaliacao_id: string
+          created_at?: string
+          id?: string
+          professor_id: string
+          status?: string
+        }
+        Update: {
+          avaliacao_id?: string
+          created_at?: string
+          id?: string
+          professor_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'professor_change_requests_avaliacao_id_fkey'
+            columns: ['avaliacao_id']
+            isOneToOne: false
+            referencedRelation: 'avaliacoes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'professor_change_requests_professor_id_fkey'
+            columns: ['professor_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       reavaliacoes: {
         Row: {
           avaliacao_original_id: string
@@ -943,6 +982,12 @@ export const Constants = {
 //   is_archived: boolean (not null, default: false)
 //   priority: text (not null, default: 'normal'::text)
 //   bulk_message_id: uuid (nullable)
+// Table: professor_change_requests
+//   id: uuid (not null, default: gen_random_uuid())
+//   avaliacao_id: uuid (not null)
+//   professor_id: uuid (not null)
+//   status: text (not null, default: 'pendente'::text)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: reavaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   avaliacao_original_id: uuid (not null)
@@ -1013,6 +1058,11 @@ export const Constants = {
 //   FOREIGN KEY notifications_bulk_message_id_fkey: FOREIGN KEY (bulk_message_id) REFERENCES bulk_messages(id) ON DELETE CASCADE
 //   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+// Table: professor_change_requests
+//   FOREIGN KEY professor_change_requests_avaliacao_id_fkey: FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
+//   PRIMARY KEY professor_change_requests_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY professor_change_requests_professor_id_fkey: FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
+//   CHECK professor_change_requests_status_check: CHECK ((status = ANY (ARRAY['pendente'::text, 'aprovado'::text, 'rejeitado'::text])))
 // Table: reavaliacoes
 //   FOREIGN KEY reavaliacoes_avaliacao_original_id_fkey: FOREIGN KEY (avaliacao_original_id) REFERENCES avaliacoes(id) ON DELETE CASCADE
 //   PRIMARY KEY reavaliacoes_pkey: PRIMARY KEY (id)
@@ -1097,6 +1147,13 @@ export const Constants = {
 //     USING: (user_id = auth.uid())
 //   Policy "Users can view their own notifications" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (user_id = auth.uid())
+// Table: professor_change_requests
+//   Policy "authenticated_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (professor_id = auth.uid())
+//   Policy "authenticated_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "coordenador_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 // Table: reavaliacoes
 //   Policy "Allow insert for authenticated" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
@@ -1520,5 +1577,7 @@ export const Constants = {
 //   CREATE UNIQUE INDEX idx_unique_active_evo ON public.avaliacoes USING btree (evo_id) WHERE ((evo_id IS NOT NULL) AND (status = ANY (ARRAY['pendente'::avaliacao_status, 'em_progresso'::avaliacao_status])))
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
+// Table: professor_change_requests
+//   CREATE UNIQUE INDEX idx_prof_change_req_pendente ON public.professor_change_requests USING btree (avaliacao_id, professor_id) WHERE (status = 'pendente'::text)
 // Table: video_automations_config
 //   CREATE UNIQUE INDEX video_automations_config_dias_trigger_key ON public.video_automations_config USING btree (dias_trigger)

@@ -38,6 +38,7 @@ export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [filterType, setFilterType] = useState<'meus' | 'todos'>('meus')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -49,7 +50,7 @@ export default function ProfessorDashboard() {
   const loadData = async () => {
     try {
       const data = await getEvaluations()
-      setEvaluations(data.filter((e: any) => e.professor_id === profile?.id))
+      setEvaluations(data)
     } catch (err) {
       console.error(err)
     }
@@ -71,12 +72,14 @@ export default function ProfessorDashboard() {
   }
 
   const filtered = useMemo(() => {
-    return evaluations.filter(
-      (ev) =>
+    return evaluations.filter((ev) => {
+      const matchesSearch =
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ev.evo_id?.includes(searchTerm),
-    )
-  }, [evaluations, searchTerm])
+        ev.evo_id?.includes(searchTerm)
+      const matchesType = filterType === 'meus' ? ev.professor_id === profile?.id : true
+      return matchesSearch && matchesType
+    })
+  }, [evaluations, searchTerm, filterType, profile?.id])
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
@@ -97,14 +100,42 @@ export default function ProfessorDashboard() {
 
         <TabsContent value="inicio">
           <div className="flex flex-wrap gap-4 mb-6 items-center justify-between">
-            <div className="relative w-full sm:w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar aluno ou EVO..."
-                className="pl-9 bg-background"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+              <div className="relative w-full sm:w-[300px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar aluno ou EVO..."
+                  className="pl-9 bg-background"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="bg-zinc-800/50 p-1 rounded-md flex items-center border border-zinc-700/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'h-8 text-xs px-4',
+                    filterType === 'meus' &&
+                      'bg-[#84cc16] text-zinc-900 font-bold hover:bg-[#84cc16]/90 hover:text-zinc-900',
+                  )}
+                  onClick={() => setFilterType('meus')}
+                >
+                  Meus Alunos
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'h-8 text-xs px-4',
+                    filterType === 'todos' &&
+                      'bg-[#84cc16] text-zinc-900 font-bold hover:bg-[#84cc16]/90 hover:text-zinc-900',
+                  )}
+                  onClick={() => setFilterType('todos')}
+                >
+                  Todos
+                </Button>
+              </div>
             </div>
             <Button onClick={() => setIsNewStudentOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" /> Novo Aluno
@@ -142,8 +173,10 @@ export default function ProfessorDashboard() {
                 />
               ))}
               {filtered.length === 0 && (
-                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-xl">
-                  Nenhum aluno atribuído a você.
+                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed border-zinc-700/50 rounded-xl">
+                  {filterType === 'meus'
+                    ? 'Nenhum aluno atribuído a você no momento.'
+                    : 'Nenhum aluno encontrado.'}
                 </div>
               )}
             </div>
