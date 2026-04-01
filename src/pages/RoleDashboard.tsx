@@ -54,11 +54,21 @@ export default function RoleDashboard() {
   }
 
   const filtered = useMemo(() => {
-    return evaluations.filter(
+    const statusOrder: Record<string, number> = {
+      pendente: 1,
+      em_progresso: 2,
+      concluido: 3,
+    }
+    const result = evaluations.filter(
       (ev) =>
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm),
     )
+    return result.sort((a, b) => {
+      const statusA = a.status || 'pendente'
+      const statusB = b.status || 'pendente'
+      return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
+    })
   }, [evaluations, searchTerm])
 
   return (

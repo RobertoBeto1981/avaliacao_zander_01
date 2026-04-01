@@ -72,12 +72,22 @@ export default function ProfessorDashboard() {
   }
 
   const filtered = useMemo(() => {
-    return evaluations.filter((ev) => {
+    const statusOrder: Record<string, number> = {
+      pendente: 1,
+      em_progresso: 2,
+      concluido: 3,
+    }
+    const result = evaluations.filter((ev) => {
       const matchesSearch =
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm)
       const matchesType = filterType === 'meus' ? ev.professor_id === profile?.id : true
       return matchesSearch && matchesType
+    })
+    return result.sort((a, b) => {
+      const statusA = a.status || 'pendente'
+      const statusB = b.status || 'pendente'
+      return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
     })
   }, [evaluations, searchTerm, filterType, profile?.id])
 

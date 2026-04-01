@@ -343,13 +343,23 @@ export default function CoordinatorDashboard() {
   }
 
   const filtered = useMemo(() => {
-    return evaluations.filter((ev) => {
+    const statusOrder: Record<string, number> = {
+      pendente: 1,
+      em_progresso: 2,
+      concluido: 3,
+    }
+    const result = evaluations.filter((ev) => {
       const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
       const matchSearch =
         searchTerm === '' ||
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm)
       return matchStatus && matchSearch
+    })
+    return result.sort((a, b) => {
+      const statusA = a.status || 'pendente'
+      const statusB = b.status || 'pendente'
+      return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
     })
   }, [evaluations, statusFilter, searchTerm])
 
