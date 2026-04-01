@@ -24,16 +24,56 @@ import CoordinatorDashboard from './pages/CoordinatorDashboard'
 
 // Global error handlers to prevent app crash on Supabase invalid refresh token
 if (typeof window !== 'undefined') {
-  const cleanSupabaseAuth = () => {
-    try {
+  try {
+    let currentVersion = '1f913f6'
+    const scriptTags = document.querySelectorAll('script')
+    for (let i = 0; i < scriptTags.length; i++) {
+      const src = scriptTags[i].getAttribute('src')
+      if (src && src.includes('assets/index-')) {
+        currentVersion = src
+        break
+      }
+    }
+
+    const storedVersion = localStorage.getItem('app_version_hash')
+    if (storedVersion && storedVersion !== currentVersion) {
       let cleaned = false
+      const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          localStorage.removeItem(key)
-          cleaned = true
+          keysToRemove.push(key)
         }
       }
+      keysToRemove.forEach((k) => {
+        localStorage.removeItem(k)
+        cleaned = true
+      })
+      localStorage.setItem('app_version_hash', currentVersion)
+      if (cleaned && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    } else if (!storedVersion) {
+      localStorage.setItem('app_version_hash', currentVersion)
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const cleanSupabaseAuth = () => {
+    try {
+      let cleaned = false
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach((k) => {
+        localStorage.removeItem(k)
+        cleaned = true
+      })
       if (cleaned && window.location.pathname !== '/login') {
         window.location.href = '/login'
       }

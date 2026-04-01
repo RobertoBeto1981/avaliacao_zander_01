@@ -1525,8 +1525,6 @@ export const Constants = {
 //       UPDATE auth.users
 //       SET
 //         encrypted_password = extensions.crypt('teste1234', extensions.gen_salt('bf', 10)),
-//         failed_attempts = 0,
-//         locked_until = NULL,
 //         updated_at = NOW(),
 //         email_confirmed_at = COALESCE(email_confirmed_at, NOW())
 //       WHERE id = v_user_id;

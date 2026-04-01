@@ -77,13 +77,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (error.message.includes('Refresh Token') || error.message.includes('AuthApiError')) {
             try {
               let cleaned = false
+              const keysToRemove: string[] = []
               for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i)
                 if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-                  localStorage.removeItem(key)
-                  cleaned = true
+                  keysToRemove.push(key)
                 }
               }
+              keysToRemove.forEach((k) => {
+                localStorage.removeItem(k)
+                cleaned = true
+              })
               if (cleaned && window.location.pathname !== '/login') {
                 window.location.href = '/login'
               }
@@ -143,12 +147,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Use local scope to prevent 403 errors if the session is already invalid on the server
       const { error } = await supabase.auth.signOut({ scope: 'local' })
 
+      const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          localStorage.removeItem(key)
+          keysToRemove.push(key)
         }
       }
+      keysToRemove.forEach((k) => localStorage.removeItem(k))
 
       setSession(null)
       setUser(null)
