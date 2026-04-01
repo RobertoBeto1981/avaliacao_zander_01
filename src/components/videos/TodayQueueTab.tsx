@@ -16,6 +16,15 @@ import { getPendingDesafioZander, markDesafioZanderSent } from '@/services/evalu
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 
+const getFullVideoUrl = (url: string | null | undefined) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  return url.startsWith('/')
+    ? `${supabaseUrl}/storage/v1/object/public${url}`
+    : `${supabaseUrl}/storage/v1/object/public/${url}`
+}
+
 export function TodayQueueTab() {
   const { toast } = useToast()
   const [queue, setQueue] = useState<any[]>([])
@@ -89,7 +98,7 @@ export function TodayQueueTab() {
       let message =
         item.config.message_template || 'Olá {{nome}}, aqui está seu vídeo: {{link_video}}'
       message = message.replace(/\{\{nome\}\}/g, firstName)
-      message = message.replace(/\{\{link_video\}\}/g, item.config.video_url || '')
+      message = message.replace(/\{\{link_video\}\}/g, getFullVideoUrl(item.config.video_url))
 
       const encodedMsg = encodeURIComponent(message)
       const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`
@@ -254,7 +263,7 @@ export function TodayQueueTab() {
                           </span>
                           {item.config.video_url && (
                             <a
-                              href={item.config.video_url}
+                              href={getFullVideoUrl(item.config.video_url)}
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs text-blue-600 hover:underline flex items-center gap-1 w-fit"
