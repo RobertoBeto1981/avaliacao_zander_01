@@ -18,7 +18,7 @@ export default function ForgotPassword() {
     e.preventDefault()
     setIsSubmitting(true)
     setSuccessMessage('')
-    const cleanEmail = email.trim()
+    const cleanEmail = email.trim().toLowerCase()
     const { error } = await supabase.rpc('reset_user_password', { p_email: cleanEmail })
     setIsSubmitting(false)
     if (error) {
