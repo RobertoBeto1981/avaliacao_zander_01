@@ -137,11 +137,11 @@ export default function Communications() {
       </div>
 
       <Tabs defaultValue="new" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8 h-12">
-          <TabsTrigger value="new" className="text-base">
+        <TabsList className="flex flex-wrap w-full mb-8 h-auto">
+          <TabsTrigger value="new" className="flex-1 text-sm sm:text-base py-2">
             Novo Comunicado
           </TabsTrigger>
-          <TabsTrigger value="history" className="text-base">
+          <TabsTrigger value="history" className="flex-1 text-sm sm:text-base py-2">
             Histórico e Leituras
           </TabsTrigger>
         </TabsList>
@@ -319,10 +319,11 @@ export default function Communications() {
                                 })}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mt-2 sm:mt-0 shrink-0">
                               {stat.file_url && (
                                 <Badge variant="secondary" className="text-xs" title="Contém anexo">
-                                  <Paperclip className="w-3 h-3 mr-1" /> Anexo
+                                  <Paperclip className="w-3 h-3 sm:mr-1" />{' '}
+                                  <span className="hidden sm:inline">Anexo</span>
                                 </Badge>
                               )}
                               {stat.priority === 'high' && (

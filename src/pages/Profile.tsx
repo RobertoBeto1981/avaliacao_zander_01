@@ -159,6 +159,7 @@ export default function Profile() {
                   value={profile?.nome || ''}
                   onChange={(e) => setProfile({ ...profile, nome: e.target.value })}
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -181,7 +182,7 @@ export default function Profile() {
               </div>
               <div className="space-y-2">
                 <Label>Cargos / Papéis Atuais</Label>
-                <div className="flex flex-wrap gap-2 mt-2 h-10 items-center px-3 bg-muted rounded-md overflow-x-auto">
+                <div className="flex flex-wrap gap-2 mt-2 min-h-[40px] py-1.5 items-center px-3 bg-muted rounded-md">
                   {(profile?.roles || (profile?.role ? [profile.role] : [])).map((r: string) => (
                     <span
                       key={r}
@@ -196,7 +197,7 @@ export default function Profile() {
 
             <div className="space-y-3 pt-4 border-t border-border">
               <Label>Solicitar Adição de Cargos</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
                 {['professor', 'avaliador', 'fisioterapeuta', 'nutricionista'].map((role) => (
                   <div key={role} className="flex items-center space-x-2">
                     <Checkbox
@@ -234,7 +235,7 @@ export default function Profile() {
             {isProfessor && (
               <div className="space-y-3 animate-fade-in-up">
                 <Label>Períodos de Trabalho (Professor)</Label>
-                <div className="grid grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
                   {['Manhã', 'Tarde', 'Noite'].map((p) => (
                     <div key={p} className="flex items-center space-x-2">
                       <Checkbox

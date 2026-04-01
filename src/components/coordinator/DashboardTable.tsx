@@ -184,7 +184,7 @@ export function DashboardTable({
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-0.5 col-span-2 mt-1">
+                      <div className="flex flex-col gap-0.5 col-span-2 mt-2 pt-2 border-t border-border/40">
                         <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium mb-1">
                           Status do Treino
                         </span>

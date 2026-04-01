@@ -108,45 +108,49 @@ export default function EvaluationDetails() {
             <p className="text-muted-foreground mt-1">ID EVO: {data.evo_id || 'Não informado'}</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
           <Button
             variant="outline"
-            className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30 print:hidden"
+            className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30 print:hidden flex-1 sm:flex-none"
             onClick={handleWhatsApp}
           >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            WhatsApp
+            <MessageCircle className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">WhatsApp</span>
           </Button>
           <Button
             variant="outline"
             onClick={handlePrint}
-            className="border-primary/50 text-primary hover:bg-primary/10"
+            className="border-primary/50 text-primary hover:bg-primary/10 flex-1 sm:flex-none"
           >
-            <Printer className="w-4 h-4 mr-2" />
-            Gerar PDF
+            <Printer className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Gerar PDF</span>
           </Button>
-          <Button variant="outline" onClick={() => setHistoryOpen(true)}>
-            <History className="w-4 h-4 mr-2" />
-            Histórico
+          <Button
+            variant="outline"
+            onClick={() => setHistoryOpen(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <History className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Histórico</span>
           </Button>
           <Button
             variant="secondary"
-            className="bg-secondary/60 hover:bg-secondary"
+            className="bg-secondary/60 hover:bg-secondary flex-1 sm:flex-none w-full sm:w-auto"
             onClick={() => setAcompanhamentoOpen(true)}
           >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Anotações / Ações
+            <MessageSquare className="w-4 h-4 sm:mr-2" />
+            <span className="truncate">Anotações / Ações</span>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="flex-1 sm:flex-none">
             <Link to={`/evaluation/edit/${data.id}`}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
+              <Edit className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Editar</span>
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="flex-1 sm:flex-none w-full sm:w-auto">
             <Link to={`/evaluation/${data.id}/reevaluate`}>
-              <Repeat className="w-4 h-4 mr-2" />
-              Reavaliar
+              <Repeat className="w-4 h-4 sm:mr-2" />
+              <span className="truncate">Reavaliar</span>
             </Link>
           </Button>
         </div>
@@ -242,7 +246,7 @@ export default function EvaluationDetails() {
         <p className="text-sm mt-1 print:text-black">Academia ZANDER</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 print:block print:space-y-6 print:text-[13px] text-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:block print:space-y-6 print:text-[13px] text-sm">
         <Card className="print:shadow-none print:border-2 print:border-primary print:bg-white print:break-inside-avoid print:mb-6">
           <CardHeader className="py-3 print:py-2 print:px-3 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
             <CardTitle className="text-base print:text-sm uppercase tracking-wider print:text-black print:font-bold">
@@ -394,7 +398,7 @@ export default function EvaluationDetails() {
             </CardTitle>
           </CardHeader>
           <CardContent className="py-3 print:py-2 print:px-3 print:text-black">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-4 print:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-4 print:grid-cols-4">
               <p>
                 <strong>Peso:</strong> {anthropometry.weight ? `${anthropometry.weight} kg` : '-'}
               </p>
@@ -469,7 +473,7 @@ export default function EvaluationDetails() {
                 Teste de VO² (Step Test)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 flex flex-wrap gap-x-12 gap-y-2 print:text-black">
+            <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 flex flex-col sm:flex-row flex-wrap sm:gap-x-12 gap-y-2 print:text-black">
               <p>
                 <strong>Batimentos (15s):</strong> {vo2Test.beats_15s || '-'}
               </p>

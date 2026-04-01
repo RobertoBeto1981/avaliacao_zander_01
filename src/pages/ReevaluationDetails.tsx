@@ -138,19 +138,21 @@ export default function ReevaluationDetails() {
                   key={i}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg bg-muted/30 gap-4 print:break-inside-avoid"
                 >
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-foreground">{ev.campo}</h4>
-                    <div className="flex items-center gap-3 text-sm mt-2">
-                      <div className="bg-destructive/10 text-destructive px-2 py-1 rounded text-xs font-medium line-through opacity-70">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-foreground truncate" title={ev.campo}>
+                      {ev.campo}
+                    </h4>
+                    <div className="flex items-center gap-2 text-sm mt-2 flex-wrap">
+                      <div className="bg-destructive/10 text-destructive px-2 py-1 rounded text-xs font-medium line-through opacity-70 truncate max-w-full">
                         {ev.de || 'N/A'}
                       </div>
-                      <ArrowLeft className="w-4 h-4 rotate-180 text-muted-foreground" />
-                      <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
+                      <ArrowLeft className="w-4 h-4 rotate-180 text-muted-foreground shrink-0" />
+                      <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium truncate max-w-full">
                         {ev.para || 'N/A'}
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0">
+                  <div className="shrink-0 mt-2 sm:mt-0">
                     {ev.status === 'melhorou' && (
                       <span className="flex items-center text-green-600 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
                         <TrendingUp className="w-4 h-4 mr-1.5" /> Melhorou

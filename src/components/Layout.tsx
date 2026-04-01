@@ -61,7 +61,10 @@ export default function Layout() {
                       <Menu className="w-5 h-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-[260px] flex flex-col">
+                  <SheetContent
+                    side="left"
+                    className="w-[280px] sm:w-[320px] flex flex-col overflow-y-auto"
+                  >
                     <SheetTitle className="flex items-center gap-2 text-primary select-none mt-2">
                       <Dumbbell size={24} strokeWidth={2.5} />
                       <span className="font-extrabold text-xl tracking-tighter uppercase">
@@ -81,7 +84,7 @@ export default function Layout() {
                               : 'text-muted-foreground'
                           }`}
                         >
-                          <Dumbbell className="w-4 h-4" />
+                          <Dumbbell className="w-4 h-4 shrink-0" />
                           Painel do Professor
                         </Link>
                       )}
@@ -96,7 +99,7 @@ export default function Layout() {
                               : 'text-muted-foreground'
                           }`}
                         >
-                          <ClipboardCheck className="w-4 h-4" />
+                          <ClipboardCheck className="w-4 h-4 shrink-0" />
                           Painel do Avaliador
                         </Link>
                       )}
@@ -111,7 +114,7 @@ export default function Layout() {
                               : 'text-muted-foreground'
                           }`}
                         >
-                          <ActivitySquare className="w-4 h-4" />
+                          <ActivitySquare className="w-4 h-4 shrink-0" />
                           Painel Fisio
                         </Link>
                       )}
@@ -126,7 +129,7 @@ export default function Layout() {
                               : 'text-muted-foreground'
                           }`}
                         >
-                          <Utensils className="w-4 h-4" />
+                          <Utensils className="w-4 h-4 shrink-0" />
                           Painel Nutri
                         </Link>
                       )}
@@ -142,11 +145,11 @@ export default function Layout() {
                                 : 'text-muted-foreground'
                             }`}
                           >
-                            <LayoutDashboard className="w-4 h-4" />
+                            <LayoutDashboard className="w-4 h-4 shrink-0" />
                             Dashboard
                           </Link>
 
-                          <div className="pl-3 py-2 border-l-2 border-border/50 flex flex-col gap-3 mt-2 mb-2">
+                          <div className="pl-3 py-2 border-l-2 border-border/50 flex flex-col gap-3 my-1">
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                               Outros Painéis
                             </span>
@@ -185,7 +188,7 @@ export default function Layout() {
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/communications' ? 'text-primary' : 'text-muted-foreground'}`}
                           >
-                            <MessageSquare className="w-4 h-4" />
+                            <MessageSquare className="w-4 h-4 shrink-0" />
                             Comunicados
                           </Link>
                           <Link
@@ -193,7 +196,7 @@ export default function Layout() {
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={`flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/videos' ? 'text-primary' : 'text-muted-foreground'}`}
                           >
-                            <Video className="w-4 h-4" />
+                            <Video className="w-4 h-4 shrink-0" />
                             Vídeos
                           </Link>
                         </>

@@ -85,7 +85,7 @@ export default function ProfessorDashboard() {
     <div className="container mx-auto py-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Painel do Professor</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Painel do Professor</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Acompanhe as montagens de treino e comunicados.
           </p>
@@ -100,22 +100,22 @@ export default function ProfessorDashboard() {
 
         <TabsContent value="inicio">
           <div className="flex flex-wrap gap-4 mb-6 items-center justify-between">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
               <div className="relative w-full sm:w-[300px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar aluno ou EVO..."
-                  className="pl-9 bg-background"
+                  className="pl-9 bg-background w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="bg-zinc-800/50 p-1 rounded-md flex items-center border border-zinc-700/50">
+              <div className="bg-zinc-800/50 p-1 rounded-md flex w-full sm:w-auto items-center border border-zinc-700/50">
                 <Button
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-8 text-xs px-4',
+                    'h-8 text-xs px-4 flex-1 sm:flex-none',
                     filterType === 'meus' &&
                       'bg-[#84cc16] text-zinc-900 font-bold hover:bg-[#84cc16]/90 hover:text-zinc-900',
                   )}
@@ -127,7 +127,7 @@ export default function ProfessorDashboard() {
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-8 text-xs px-4',
+                    'h-8 text-xs px-4 flex-1 sm:flex-none',
                     filterType === 'todos' &&
                       'bg-[#84cc16] text-zinc-900 font-bold hover:bg-[#84cc16]/90 hover:text-zinc-900',
                   )}

@@ -113,7 +113,7 @@ export function StudentCard({
             <span className="text-zinc-400 text-[10px] font-bold tracking-wider block mb-1">
               DATA AVALIAÇÃO
             </span>
-            <span className="font-bold text-white text-[15px]">
+            <span className="font-bold text-white text-[15px] break-words">
               {evalDate ? format(evalDate, 'dd/MM/yyyy') : '-'}
             </span>
           </div>
@@ -121,7 +121,7 @@ export function StudentCard({
             <span className="text-zinc-400 text-[10px] font-bold tracking-wider block mb-1">
               PERÍODO
             </span>
-            <span className="font-bold text-white text-[15px] capitalize">
+            <span className="font-bold text-white text-[15px] capitalize break-words">
               {ev.periodo_treino || '-'}
             </span>
           </div>
@@ -242,28 +242,30 @@ export function StudentCard({
           </div>
         </div>
 
-        <div className="flex gap-2 w-full pt-1">
+        <div className="flex gap-1.5 w-full pt-1">
           <Button
             variant="outline"
-            className="flex-[1.2] bg-zinc-700 hover:bg-zinc-600 border-zinc-600 text-white font-bold text-xs h-9 px-0"
+            className="flex-[1.2] bg-zinc-700 hover:bg-zinc-600 border-zinc-600 text-white font-bold text-[11px] h-9 px-0 min-w-0 overflow-hidden"
             onClick={() => onAnotacoesClick(ev)}
           >
-            <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-            Anotações
+            <MessageSquare className="w-3.5 h-3.5 sm:mr-1.5 shrink-0" />
+            <span className="truncate px-1">Anotações</span>
           </Button>
 
           <Button
-            className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-xs h-9 px-0"
+            className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-9 px-0 min-w-0 overflow-hidden"
             asChild
           >
-            <Link to={`/evaluation/${ev.id}`}>Avaliação</Link>
+            <Link to={`/evaluation/${ev.id}`} className="truncate px-1">
+              Avaliação
+            </Link>
           </Button>
 
           <Button
             variant="outline"
             size="icon"
             className={cn(
-              'flex-[0.5] h-9 border-[#84cc16] text-[#84cc16] bg-transparent hover:bg-[#84cc16]/10',
+              'flex-[0.4] shrink-0 h-9 border-[#84cc16] text-[#84cc16] bg-transparent hover:bg-[#84cc16]/10',
               !canEditButton && 'opacity-40 cursor-not-allowed grayscale',
             )}
             asChild={canEditButton}
@@ -273,11 +275,11 @@ export function StudentCard({
           >
             {canEditButton ? (
               <Link to={`/evaluation/edit/${ev.id}`}>
-                <Edit className="w-4 h-4" />
+                <Edit className="w-4 h-4 shrink-0" />
               </Link>
             ) : (
               <button type="button" disabled>
-                <Edit className="w-4 h-4" />
+                <Edit className="w-4 h-4 shrink-0" />
               </button>
             )}
           </Button>

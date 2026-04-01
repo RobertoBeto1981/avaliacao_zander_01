@@ -21,20 +21,21 @@ export default function VideoScheduling() {
       </div>
 
       <Tabs defaultValue="queue" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 w-full max-w-3xl grid grid-cols-4">
-          <TabsTrigger value="queue" className="flex items-center gap-2">
+        <TabsList className="bg-muted/50 p-1 w-full max-w-3xl flex flex-wrap h-auto justify-start gap-1">
+          <TabsTrigger value="queue" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <ListTodo className="w-4 h-4" />
-            Fila do Dia
+            <span className="hidden sm:inline">Fila do Dia</span>
+            <span className="sm:hidden">Fila</span>
           </TabsTrigger>
-          <TabsTrigger value="configs" className="flex items-center gap-2">
+          <TabsTrigger value="configs" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <Settings className="w-4 h-4" />
             Gatilhos
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
+          <TabsTrigger value="templates" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <MessageSquare className="w-4 h-4" />
             Mensagens
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
+          <TabsTrigger value="history" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <History className="w-4 h-4" />
             Histórico
           </TabsTrigger>

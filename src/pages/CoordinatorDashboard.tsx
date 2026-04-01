@@ -376,27 +376,35 @@ export default function CoordinatorDashboard() {
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard do Coordenador</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard do Coordenador</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Visão geral de todos os alunos e avaliações.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setIsNewStudentOpen(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Aluno
+        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => setIsNewStudentOpen(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <UserPlus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Aluno</span>
           </Button>
-          <Button asChild>
+          <Button asChild className="flex-1 sm:flex-none">
             <Link to="/evaluation/new">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Avaliação
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nova Avaliação</span>
             </Link>
           </Button>
-          <Button variant="outline" onClick={() => setIsExportOpen(true)}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+          <Button
+            variant="outline"
+            onClick={() => setIsExportOpen(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </div>
@@ -479,18 +487,18 @@ export default function CoordinatorDashboard() {
             </Alert>
           )}
 
-          <div className="flex gap-4 mb-6 flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative w-full sm:w-[300px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar aluno ou EVO..."
-                className="pl-9 bg-background"
+                className="pl-9 bg-background w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Filtrar por Status" />
               </SelectTrigger>
               <SelectContent>
@@ -742,11 +750,11 @@ export default function CoordinatorDashboard() {
 
                   <CardFooter className="p-4 pt-0 flex flex-col gap-3 bg-muted/10 border-t border-border/10">
                     {/* Botões de Ação Secundários */}
-                    <div className="flex items-center gap-2 w-full pt-3">
+                    <div className="flex items-center gap-1.5 w-full pt-3">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-[1.2] h-8 text-xs font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors px-0"
+                        className="flex-[1.2] h-8 text-[11px] font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors px-0 min-w-0"
                         onClick={() =>
                           setAcompanhamentoEval({
                             id: ev.id,
@@ -755,13 +763,16 @@ export default function CoordinatorDashboard() {
                           })
                         }
                       >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1 text-primary" /> Anot.
+                        <MessageSquare className="w-3.5 h-3.5 sm:mr-1 text-primary shrink-0" />{' '}
+                        <span className="truncate px-1">Anot.</span>
                       </Button>
                       <Button
-                        className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-xs h-8 px-0 shadow-sm"
+                        className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-8 px-0 shadow-sm min-w-0"
                         asChild
                       >
-                        <Link to={`/evaluation/${ev.id}`}>Avaliação</Link>
+                        <Link to={`/evaluation/${ev.id}`} className="truncate px-1">
+                          Avaliação
+                        </Link>
                       </Button>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -899,7 +910,7 @@ export default function CoordinatorDashboard() {
               realizadas.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <Label>Mês</Label>
               <Select value={exportMonth} onValueChange={setExportMonth}>
