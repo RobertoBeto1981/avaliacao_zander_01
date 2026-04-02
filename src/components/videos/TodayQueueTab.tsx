@@ -16,13 +16,17 @@ import { getPendingDesafioZander, markDesafioZanderSent } from '@/services/evalu
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 
-const getFullVideoUrl = (url: string | null | undefined) => {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
+const getFullVideoUrl = (url: string | null | undefined, urlGoogleDrive?: string | null) => {
+  const targetUrl = urlGoogleDrive || url
+  if (!targetUrl) return ''
+  if (targetUrl.startsWith('http')) return targetUrl
+  if (urlGoogleDrive && !urlGoogleDrive.startsWith('http')) {
+    return `https://drive.google.com/uc?id=${urlGoogleDrive}&export=download`
+  }
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  return url.startsWith('/')
-    ? `${supabaseUrl}/storage/v1/object/public${url}`
-    : `${supabaseUrl}/storage/v1/object/public/${url}`
+  return targetUrl.startsWith('/')
+    ? `${supabaseUrl}/storage/v1/object/public${targetUrl}`
+    : `${supabaseUrl}/storage/v1/object/public/${targetUrl}`
 }
 
 export function TodayQueueTab() {
@@ -98,7 +102,10 @@ export function TodayQueueTab() {
       let message =
         item.config.message_template || 'Olá {{nome}}, aqui está seu vídeo: {{link_video}}'
       message = message.replace(/\{\{nome\}\}/g, firstName)
-      message = message.replace(/\{\{link_video\}\}/g, getFullVideoUrl(item.config.video_url))
+      message = message.replace(
+        /\{\{link_video\}\}/g,
+        getFullVideoUrl(item.config.video_url, item.url_google_drive),
+      )
 
       const encodedMsg = encodeURIComponent(message)
       const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`
@@ -107,7 +114,11 @@ export function TodayQueueTab() {
       window.open(waUrl, '_blank')
 
       // Log the action to the database
-      await logVideoSent(item.avaliacao.id, item.config.dias_trigger, item.config.video_url)
+      await logVideoSent(
+        item.avaliacao.id,
+        item.config.dias_trigger,
+        item.url_google_drive || item.config.video_url,
+      )
 
       // Mark as processed locally
       setProcessedKeys((prev) => new Set(prev).add(itemKey))
@@ -261,9 +272,9 @@ export function TodayQueueTab() {
                           <span className="text-sm font-medium">
                             {item.config.dias_trigger} Dias pós-avaliação
                           </span>
-                          {item.config.video_url && (
+                          {(item.config.video_url || item.url_google_drive) && (
                             <a
-                              href={getFullVideoUrl(item.config.video_url)}
+                              href={getFullVideoUrl(item.config.video_url, item.url_google_drive)}
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs text-blue-600 hover:underline flex items-center gap-1 w-fit"

@@ -664,6 +664,7 @@ export type Database = {
           id: string
           status: string
           url_google_drive: string | null
+          video_id_google_drive: string | null
         }
         Insert: {
           avaliacao_id: string
@@ -674,6 +675,7 @@ export type Database = {
           id?: string
           status?: string
           url_google_drive?: string | null
+          video_id_google_drive?: string | null
         }
         Update: {
           avaliacao_id?: string
@@ -684,6 +686,7 @@ export type Database = {
           id?: string
           status?: string
           url_google_drive?: string | null
+          video_id_google_drive?: string | null
         }
         Relationships: [
           {
@@ -1026,6 +1029,7 @@ export const Constants = {
 //   data_envio: timestamp with time zone (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   error_reason: text (nullable)
+//   video_id_google_drive: text (nullable)
 
 // --- CONSTRAINTS ---
 // Table: avaliacao_acompanhamentos
