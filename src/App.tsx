@@ -224,7 +224,15 @@ const AppRoutes = () => (
         path="/communications"
         element={
           <PrivateRoute>
-            <RoleGuard allowedRoles={['coordenador']}>
+            <RoleGuard
+              allowedRoles={[
+                'coordenador',
+                'professor',
+                'avaliador',
+                'fisioterapeuta',
+                'nutricionista',
+              ]}
+            >
               <Communications />
             </RoleGuard>
           </PrivateRoute>

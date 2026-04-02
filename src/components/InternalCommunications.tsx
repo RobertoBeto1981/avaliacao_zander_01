@@ -12,6 +12,7 @@ import {
 import { MessageSquare, Paperclip, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { Link } from 'react-router-dom'
 
 export function InternalCommunications() {
   const { profile } = useAuth()
@@ -61,15 +62,23 @@ export function InternalCommunications() {
 
   return (
     <Card className="border-border/50 shadow-md animate-fade-in">
-      <CardHeader className="border-b border-border/50 bg-muted/10">
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-primary" />
-          Comunicados Internos
-        </CardTitle>
-        <CardDescription>
-          Acompanhe aqui os recados e arquivos enviados pela coordenação. Ao abrir uma mensagem, ela
-          é registrada como lida automaticamente.
-        </CardDescription>
+      <CardHeader className="border-b border-border/50 bg-muted/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            Comunicados Internos
+          </CardTitle>
+          <CardDescription>
+            Acompanhe aqui os recados e arquivos recebidos. Ao abrir uma mensagem, ela é registrada
+            como lida automaticamente.
+          </CardDescription>
+        </div>
+        <Button asChild size="sm" className="w-full sm:w-auto font-bold shrink-0">
+          <Link to="/communications">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Enviar Recado
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent className="pt-6">
         {messages.length === 0 ? (

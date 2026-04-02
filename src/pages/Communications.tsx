@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { sendBulkMessage, getSentMessagesStats } from '@/services/notifications'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,7 +22,9 @@ import { cn } from '@/lib/utils'
 
 export default function Communications() {
   const { toast } = useToast()
-  const [targetRoles, setTargetRoles] = useState<string[]>(['todos'])
+  const [targetRoles, setTargetRoles] = useState<string[]>([])
+  const [targetUsers, setTargetUsers] = useState<string[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -31,27 +32,68 @@ export default function Communications() {
   const [sending, setSending] = useState(false)
   const [stats, setStats] = useState<any[]>([])
 
+  useEffect(() => {
+    loadUsers()
+    loadStats()
+  }, [])
+
+  const loadUsers = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('users')
+      .select('id, nome, role')
+      .eq('ativo', true)
+      .neq('id', user.id)
+      .order('nome')
+    if (data) setUsers(data)
+  }
+
   const loadStats = async () => {
     try {
-      const data = await getSentMessagesStats()
-      setStats(data)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('roles')
+        .eq('id', user.id)
+        .single()
+      const isCoordenador = profile?.roles?.includes('coordenador')
+
+      let query = supabase
+        .from('bulk_messages')
+        .select(`
+          *,
+          notifications ( id, is_read, user_id, users ( nome, foto_url ) )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (!isCoordenador) {
+        query = query.eq('sender_id', user.id)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      setStats(data || [])
     } catch (e) {
       console.error(e)
     }
   }
 
-  useEffect(() => {
-    loadStats()
-  }, [])
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (targetRoles.length === 0) {
+    if (targetRoles.length === 0 && targetUsers.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Atenção',
-        description: 'Selecione pelo menos um grupo de destinatários.',
+        description: 'Selecione pelo menos um grupo ou destinatário individual.',
       })
       return
     }
@@ -78,14 +120,17 @@ export default function Communications() {
         fileName = file.name
       }
 
-      await sendBulkMessage(
-        targetRoles,
-        title,
-        message,
-        isHighPriority ? 'high' : 'normal',
-        fileUrl,
-        fileName,
-      )
+      const { error } = await supabase.rpc('send_internal_communication', {
+        p_target_roles: targetRoles,
+        p_target_users: targetUsers,
+        p_title: title,
+        p_message: message,
+        p_priority: isHighPriority ? 'high' : 'normal',
+        p_file_url: fileUrl,
+        p_file_name: fileName,
+      })
+
+      if (error) throw error
 
       toast({
         title: 'Sucesso',
@@ -97,7 +142,8 @@ export default function Communications() {
       const fileInput = document.getElementById('attachment') as HTMLInputElement
       if (fileInput) fileInput.value = ''
       setIsHighPriority(false)
-      setTargetRoles(['todos'])
+      setTargetRoles([])
+      setTargetUsers([])
       loadStats()
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao enviar', description: err.message })
@@ -120,6 +166,10 @@ export default function Communications() {
         return next
       })
     }
+  }
+
+  const handleUserToggle = (userId: string, checked: boolean) => {
+    setTargetUsers((prev) => (checked ? [...prev, userId] : prev.filter((id) => id !== userId)))
   }
 
   return (
@@ -160,7 +210,7 @@ export default function Communications() {
             <CardContent className="pt-6">
               <form onSubmit={handleSend} className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-base">Destinatários</Label>
+                  <Label className="text-base">Grupos de Destinatários</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-5 bg-muted/20">
                     <div className="flex items-center space-x-3 col-span-1 sm:col-span-2 pb-3 border-b border-border">
                       <Checkbox
@@ -181,6 +231,7 @@ export default function Communications() {
                       { id: 'avaliador', label: 'Avaliadores' },
                       { id: 'fisioterapeuta', label: 'Fisioterapeutas' },
                       { id: 'nutricionista', label: 'Nutricionistas' },
+                      { id: 'coordenador', label: 'Coordenadores' },
                     ].map((role) => (
                       <div key={role.id} className="flex items-center space-x-3">
                         <Checkbox
@@ -197,6 +248,40 @@ export default function Communications() {
                   </div>
                 </div>
 
+                <div className="space-y-3">
+                  <Label className="text-base">Colaboradores Individuais</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border rounded-lg p-4 bg-muted/20 max-h-[250px] overflow-y-auto">
+                    {users.length === 0 ? (
+                      <p className="text-sm text-muted-foreground col-span-full">
+                        Carregando colaboradores...
+                      </p>
+                    ) : (
+                      users.map((u) => (
+                        <div
+                          key={u.id}
+                          className="flex items-start space-x-3 p-2 hover:bg-muted/30 rounded-md transition-colors"
+                        >
+                          <Checkbox
+                            id={`user-${u.id}`}
+                            checked={targetUsers.includes(u.id)}
+                            onCheckedChange={(c) => handleUserToggle(u.id, c as boolean)}
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <Label
+                            htmlFor={`user-${u.id}`}
+                            className="text-sm cursor-pointer flex flex-col leading-tight"
+                          >
+                            <span className="font-semibold">{u.nome.split(' ')[0]}</span>
+                            <span className="text-muted-foreground text-[10px] font-bold uppercase mt-0.5">
+                              {u.role}
+                            </span>
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-base">
                     Título do Comunicado
@@ -205,7 +290,7 @@ export default function Communications() {
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Reunião Geral nesta Sexta-feira"
+                    placeholder="Ex: Atualização de Treino ou Recado Importante"
                     className="h-12 text-base"
                     required
                   />
@@ -236,9 +321,6 @@ export default function Communications() {
                     className="cursor-pointer"
                     accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
                   />
-                  <p className="text-sm text-muted-foreground">
-                    Você pode anexar PDFs, documentos, ou imagens para compartilhar com a equipe.
-                  </p>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
@@ -247,7 +329,7 @@ export default function Communications() {
                       <AlertTriangle
                         className={cn(
                           'w-4 h-4',
-                          isHighPriority ? 'text-red-500' : 'text-muted-foreground',
+                          isHighPriority ? 'text-destructive' : 'text-muted-foreground',
                         )}
                       />
                       Prioridade Alta (Urgente)
@@ -283,10 +365,10 @@ export default function Communications() {
             <CardHeader className="border-b border-border/50 bg-muted/10">
               <CardTitle className="flex items-center gap-2">
                 <CheckCheck className="w-5 h-5 text-primary" />
-                Histórico de Envios
+                Seu Histórico de Envios
               </CardTitle>
               <CardDescription>
-                Acompanhe as mensagens enviadas e verifique quem já visualizou.
+                Acompanhe as mensagens que você enviou e verifique quem já visualizou.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
