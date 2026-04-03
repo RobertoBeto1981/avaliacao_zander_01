@@ -131,7 +131,17 @@ export default function CoordinatorDashboard() {
   const handleStatusChange = async (id: string, status: string) => {
     try {
       await updateEvaluationStatus(id, status)
-      setEvaluations((prev) => prev.map((ev) => (ev.id === id ? { ...ev, status } : ev)))
+      setEvaluations((prev) =>
+        prev.map((ev) =>
+          ev.id === id
+            ? {
+                ...ev,
+                status,
+                desafio_zander_status: status === 'concluido' ? 'nenhum' : ev.desafio_zander_status,
+              }
+            : ev,
+        ),
+      )
       toast({ title: 'Sucesso', description: 'Status atualizado com sucesso.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
@@ -608,6 +618,16 @@ export default function CoordinatorDashboard() {
                             EVO: {ev.evo_id}
                           </Badge>
                         )}
+                        {ev.desafio_zander_status &&
+                          ev.desafio_zander_status !== 'nenhum' &&
+                          ev.status !== 'concluido' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-5 px-1.5 border-purple-500/50 text-purple-700 bg-purple-50 dark:bg-purple-500/10 dark:text-purple-400"
+                            >
+                              #DesafioZander
+                            </Badge>
+                          )}
                       </div>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0 -mr-2 -mt-2">
@@ -831,7 +851,7 @@ export default function CoordinatorDashboard() {
                         <Trophy className="w-3.5 h-3.5 mr-1.5" /> Ativar #DesafioZander
                       </Button>
                     )}
-                    {ev.desafio_zander_status === 'ativado' && (
+                    {ev.desafio_zander_status === 'ativo' && (
                       <Button
                         variant="outline"
                         size="sm"

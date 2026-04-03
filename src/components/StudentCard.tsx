@@ -98,11 +98,13 @@ export function StudentCard({
             <div className="text-[#84cc16] text-sm font-bold">
               {ev.nao_cliente ? 'NÃO CLIENTE' : ev.evo_id ? `EVO: ${ev.evo_id}` : 'EVO: -'}
             </div>
-            {ev.desafio_zander_status === 'ativo' && ev.status !== 'concluido' && (
-              <span className="bg-purple-500/20 text-purple-400 border border-purple-500/50 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider whitespace-nowrap">
-                #DesafioZander
-              </span>
-            )}
+            {ev.desafio_zander_status &&
+              ev.desafio_zander_status !== 'nenhum' &&
+              ev.status !== 'concluido' && (
+                <span className="bg-purple-500/20 text-purple-400 border border-purple-500/50 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider whitespace-nowrap">
+                  #DesafioZander
+                </span>
+              )}
           </div>
         </div>
         <Tooltip>
