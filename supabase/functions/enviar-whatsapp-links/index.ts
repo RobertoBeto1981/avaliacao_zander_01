@@ -96,20 +96,22 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    const requestBody = JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'text',
+      text: {
+        body: message,
+      },
+    })
+
     const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${waToken}`,
         'Content-Type': 'application/json; charset=utf-8',
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: phone,
-        type: 'text',
-        text: {
-          body: message,
-        },
-      }),
+      body: new TextEncoder().encode(requestBody),
     })
 
     const waData = await waRes.json()

@@ -98,13 +98,11 @@ export function StudentCard({
             <div className="text-[#84cc16] text-sm font-bold">
               {ev.nao_cliente ? 'NÃO CLIENTE' : ev.evo_id ? `EVO: ${ev.evo_id}` : 'EVO: -'}
             </div>
-            {ev.desafio_zander_status &&
-              ev.desafio_zander_status !== 'nenhum' &&
-              ev.status !== 'concluido' && (
-                <span className="bg-purple-500/20 text-purple-400 border border-purple-500/50 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider whitespace-nowrap">
-                  #DesafioZander
-                </span>
-              )}
+            {ev.desafio_zander_status === 'ativo' && ev.status !== 'concluido' && (
+              <span className="bg-purple-500/20 text-purple-400 border border-purple-500/50 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider whitespace-nowrap">
+                #DesafioZander
+              </span>
+            )}
           </div>
         </div>
         <Tooltip>
@@ -144,7 +142,7 @@ export function StudentCard({
             <span className="text-zinc-400 text-[10px] font-bold tracking-wider block mb-1.5">
               PROFESSOR
             </span>
-            {isCoordenador ? (
+            {isCoordenador && professors ? (
               <Select
                 value={ev.professor_id || 'unassigned'}
                 onValueChange={(val) => onProfessorChange && onProfessorChange(ev.id, val)}
@@ -154,7 +152,7 @@ export function StudentCard({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">-</SelectItem>
-                  {professors?.map((p) => (
+                  {professors.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.nome}
                     </SelectItem>

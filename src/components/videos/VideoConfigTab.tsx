@@ -6,13 +6,30 @@ const STANDARD_TRIGGERS = [1, 7, 30, 60, 90]
 
 export function VideoConfigTab() {
   const [configs, setConfigs] = useState<any[]>([])
+  const [triggers, setTriggers] = useState<number[]>([])
+  const [newTrigger, setNewTrigger] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getVideoConfigs()
-      .then(setConfigs)
+      .then((data) => {
+        setConfigs(data)
+        const dbTriggers = data.map((c) => c.dias_trigger)
+        const allTriggers = Array.from(new Set([...STANDARD_TRIGGERS, ...dbTriggers])).sort(
+          (a, b) => a - b,
+        )
+        setTriggers(allTriggers)
+      })
       .finally(() => setLoading(false))
   }, [])
+
+  const handleAddTrigger = () => {
+    const val = parseInt(newTrigger)
+    if (!isNaN(val) && val > 0 && !triggers.includes(val)) {
+      setTriggers((prev) => [...prev, val].sort((a, b) => a - b))
+      setNewTrigger('')
+    }
+  }
 
   if (loading)
     return <div className="p-8 text-center text-muted-foreground">Carregando configurações...</div>
@@ -42,9 +59,27 @@ export function VideoConfigTab() {
           a avaliação. Faça o upload do vídeo ou insira um link externo. O sistema verificará
           diariamente e enviará pelo WhatsApp.
         </p>
+        <div className="flex items-center gap-4 mt-4 bg-muted/20 p-4 rounded-lg border border-border/50">
+          <span className="text-sm font-semibold text-foreground">Adicionar Novo Gatilho:</span>
+          <input
+            type="number"
+            min="1"
+            placeholder="Ex: 45 (dias)"
+            value={newTrigger}
+            onChange={(e) => setNewTrigger(e.target.value)}
+            className="w-36 flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          <button
+            onClick={handleAddTrigger}
+            disabled={!newTrigger}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#95c23d] text-black hover:bg-[#85b035] h-10 px-4 py-2"
+          >
+            Adicionar Gatilho
+          </button>
+        </div>
       </div>
 
-      {STANDARD_TRIGGERS.map((days) => {
+      {triggers.map((days) => {
         const config = configs.find((c) => c.dias_trigger === days)
         return <ConfigCard key={days} triggerDays={days} initialConfig={config} />
       })}

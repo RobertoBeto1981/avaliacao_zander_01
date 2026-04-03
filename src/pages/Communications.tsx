@@ -16,7 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { getUsers } from '@/services/users'
 import { supabase } from '@/lib/supabase/client'
-import { Send, Loader2, X } from 'lucide-react'
+import { Send, Loader2, X, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 export default function Communications() {
@@ -28,6 +28,7 @@ export default function Communications() {
   const [priority, setPriority] = useState('normal')
   const [targetRoles, setTargetRoles] = useState<string[]>([])
   const [targetUsers, setTargetUsers] = useState<string[]>([])
+  const [file, setFile] = useState<File | null>(null)
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -117,14 +118,33 @@ export default function Communications() {
     try {
       setLoading(true)
 
+      let p_file_url = null
+      let p_file_name = null
+
+      if (file) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('communications')
+          .upload(fileName, file)
+
+        if (uploadError) throw uploadError
+
+        const { data: urlData } = supabase.storage.from('communications').getPublicUrl(fileName)
+
+        p_file_url = urlData.publicUrl
+        p_file_name = file.name
+      }
+
       const { error } = await supabase.rpc('send_internal_communication', {
         p_target_roles: targetRoles,
         p_target_users: targetUsers,
         p_title: title.trim(),
         p_message: message.trim(),
         p_priority: priority,
-        p_file_url: null,
-        p_file_name: null,
+        p_file_url,
+        p_file_name,
       })
 
       if (error) throw error
@@ -135,6 +155,7 @@ export default function Communications() {
       setPriority('normal')
       setTargetRoles([])
       setTargetUsers([])
+      setFile(null)
     } catch (e: any) {
       toast({
         variant: 'destructive',
@@ -292,6 +313,28 @@ export default function Communications() {
                     })}
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-2 mt-6">
+                <Label className="text-zinc-200 font-semibold flex items-center gap-2">
+                  Anexar Arquivo
+                  <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-normal">
+                    Opcional
+                  </span>
+                </Label>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-300 file:bg-zinc-700 file:text-white file:border-0 file:mr-4 file:py-1 file:px-3 file:rounded-md cursor-pointer hover:file:bg-zinc-600"
+                  />
+                  {file && (
+                    <span className="text-xs text-zinc-400 flex items-center gap-1">
+                      <Check className="w-3 h-3 text-[#84cc16]" />
+                      Pronto para envio: {file.name}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
