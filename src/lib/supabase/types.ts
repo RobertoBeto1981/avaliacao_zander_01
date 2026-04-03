@@ -719,6 +719,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      send_internal_communication: {
+        Args: {
+          p_file_name?: string
+          p_file_url?: string
+          p_message: string
+          p_priority?: string
+          p_target_roles: string[]
+          p_target_users: string[]
+          p_title: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       avaliacao_status: 'pendente' | 'em_progresso' | 'concluido'
@@ -1114,10 +1126,10 @@ export const Constants = {
 //     USING: (avaliador_id = auth.uid())
 //     WITH CHECK: (avaliador_id = auth.uid())
 // Table: bulk_messages
-//   Policy "Coordinators can insert bulk messages" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
-//   Policy "Coordinators can view all bulk messages" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
+//   Policy "Users can insert bulk messages" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: (auth.uid() = sender_id)
+//   Policy "Users can view bulk messages" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((auth.uid() = sender_id) OR (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles))))))
 // Table: evaluations
 //   Policy "Users can manage their own evaluations" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
@@ -1516,6 +1528,20 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION reset_desafio_on_concluido()
+//   CREATE OR REPLACE FUNCTION public.reset_desafio_on_concluido()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       IF NEW.status = 'concluido' AND OLD.status IS DISTINCT FROM 'concluido' THEN
+//           NEW.desafio_zander_status := 'nenhum';
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION reset_user_password(text)
 //   CREATE OR REPLACE FUNCTION public.reset_user_password(p_email text)
 //    RETURNS void
@@ -1572,6 +1598,65 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION send_internal_communication(text[], uuid[], text, text, text, text, text)
+//   CREATE OR REPLACE FUNCTION public.send_internal_communication(p_target_roles text[], p_target_users uuid[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text, p_file_url text DEFAULT NULL::text, p_file_name text DEFAULT NULL::text)
+//    RETURNS void
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//       v_sender_id UUID;
+//       v_bulk_id UUID;
+//       v_role_text text;
+//   BEGIN
+//       v_sender_id := auth.uid();
+//
+//       IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND ativo = true) THEN
+//         RAISE EXCEPTION 'Apenas usuários ativos podem enviar comunicados.';
+//       END IF;
+//
+//       v_role_text := array_to_string(p_target_roles, ', ');
+//       IF array_length(p_target_users, 1) > 0 THEN
+//         IF v_role_text = '' THEN
+//           v_role_text := 'usuarios_especificos';
+//         ELSE
+//           v_role_text := v_role_text || ', usuarios_especificos';
+//         END IF;
+//       END IF;
+//
+//       INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority, file_url, file_name)
+//       VALUES (v_sender_id, COALESCE(NULLIF(v_role_text, ''), 'nenhum'), p_title, p_message, p_priority, p_file_url, p_file_name)
+//       RETURNING id INTO v_bulk_id;
+//
+//       -- Insert for roles
+//       IF array_length(p_target_roles, 1) > 0 THEN
+//         IF 'todos' = ANY(p_target_roles) THEN
+//           INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//           SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
+//           FROM public.users
+//           WHERE id != v_sender_id AND ativo = true;
+//         ELSE
+//           INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//           SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
+//           FROM public.users
+//           WHERE roles && p_target_roles AND id != v_sender_id AND ativo = true;
+//         END IF;
+//       END IF;
+//
+//       -- Insert for specific users
+//       IF array_length(p_target_users, 1) > 0 THEN
+//         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
+//         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
+//         FROM public.users
+//         WHERE id = ANY(p_target_users) AND id != v_sender_id AND ativo = true
+//         AND NOT EXISTS (
+//           SELECT 1 FROM public.notifications n
+//           WHERE n.user_id = public.users.id AND n.bulk_message_id = v_bulk_id
+//         );
+//       END IF;
+//   END;
+//   $function$
+//
 // FUNCTION set_desafio_zander_activation_date()
 //   CREATE OR REPLACE FUNCTION public.set_desafio_zander_activation_date()
 //    RETURNS trigger
@@ -1594,6 +1679,7 @@ export const Constants = {
 //   on_avaliacao_assigned: CREATE TRIGGER on_avaliacao_assigned AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_professor_on_assignment()
 //   on_avaliacao_created_assign_professor: CREATE TRIGGER on_avaliacao_created_assign_professor BEFORE INSERT OR UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION auto_assign_professor()
 //   on_avaliacao_created_log: CREATE TRIGGER on_avaliacao_created_log AFTER INSERT ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_new_client_history()
+//   on_avaliacao_status_concluido: CREATE TRIGGER on_avaliacao_status_concluido BEFORE UPDATE OF status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION reset_desafio_on_concluido()
 //   on_avaliacao_update_log: CREATE TRIGGER on_avaliacao_update_log AFTER UPDATE ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION log_avaliacao_updates()
 //   on_desafio_zander_activated: CREATE TRIGGER on_desafio_zander_activated AFTER UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION notify_desafio_zander_activation()
 //   on_desafio_zander_set_date: CREATE TRIGGER on_desafio_zander_set_date BEFORE UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION set_desafio_zander_activation_date()

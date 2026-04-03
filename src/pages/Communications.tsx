@@ -1,508 +1,322 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/hooks/use-auth'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Send, Users, Megaphone, CheckCheck, AlertTriangle, Paperclip } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { getUsers } from '@/services/users'
+import { supabase } from '@/lib/supabase/client'
+import { Send, Loader2, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 export default function Communications() {
+  const { profile } = useAuth()
   const { toast } = useToast()
+
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [priority, setPriority] = useState('normal')
   const [targetRoles, setTargetRoles] = useState<string[]>([])
   const [targetUsers, setTargetUsers] = useState<string[]>([])
   const [users, setUsers] = useState<any[]>([])
-  const [title, setTitle] = useState('')
-  const [message, setMessage] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [isHighPriority, setIsHighPriority] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [stats, setStats] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
+  const [selectedUserId, setSelectedUserId] = useState('none')
+
+  const rolesList = [
+    { id: 'todos', label: 'Todos os Colaboradores' },
+    { id: 'professor', label: 'Professores' },
+    { id: 'avaliador', label: 'Avaliadores' },
+    { id: 'fisioterapeuta', label: 'Fisioterapeutas' },
+    { id: 'nutricionista', label: 'Nutricionistas' },
+    { id: 'coordenador', label: 'Coordenadores' },
+  ]
 
   useEffect(() => {
     loadUsers()
-    loadStats()
   }, [])
 
   const loadUsers = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data } = await supabase
-      .from('users')
-      .select('id, nome, role')
-      .eq('ativo', true)
-      .neq('id', user.id)
-      .order('nome')
-    if (data) setUsers(data)
-  }
-
-  const loadStats = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('roles')
-        .eq('id', user.id)
-        .single()
-      const isCoordenador = profile?.roles?.includes('coordenador')
-
-      let query = supabase
-        .from('bulk_messages')
-        .select(`
-          *,
-          notifications ( id, is_read, user_id, users ( nome, foto_url ) )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (!isCoordenador) {
-        query = query.eq('sender_id', user.id)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
-      setStats(data || [])
-    } catch (e) {
-      console.error(e)
+      setFetching(true)
+      const data = await getUsers()
+      // Ordema alfabeticamente para melhor visualização na lista suspensa
+      const sorted = data.sort((a: any, b: any) => a.nome.localeCompare(b.nome))
+      setUsers(sorted)
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao carregar usuários.' })
+    } finally {
+      setFetching(false)
     }
   }
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRoleToggle = (role: string) => {
+    if (role === 'todos') {
+      if (targetRoles.includes('todos')) {
+        setTargetRoles([])
+      } else {
+        setTargetRoles(['todos'])
+      }
+      return
+    }
 
-    if (targetRoles.length === 0 && targetUsers.length === 0) {
+    let newRoles = [...targetRoles]
+    if (newRoles.includes('todos')) {
+      newRoles = newRoles.filter((r) => r !== 'todos')
+    }
+
+    if (newRoles.includes(role)) {
+      newRoles = newRoles.filter((r) => r !== role)
+    } else {
+      newRoles.push(role)
+    }
+    setTargetRoles(newRoles)
+  }
+
+  const handleAddUser = (userId: string) => {
+    if (userId !== 'none' && !targetUsers.includes(userId)) {
+      setTargetUsers([...targetUsers, userId])
+    }
+    // Reseta imediatamente o estado do select para permitir selecionar a mesma pessoa se removida
+    setTimeout(() => setSelectedUserId('none'), 10)
+  }
+
+  const handleRemoveUser = (userId: string) => {
+    setTargetUsers(targetUsers.filter((id) => id !== userId))
+  }
+
+  const handleSend = async () => {
+    if (!title.trim() || !message.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Atenção',
-        description: 'Selecione pelo menos um grupo ou destinatário individual.',
+        title: 'Aviso',
+        description: 'Título e mensagem são obrigatórios.',
       })
       return
     }
 
-    setSending(true)
+    if (targetRoles.length === 0 && targetUsers.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Aviso',
+        description: 'Selecione pelo menos um grupo ou colaborador.',
+      })
+      return
+    }
+
     try {
-      let fileUrl = null
-      let fileName = null
-
-      if (file) {
-        const fileExt = file.name.split('.').pop()
-        const filePath = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('communications')
-          .upload(filePath, file)
-
-        if (uploadError) {
-          throw new Error(`Erro ao enviar anexo: ${uploadError.message}`)
-        }
-
-        const { data } = supabase.storage.from('communications').getPublicUrl(filePath)
-        fileUrl = data.publicUrl
-        fileName = file.name
-      }
+      setLoading(true)
 
       const { error } = await supabase.rpc('send_internal_communication', {
         p_target_roles: targetRoles,
         p_target_users: targetUsers,
-        p_title: title,
-        p_message: message,
-        p_priority: isHighPriority ? 'high' : 'normal',
-        p_file_url: fileUrl,
-        p_file_name: fileName,
+        p_title: title.trim(),
+        p_message: message.trim(),
+        p_priority: priority,
+        p_file_url: null,
+        p_file_name: null,
       })
 
       if (error) throw error
 
-      toast({
-        title: 'Sucesso',
-        description: 'Mensagem enviada com sucesso para os destinatários.',
-      })
+      toast({ title: 'Sucesso', description: 'Comunicado enviado com sucesso!' })
       setTitle('')
       setMessage('')
-      setFile(null)
-      const fileInput = document.getElementById('attachment') as HTMLInputElement
-      if (fileInput) fileInput.value = ''
-      setIsHighPriority(false)
+      setPriority('normal')
       setTargetRoles([])
       setTargetUsers([])
-      loadStats()
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Erro ao enviar', description: err.message })
-    } finally {
-      setSending(false)
-    }
-  }
-
-  const handleRoleToggle = (roleId: string, checked: boolean) => {
-    if (roleId === 'todos') {
-      setTargetRoles(checked ? ['todos'] : [])
-    } else {
-      setTargetRoles((prev) => {
-        let next = prev.filter((r) => r !== 'todos')
-        if (checked) {
-          next.push(roleId)
-        } else {
-          next = next.filter((r) => r !== roleId)
-        }
-        return next
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: e.message || 'Falha ao enviar comunicado.',
       })
+    } finally {
+      setLoading(false)
     }
-  }
-
-  const handleUserToggle = (userId: string, checked: boolean) => {
-    setTargetUsers((prev) => (checked ? [...prev, userId] : prev.filter((id) => id !== userId)))
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl animate-fade-in-up">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="bg-primary/10 p-4 rounded-xl text-primary">
-          <Megaphone className="w-8 h-8" />
-        </div>
+    <div className="container mx-auto p-4 max-w-4xl space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Central de Comunicados</h1>
-          <p className="text-muted-foreground text-lg">
-            Envie mensagens, priorize avisos e acompanhe o histórico de leitura
+          <h1 className="text-3xl font-bold tracking-tight text-white">Comunicação Interna</h1>
+          <p className="text-zinc-400 mt-1">
+            Envie comunicados para grupos ou colaboradores específicos.
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="new" className="w-full">
-        <TabsList className="flex flex-wrap w-full mb-8 h-auto">
-          <TabsTrigger value="new" className="flex-1 text-sm sm:text-base py-2">
+      <Card className="bg-zinc-900 border-zinc-800 shadow-md">
+        <CardHeader className="border-b border-zinc-800/50 pb-4">
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <Send className="w-5 h-5 text-[#84cc16]" />
             Novo Comunicado
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex-1 text-sm sm:text-base py-2">
-            Histórico e Leituras
-          </TabsTrigger>
-        </TabsList>
+          </CardTitle>
+          <CardDescription className="text-zinc-400">
+            Preencha os campos abaixo para enviar uma mensagem a toda a equipe ou a pessoas
+            selecionadas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div className="space-y-2">
+            <Label className="text-zinc-200 font-semibold">Título</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Atualização de Treino, Dúvida com Aluno..."
+              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 h-11"
+            />
+          </div>
 
-        <TabsContent value="new">
-          <Card className="border-border/50 shadow-md">
-            <CardHeader className="border-b border-border/50 bg-muted/10">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Nova Mensagem
-              </CardTitle>
-              <CardDescription>
-                A notificação aparecerá imediatamente no sistema dos colaboradores selecionados.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <form onSubmit={handleSend} className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-base">Grupos de Destinatários</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-5 bg-muted/20">
-                    <div className="flex items-center space-x-3 col-span-1 sm:col-span-2 pb-3 border-b border-border">
-                      <Checkbox
-                        id="role-todos"
-                        checked={targetRoles.includes('todos')}
-                        onCheckedChange={(c) => handleRoleToggle('todos', c as boolean)}
-                        className="w-5 h-5"
-                      />
-                      <Label
-                        htmlFor="role-todos"
-                        className="font-semibold text-base cursor-pointer"
-                      >
-                        Todos (Toda a Equipe)
-                      </Label>
-                    </div>
-                    {[
-                      { id: 'professor', label: 'Professores' },
-                      { id: 'avaliador', label: 'Avaliadores' },
-                      { id: 'fisioterapeuta', label: 'Fisioterapeutas' },
-                      { id: 'nutricionista', label: 'Nutricionistas' },
-                      { id: 'coordenador', label: 'Coordenadores' },
-                    ].map((role) => (
-                      <div key={role.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`role-${role.id}`}
-                          checked={targetRoles.includes(role.id)}
-                          onCheckedChange={(c) => handleRoleToggle(role.id, c as boolean)}
-                          className="w-5 h-5"
-                        />
-                        <Label htmlFor={`role-${role.id}`} className="text-base cursor-pointer">
-                          {role.label}
-                        </Label>
-                      </div>
-                    ))}
+          <div className="space-y-2">
+            <Label className="text-zinc-200 font-semibold">Mensagem</Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Digite o conteúdo do seu comunicado aqui..."
+              className="min-h-[160px] bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 resize-y"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <Label className="text-zinc-200 font-semibold flex items-center gap-2">
+                Enviar por Cargo
+                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-normal">
+                  Grupos
+                </span>
+              </Label>
+              <div className="space-y-3 p-4 bg-zinc-800/30 rounded-lg border border-zinc-800/50">
+                {rolesList.map((role) => (
+                  <div key={role.id} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`role-${role.id}`}
+                      checked={targetRoles.includes(role.id)}
+                      onCheckedChange={() => handleRoleToggle(role.id)}
+                      className="border-zinc-600 data-[state=checked]:bg-[#84cc16] data-[state=checked]:text-zinc-900 w-5 h-5"
+                    />
+                    <label
+                      htmlFor={`role-${role.id}`}
+                      className="text-sm font-medium leading-none text-zinc-300 cursor-pointer hover:text-white transition-colors"
+                    >
+                      {role.label}
+                    </label>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="space-y-3">
-                  <Label className="text-base">Colaboradores Individuais</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border rounded-lg p-4 bg-muted/20 max-h-[250px] overflow-y-auto">
-                    {users.length === 0 ? (
-                      <p className="text-sm text-muted-foreground col-span-full">
-                        Carregando colaboradores...
-                      </p>
-                    ) : (
-                      users.map((u) => (
-                        <div
-                          key={u.id}
-                          className="flex items-start space-x-3 p-2 hover:bg-muted/30 rounded-md transition-colors"
-                        >
-                          <Checkbox
-                            id={`user-${u.id}`}
-                            checked={targetUsers.includes(u.id)}
-                            onCheckedChange={(c) => handleUserToggle(u.id, c as boolean)}
-                            className="w-4 h-4 mt-0.5"
-                          />
-                          <Label
-                            htmlFor={`user-${u.id}`}
-                            className="text-sm cursor-pointer flex flex-col leading-tight"
-                          >
-                            <span className="font-semibold">{u.nome.split(' ')[0]}</span>
-                            <span className="text-muted-foreground text-[10px] font-bold uppercase mt-0.5">
-                              {u.role}
-                            </span>
-                          </Label>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-zinc-200 font-semibold">Prioridade</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high" className="text-red-400 font-medium">
+                      Alta (Urgente)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-zinc-200 font-semibold flex items-center gap-2">
+                  Adicionar Colaborador Específico
+                  <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-normal">
+                    Individual
+                  </span>
+                </Label>
+
+                <Select value={selectedUserId} onValueChange={handleAddUser}>
+                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white h-11">
+                    <SelectValue
+                      placeholder={
+                        fetching ? 'Carregando...' : 'Selecione um colaborador na lista...'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="none" className="text-zinc-500 italic">
+                      Selecione um colaborador na lista...
+                    </SelectItem>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id} className="cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white">{u.nome}</span>
+                          <span className="text-[11px] text-zinc-400 capitalize bg-zinc-800 px-1.5 py-0.5 rounded">
+                            {u.role || 'Sem cargo'}
+                          </span>
                         </div>
-                      ))
-                    )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {targetUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4 p-3 bg-zinc-800/30 rounded-lg border border-zinc-800/50 min-h-[48px]">
+                    {targetUsers.map((id) => {
+                      const user = users.find((u) => u.id === id)
+                      return (
+                        <Badge
+                          key={id}
+                          variant="secondary"
+                          className="bg-zinc-700/80 hover:bg-zinc-600 text-zinc-100 pr-1 py-1 pl-3 flex items-center gap-1.5"
+                        >
+                          <span className="font-medium">{user?.nome.split(' ')[0]}</span>
+                          <span className="text-[10px] text-zinc-400 font-normal capitalize">
+                            ({user?.role})
+                          </span>
+                          <button
+                            onClick={() => handleRemoveUser(id)}
+                            className="ml-1 bg-zinc-800/80 hover:bg-red-500 hover:text-white rounded-full p-0.5 transition-colors focus:outline-none"
+                            title="Remover"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </Badge>
+                      )
+                    })}
                   </div>
-                </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-base">
-                    Título do Comunicado
-                  </Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Atualização de Treino ou Recado Importante"
-                    className="h-12 text-base"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="text-base">
-                    Mensagem
-                  </Label>
-                  <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Escreva os detalhes do comunicado aqui..."
-                    className="min-h-[160px] text-base resize-none"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="attachment" className="text-base flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" /> Anexo (Opcional)
-                  </Label>
-                  <Input
-                    id="attachment"
-                    type="file"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="cursor-pointer"
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-                  <div className="space-y-0.5">
-                    <Label className="text-base font-semibold flex items-center gap-2">
-                      <AlertTriangle
-                        className={cn(
-                          'w-4 h-4',
-                          isHighPriority ? 'text-destructive' : 'text-muted-foreground',
-                        )}
-                      />
-                      Prioridade Alta (Urgente)
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Fixar no topo das notificações dos usuários com destaque visual especial
-                    </p>
-                  </div>
-                  <Switch checked={isHighPriority} onCheckedChange={setIsHighPriority} />
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full font-bold text-lg"
-                  disabled={sending}
-                >
-                  {sending ? (
-                    'Enviando...'
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5 mr-2" /> Enviar Comunicado
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card className="border-border/50 shadow-md">
-            <CardHeader className="border-b border-border/50 bg-muted/10">
-              <CardTitle className="flex items-center gap-2">
-                <CheckCheck className="w-5 h-5 text-primary" />
-                Seu Histórico de Envios
-              </CardTitle>
-              <CardDescription>
-                Acompanhe as mensagens que você enviou e verifique quem já visualizou.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {stats.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  Nenhuma mensagem enviada ainda.
-                </div>
+          <div className="pt-4 border-t border-zinc-800/50">
+            <Button
+              className="w-full bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-sm h-12"
+              onClick={handleSend}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Enviando Comunicado...
+                </>
               ) : (
-                <Accordion type="single" collapsible className="w-full space-y-4">
-                  {stats.map((stat) => {
-                    const readCount = stat.notifications?.filter((n: any) => n.is_read).length || 0
-                    const totalCount = stat.notifications?.length || 0
-
-                    return (
-                      <AccordionItem
-                        key={stat.id}
-                        value={stat.id}
-                        className="border rounded-lg px-4 bg-card"
-                      >
-                        <AccordionTrigger className="hover:no-underline py-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full pr-4 gap-4">
-                            <div className="flex flex-col text-left gap-1">
-                              <span className="font-semibold text-base line-clamp-1">
-                                {stat.title}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(stat.created_at).toLocaleString('pt-BR', {
-                                  dateStyle: 'short',
-                                  timeStyle: 'short',
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mt-2 sm:mt-0 shrink-0">
-                              {stat.file_url && (
-                                <Badge variant="secondary" className="text-xs" title="Contém anexo">
-                                  <Paperclip className="w-3 h-3 sm:mr-1" />{' '}
-                                  <span className="hidden sm:inline">Anexo</span>
-                                </Badge>
-                              )}
-                              {stat.priority === 'high' && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Urgente
-                                </Badge>
-                              )}
-                              <Badge
-                                variant="outline"
-                                className="capitalize text-xs max-w-[120px] truncate"
-                              >
-                                {stat.target_role.replace(/,/g, ', ')}
-                              </Badge>
-                              <div className="flex items-center gap-1.5 text-sm font-medium bg-muted px-2 py-1 rounded-md">
-                                <CheckCheck className="w-4 h-4 text-green-500" />
-                                {readCount}/{totalCount}
-                              </div>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pt-2 pb-4 border-t border-border/50">
-                          <div className="mb-4 bg-muted/30 p-4 rounded-md border text-sm text-foreground/90 whitespace-pre-wrap">
-                            {stat.message}
-                          </div>
-
-                          {stat.file_url && (
-                            <div className="mb-6">
-                              <a
-                                href={stat.file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-3 py-2 rounded-md border border-primary/20 w-fit"
-                              >
-                                <Paperclip className="w-4 h-4" />
-                                Baixar Anexo: {stat.file_name || 'Documento'}
-                              </a>
-                            </div>
-                          )}
-
-                          <h4 className="font-semibold text-sm mb-3">Confirmações de Leitura:</h4>
-                          {totalCount === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                              Nenhum destinatário encontrado para esta mensagem.
-                            </p>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {stat.notifications?.map((notif: any) => (
-                                <div
-                                  key={notif.id}
-                                  className="flex items-center justify-between p-2.5 rounded-md border bg-background/50"
-                                >
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    <Avatar className="h-7 w-7 border">
-                                      <AvatarImage
-                                        src={notif.users?.foto_url}
-                                        className="object-cover"
-                                      />
-                                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                        {notif.users?.nome?.substring(0, 2).toUpperCase() || 'UN'}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <span
-                                      className="text-sm font-medium truncate"
-                                      title={notif.users?.nome}
-                                    >
-                                      {notif.users?.nome || 'Usuário'}
-                                    </span>
-                                  </div>
-                                  {notif.is_read ? (
-                                    <Badge
-                                      variant="default"
-                                      className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px]"
-                                    >
-                                      Lido
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px] text-muted-foreground"
-                                    >
-                                      Pendente
-                                    </Badge>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    )
-                  })}
-                </Accordion>
+                <>
+                  <Send className="w-5 h-5 mr-2" />
+                  Enviar Comunicado Agora
+                </>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
