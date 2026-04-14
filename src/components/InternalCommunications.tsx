@@ -12,12 +12,15 @@ import {
 import { MessageSquare, Paperclip, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 export function InternalCommunications() {
   const { profile } = useAuth()
   const { toast } = useToast()
+  const location = useLocation()
   const [messages, setMessages] = useState<any[]>([])
+
+  const isCommunicationsPage = location.pathname === '/communications'
 
   useEffect(() => {
     if (profile?.id) {
@@ -73,12 +76,14 @@ export function InternalCommunications() {
             como lida automaticamente.
           </CardDescription>
         </div>
-        <Button asChild size="sm" className="w-full sm:w-auto font-bold shrink-0">
-          <Link to="/communications">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Enviar Recado
-          </Link>
-        </Button>
+        {!isCommunicationsPage && (
+          <Button asChild size="sm" className="w-full sm:w-auto font-bold shrink-0">
+            <Link to="/communications">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Enviar Recado
+            </Link>
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="pt-6">
         {messages.length === 0 ? (

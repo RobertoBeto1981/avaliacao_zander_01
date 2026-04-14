@@ -46,7 +46,7 @@ export default function Register() {
     const cleanEmail = email.trim()
     try {
       const { error } = await signUp(cleanEmail, password, {
-        nome: nome.trim(),
+        nome: nome.trim().toUpperCase(),
         telefone,
         roles,
         role: roles[0],

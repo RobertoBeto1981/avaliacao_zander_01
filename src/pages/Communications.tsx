@@ -18,6 +18,7 @@ import { getUsers } from '@/services/users'
 import { supabase } from '@/lib/supabase/client'
 import { Send, Loader2, X, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { InternalCommunications } from '@/components/InternalCommunications'
 
 export default function Communications() {
   const { profile } = useAuth()
@@ -173,10 +174,12 @@ export default function Communications() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Comunicação Interna</h1>
           <p className="text-zinc-400 mt-1">
-            Envie comunicados para grupos ou colaboradores específicos.
+            Envie comunicados para grupos ou colaboradores específicos e acompanhe seus recados.
           </p>
         </div>
       </div>
+
+      <InternalCommunications />
 
       <Card className="bg-zinc-900 border-zinc-800 shadow-md">
         <CardHeader className="border-b border-zinc-800/50 pb-4">

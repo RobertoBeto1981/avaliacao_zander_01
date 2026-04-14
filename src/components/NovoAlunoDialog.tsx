@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 import { createPreAvaliacao } from '@/services/evaluations'
 import { Loader2 } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
@@ -29,6 +30,7 @@ export function NovoAlunoDialog({
   const [telefone, setTelefone] = useState('')
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const { profile } = useAuth()
 
   const handleSave = async () => {
     if (!evoId || !nome) {
@@ -41,11 +43,18 @@ export function NovoAlunoDialog({
     }
     setLoading(true)
     try {
-      await createPreAvaliacao({
+      const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
+      const payload: any = {
         evo_id: evoId,
-        nome_cliente: nome,
+        nome_cliente: nome.trim().toUpperCase(),
         telefone_cliente: telefone,
-      })
+      }
+
+      if (isProfessor && profile?.id) {
+        payload.professor_id = profile.id
+      }
+
+      await createPreAvaliacao(payload)
       toast({ title: 'Sucesso', description: 'Aluno registrado com sucesso.' })
       setEvoId('')
       setNome('')
