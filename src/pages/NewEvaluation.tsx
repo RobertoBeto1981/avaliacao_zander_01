@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -37,27 +37,6 @@ export default function NewEvaluation() {
   const [existingId, setExistingId] = useState<string | null>(null)
   const [isNaoCliente, setIsNaoCliente] = useState(false)
   const [existingEval, setExistingEval] = useState<any>(null)
-
-  const evoIdValue = form.watch('evo_id')
-
-  useEffect(() => {
-    const checkEvoId = async () => {
-      if (!evoIdValue || evoIdValue.length < 2 || isNaoCliente) return
-      const { data } = await supabase
-        .from('avaliacoes')
-        .select('id, nome_cliente, evo_id')
-        .eq('evo_id', evoIdValue)
-        .single()
-
-      if (data) {
-        setExistingEval(data)
-      } else {
-        setExistingEval(null)
-      }
-    }
-    const timeoutId = setTimeout(checkEvoId, 800)
-    return () => clearTimeout(timeoutId)
-  }, [evoIdValue, isNaoCliente])
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -132,6 +111,27 @@ export default function NewEvaluation() {
       },
     },
   })
+
+  const evoIdValue = form.watch('evo_id')
+
+  useEffect(() => {
+    const checkEvoId = async () => {
+      if (!evoIdValue || evoIdValue.length < 2 || isNaoCliente) return
+      const { data } = await supabase
+        .from('avaliacoes')
+        .select('id, nome_cliente, evo_id')
+        .eq('evo_id', evoIdValue)
+        .single()
+
+      if (data) {
+        setExistingEval(data)
+      } else {
+        setExistingEval(null)
+      }
+    }
+    const timeoutId = setTimeout(checkEvoId, 800)
+    return () => clearTimeout(timeoutId)
+  }, [evoIdValue, isNaoCliente])
 
   const handleSetExistingId = (id: string | null) => {
     setExistingId(id)
