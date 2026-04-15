@@ -63,7 +63,19 @@ export function TodayQueueTab() {
         getPendingVideosForToday(),
         getPendingDesafioZander(),
       ])
-      setQueue(videos)
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const validVideos = videos.filter((v: any) => {
+        if (!v.avaliacao?.data_avaliacao) return false
+        const dataAvaliacao = new Date(v.avaliacao.data_avaliacao + 'T00:00:00')
+        const dataEstimada = new Date(dataAvaliacao)
+        dataEstimada.setDate(dataEstimada.getDate() + v.config.dias_trigger)
+        return dataEstimada >= today
+      })
+
+      setQueue(validVideos)
       setDesafioQueue(desafios)
     } catch (error: any) {
       toast({
@@ -168,7 +180,7 @@ export function TodayQueueTab() {
       }
 
       const firstName = item.nome_cliente.trim().split(' ')[0]
-      const message = `Fala, ${firstName}! 🚀🔥\n\nQue incrível que você aceitou o *#DesafioZander*! Parabéns pela sua decisão de buscar a sua melhor versão.\n\nO foco agora é total na sua evolução: o professor entrará em contato em breve para alinharmos todos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados impressionantes!\n\nVamos pra cima! 💪🏋️‍♂️`
+      const message = `Fala, ${firstName}!\n\nQue incrível que você aceitou o *#DesafioZander*! Parabéns pela sua decisão de buscar a sua melhor versão.\n\nO foco agora é total na sua evolução: o professor entrará em contato em breve para alinharmos todos os detalhes e garantirmos que você chegue na sua reavaliação daqui a 30 dias com resultados impressionantes!\n\nVamos pra cima!`
 
       const encodedMsg = encodeURIComponent(message)
       const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`

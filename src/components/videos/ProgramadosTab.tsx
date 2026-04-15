@@ -27,14 +27,10 @@ export function ProgramadosTab() {
         const videos = await getScheduledVideos()
 
         const formatted = videos
-          .filter((v) => v.status === 'pendente')
+          .filter((v) => v.status === 'pendente' && v.avaliacoes?.data_avaliacao)
           .map((v) => {
-            const dataAvaliacao = v.avaliacoes?.data_avaliacao
-              ? new Date(v.avaliacoes.data_avaliacao + 'T00:00:00')
-              : null
-            const dataEstimada = dataAvaliacao
-              ? addDays(dataAvaliacao, v.dias_apos_avaliacao)
-              : null
+            const dataAvaliacao = new Date(v.avaliacoes!.data_avaliacao + 'T00:00:00')
+            const dataEstimada = addDays(dataAvaliacao, v.dias_apos_avaliacao)
 
             return {
               id: v.id,
@@ -49,8 +45,8 @@ export function ProgramadosTab() {
             }
           })
           .sort((a, b) => {
-            const dateA = a.data_estimada ? a.data_estimada.getTime() : 0
-            const dateB = b.data_estimada ? b.data_estimada.getTime() : 0
+            const dateA = a.data_estimada.getTime()
+            const dateB = b.data_estimada.getTime()
             return dateA - dateB
           })
 
@@ -166,26 +162,22 @@ export function ProgramadosTab() {
                         <span className="font-medium">{item.gatilho}</span>
                       </TableCell>
                       <TableCell>
-                        {item.data_estimada ? (
-                          <div className="flex items-center gap-2">
-                            <span>{format(item.data_estimada, 'dd/MM/yyyy')}</span>
-                            {isLate && (
-                              <Badge
-                                variant="destructive"
-                                className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
-                              >
-                                <AlertCircle className="w-3 h-3" /> Atrasado
-                              </Badge>
-                            )}
-                            {isToday && (
-                              <Badge className="bg-[#84cc16] text-zinc-900 text-[10px] py-0 px-1.5 h-4 hover:bg-[#84cc16]">
-                                Hoje
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          '-'
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span>{format(item.data_estimada, 'dd/MM/yyyy')}</span>
+                          {isLate && (
+                            <Badge
+                              variant="destructive"
+                              className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
+                            >
+                              <AlertCircle className="w-3 h-3" /> Atrasado
+                            </Badge>
+                          )}
+                          {isToday && (
+                            <Badge className="bg-[#84cc16] text-zinc-900 text-[10px] py-0 px-1.5 h-4 hover:bg-[#84cc16]">
+                              Hoje
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">Na Fila</Badge>
