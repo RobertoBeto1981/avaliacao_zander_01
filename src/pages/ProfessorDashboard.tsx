@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
 import { InternalCommunications } from '@/components/InternalCommunications'
+import { getNotifications } from '@/services/notifications'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,7 @@ export default function ProfessorDashboard() {
     evo_id?: string
   } | null>(null)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -58,7 +60,12 @@ export default function ProfessorDashboard() {
   }
 
   useEffect(() => {
-    if (profile?.id) loadData()
+    if (profile?.id) {
+      loadData()
+      getNotifications(profile.id).then((data) => {
+        setUnreadCount(data.filter((n: any) => !n.is_read && n.type === 'message').length)
+      })
+    }
   }, [profile?.id])
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -105,7 +112,14 @@ export default function ProfessorDashboard() {
       <Tabs defaultValue="inicio">
         <TabsList className="mb-6">
           <TabsTrigger value="inicio">Início</TabsTrigger>
-          <TabsTrigger value="comunicados">Comunicado Interno</TabsTrigger>
+          <TabsTrigger value="comunicados" className="relative group">
+            Comunicado Interno
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white font-bold animate-pulse shadow-sm shadow-red-900/50">
+                {unreadCount}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inicio">

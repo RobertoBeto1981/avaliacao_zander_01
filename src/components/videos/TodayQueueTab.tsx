@@ -77,7 +77,7 @@ export function TodayQueueTab() {
   }
 
   const handleSend = async (item: any) => {
-    const itemKey = `${item.avaliacao.id}_${item.config.dias_trigger}`
+    const itemKey = item.agendado_id || `${item.avaliacao.id}_${item.config.dias_trigger}`
     if (processedKeys.has(itemKey)) return
 
     try {
@@ -118,6 +118,7 @@ export function TodayQueueTab() {
         item.avaliacao.id,
         item.config.dias_trigger,
         item.url_google_drive || item.config.video_url,
+        item.agendado_id,
       )
 
       // Mark as processed locally
@@ -140,7 +141,7 @@ export function TodayQueueTab() {
 
   const handleSendNext = () => {
     const nextItem = queue.find(
-      (q) => !processedKeys.has(`${q.avaliacao.id}_${q.config.dias_trigger}`),
+      (q) => !processedKeys.has(q.agendado_id || `${q.avaliacao.id}_${q.config.dias_trigger}`),
     )
     if (nextItem) {
       handleSend(nextItem)
@@ -200,7 +201,7 @@ export function TodayQueueTab() {
   }
 
   const pendingCount = queue.filter(
-    (q) => !processedKeys.has(`${q.avaliacao.id}_${q.config.dias_trigger}`),
+    (q) => !processedKeys.has(q.agendado_id || `${q.avaliacao.id}_${q.config.dias_trigger}`),
   ).length
 
   if (loading) {
@@ -255,7 +256,8 @@ export function TodayQueueTab() {
                 </TableRow>
               ) : (
                 queue.map((item) => {
-                  const itemKey = `${item.avaliacao.id}_${item.config.dias_trigger}`
+                  const itemKey =
+                    item.agendado_id || `${item.avaliacao.id}_${item.config.dias_trigger}`
                   const isProcessed = processedKeys.has(itemKey)
                   const isProcessing = processingId === itemKey
 
