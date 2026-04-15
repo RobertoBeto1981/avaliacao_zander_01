@@ -27,7 +27,7 @@ export function LinksFields({
         </fieldset>
 
         <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
-          <div className="space-y-1 relative">
+          <div className="space-y-1 relative group">
             <FTextarea
               name="final_observations"
               label="Observações Finais do Avaliador"
@@ -36,12 +36,12 @@ export function LinksFields({
               disabled={isProfessor}
             />
             {isProfessor && (
-              <div className="absolute top-0 right-0 -mt-1 text-xs text-muted-foreground flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-bl-md border-b border-l border-border/50 shadow-sm">
+              <div className="absolute top-8 right-2 text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/80 backdrop-blur-sm px-2 py-1 rounded-md border border-border/50">
                 <Info className="w-3 h-3" /> Somente Leitura
               </div>
             )}
           </div>
-          <div className="space-y-1 relative">
+          <div className="space-y-1 relative group">
             <FTextarea
               name="professor_observations"
               label="Observações do Professor"
@@ -50,7 +50,7 @@ export function LinksFields({
               disabled={isAvaliador}
             />
             {isAvaliador && (
-              <div className="absolute top-0 right-0 -mt-1 text-xs text-muted-foreground flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-bl-md border-b border-l border-border/50 shadow-sm">
+              <div className="absolute top-8 right-2 text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/80 backdrop-blur-sm px-2 py-1 rounded-md border border-border/50">
                 <Info className="w-3 h-3" /> Exclusivo do Professor
               </div>
             )}

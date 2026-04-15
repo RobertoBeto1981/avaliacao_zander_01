@@ -196,18 +196,15 @@ export default function NewReevaluation() {
       <PrevEvalContext.Provider value={prevData}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
-            <fieldset disabled={isProfessor} className="space-y-8">
-              {/* identification block makes name and ID readonly in re-evaluation */}
-              <div className="pointer-events-none opacity-80">
-                <IdentificationFields />
-              </div>
+            <div className="space-y-8">
+              <IdentificationFields />
               <TrainingHistoryFields />
               <CurrentLifestyleFields />
               <HealthFields />
               <TrainingFields />
               <AnthropometryFields />
               <VO2TestFields />
-            </fieldset>
+            </div>
 
             <LinksFields isProfessor={isProfessor} isAvaliador={isAvaliador} />
 

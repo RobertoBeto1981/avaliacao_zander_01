@@ -117,6 +117,44 @@ export function calculateEvolucao(oldData: any, newData: any) {
     })
   }
 
+  // Antropometria
+  const anthroFields = [
+    { key: 'weight', label: 'Peso (kg)', reverse: false },
+    { key: 'waist', label: 'Cintura (cm)', reverse: true },
+    { key: 'abdomen', label: 'Abdômen (cm)', reverse: true },
+    { key: 'hips', label: 'Quadril (cm)', reverse: true },
+  ]
+
+  const oldAnt = oldData.anthropometry || {}
+  const newAnt = newData.anthropometry || {}
+
+  anthroFields.forEach((field) => {
+    const oVal = parseFloat(oldAnt[field.key])
+    const nVal = parseFloat(newAnt[field.key])
+    if (!isNaN(oVal) && !isNaN(nVal) && oVal !== nVal) {
+      let status = 'manteve'
+      if (nVal < oVal) status = field.reverse ? 'melhorou' : 'piorou'
+      if (nVal > oVal) status = field.reverse ? 'piorou' : 'melhorou'
+
+      // Ajuste para peso: ganhar peso pode ser o objetivo se for hipertrofia
+      if (field.key === 'weight') {
+        const goal = newData.main_objective || ''
+        if (goal.toLowerCase().includes('hipertrofia') || goal.toLowerCase().includes('ganho')) {
+          status = nVal > oVal ? 'melhorou' : 'piorou'
+        } else {
+          status = nVal < oVal ? 'melhorou' : 'piorou'
+        }
+      }
+
+      evolucao.push({
+        campo: field.label,
+        status: status,
+        de: String(oVal),
+        para: String(nVal),
+      })
+    }
+  })
+
   return evolucao
 }
 
@@ -126,6 +164,12 @@ export const createReavaliacao = async (
   evolucao: any,
   dataReavaliacao: string,
 ) => {
+  const { data: oldAvaliacao } = await supabase
+    .from('avaliacoes')
+    .select('periodo_treino')
+    .eq('id', avaliacaoId)
+    .single()
+
   const { data, error } = await supabase
     .from('reavaliacoes')
     .insert({
@@ -146,16 +190,21 @@ export const createReavaliacao = async (
 
   const { objectives, periodo_treino, client_links, ...restRespostas } = respostasNovas
 
-  await supabase
-    .from('avaliacoes')
-    .update({
-      data_avaliacao: dataReavaliacao,
-      data_reavaliacao: nextReavDateStr,
-      objectives: objectives,
-      periodo_treino: periodo_treino,
-      respostas: restRespostas,
-    })
-    .eq('id', avaliacaoId)
+  const updatePayload: any = {
+    data_avaliacao: dataReavaliacao,
+    data_reavaliacao: nextReavDateStr,
+    objectives: objectives,
+    periodo_treino: periodo_treino,
+    respostas: restRespostas,
+  }
+
+  // Se o período de treino mudou, forçamos a redistribuição retirando o professor atual
+  if (oldAvaliacao && oldAvaliacao.periodo_treino !== periodo_treino) {
+    updatePayload.professor_id = null
+    updatePayload.status = 'pendente'
+  }
+
+  await supabase.from('avaliacoes').update(updatePayload).eq('id', avaliacaoId)
 
   if (client_links) {
     await supabase
@@ -171,6 +220,24 @@ export const createReavaliacao = async (
 
   window.dispatchEvent(new CustomEvent('avaliacao_updated'))
   return data
+}
+
+export const getAvaliacaoHistory = async (avaliacaoId: string) => {
+  const [origRes, reavRes] = await Promise.all([
+    supabase.from('avaliacoes').select('*').eq('id', avaliacaoId).single(),
+    supabase
+      .from('reavaliacoes')
+      .select('*')
+      .eq('avaliacao_original_id', avaliacaoId)
+      .order('data_reavaliacao', { ascending: true }),
+  ])
+
+  if (origRes.error) throw origRes.error
+
+  return {
+    original: origRes.data,
+    reavaliacoes: reavRes.data || [],
+  }
 }
 
 export const getReavaliacoesByAvaliacao = async (avaliacaoId: string) => {

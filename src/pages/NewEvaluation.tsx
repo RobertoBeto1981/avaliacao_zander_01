@@ -19,12 +19,45 @@ import { TrainingFields } from './eval-sections/Training'
 import { AnthropometryFields } from './eval-sections/Anthropometry'
 import { VO2TestFields } from './eval-sections/VO2Test'
 import { LinksFields } from './eval-sections/Links'
+import { supabase } from '@/lib/supabase/client'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export default function NewEvaluation() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [existingId, setExistingId] = useState<string | null>(null)
   const [isNaoCliente, setIsNaoCliente] = useState(false)
+  const [existingEval, setExistingEval] = useState<any>(null)
+
+  const evoIdValue = form.watch('evo_id')
+
+  useEffect(() => {
+    const checkEvoId = async () => {
+      if (!evoIdValue || evoIdValue.length < 2 || isNaoCliente) return
+      const { data } = await supabase
+        .from('avaliacoes')
+        .select('id, nome_cliente, evo_id')
+        .eq('evo_id', evoIdValue)
+        .single()
+
+      if (data) {
+        setExistingEval(data)
+      } else {
+        setExistingEval(null)
+      }
+    }
+    const timeoutId = setTimeout(checkEvoId, 800)
+    return () => clearTimeout(timeoutId)
+  }, [evoIdValue, isNaoCliente])
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -167,6 +200,34 @@ export default function NewEvaluation() {
           Cancelar
         </Button>
       </div>
+
+      <AlertDialog open={!!existingEval} onOpenChange={(open) => !open && setExistingEval(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aluno já cadastrado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Encontramos uma avaliação existente para o aluno{' '}
+              <strong>{existingEval?.nome_cliente}</strong> (EVO: {existingEval?.evo_id}). Deseja
+              iniciar uma reavaliação para este aluno?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                form.setValue('evo_id', '')
+                setExistingEval(null)
+              }}
+            >
+              Não, limpar ID
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => navigate(`/evaluation/${existingEval?.id}/reevaluate`)}
+            >
+              Sim, Iniciar Reavaliação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
