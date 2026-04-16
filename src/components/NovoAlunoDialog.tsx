@@ -43,7 +43,8 @@ export function NovoAlunoDialog({
     }
     setLoading(true)
     try {
-      const isProfessor = profile?.roles?.includes('professor') || profile?.role === 'professor'
+      const isProfessor =
+        profile?.roles?.includes('professor') || profile?.role?.toLowerCase() === 'professor'
       const payload: any = {
         evo_id: evoId,
         nome_cliente: nome.trim().toUpperCase(),

@@ -29,8 +29,10 @@ export default function NewReevaluation() {
   const [prevData, setPrevData] = useState<any>(null)
   const { profile } = useAuth()
 
-  const isProfessor = profile?.role === 'professor'
-  const isAvaliador = profile?.role === 'avaliador'
+  const isProfessor =
+    profile?.roles?.includes('professor') || profile?.role?.toLowerCase() === 'professor'
+  const isAvaliador =
+    profile?.roles?.includes('avaliador') || profile?.role?.toLowerCase() === 'avaliador'
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -56,6 +58,29 @@ export default function NewReevaluation() {
             myscore: links.my_score_url || '',
           },
         }
+
+        if (flatPrev.data_nascimento) {
+          flatPrev.data_nascimento = format(
+            new Date(flatPrev.data_nascimento + 'T12:00:00'),
+            'dd/MM/yyyy',
+          )
+        }
+        if (flatPrev.target_date) {
+          flatPrev.target_date = format(new Date(flatPrev.target_date + 'T12:00:00'), 'dd/MM/yyyy')
+        }
+        if (flatPrev.data_avaliacao) {
+          flatPrev.data_avaliacao = format(
+            new Date(flatPrev.data_avaliacao + 'T12:00:00'),
+            'dd/MM/yyyy',
+          )
+        }
+        if (flatPrev.data_reavaliacao) {
+          flatPrev.data_reavaliacao = format(
+            new Date(flatPrev.data_reavaliacao + 'T12:00:00'),
+            'dd/MM/yyyy',
+          )
+        }
+
         setPrevData(flatPrev)
 
         form.reset({

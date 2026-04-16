@@ -166,9 +166,28 @@ export const createReavaliacao = async (
 ) => {
   const { data: oldAvaliacao } = await supabase
     .from('avaliacoes')
-    .select('periodo_treino')
+    .select('*')
     .eq('id', avaliacaoId)
     .single()
+
+  const { data: existingReavs } = await supabase
+    .from('reavaliacoes')
+    .select('id')
+    .eq('avaliacao_original_id', avaliacaoId)
+    .order('created_at', { ascending: true })
+
+  if (oldAvaliacao && existingReavs && existingReavs.length === 0) {
+    await supabase.from('reavaliacoes').insert({
+      avaliacao_original_id: avaliacaoId,
+      data_reavaliacao: oldAvaliacao.data_avaliacao || new Date().toISOString().split('T')[0],
+      respostas_novas: {
+        ...oldAvaliacao.respostas,
+        objectives: oldAvaliacao.objectives,
+        periodo_treino: oldAvaliacao.periodo_treino,
+      },
+      evolucao: [],
+    })
+  }
 
   const { data, error } = await supabase
     .from('reavaliacoes')
@@ -196,12 +215,12 @@ export const createReavaliacao = async (
     objectives: objectives,
     periodo_treino: periodo_treino,
     respostas: restRespostas,
+    status: 'pendente',
   }
 
   // Se o período de treino mudou, forçamos a redistribuição retirando o professor atual
   if (oldAvaliacao && oldAvaliacao.periodo_treino !== periodo_treino) {
     updatePayload.professor_id = null
-    updatePayload.status = 'pendente'
   }
 
   await supabase.from('avaliacoes').update(updatePayload).eq('id', avaliacaoId)
@@ -229,7 +248,7 @@ export const getAvaliacaoHistory = async (avaliacaoId: string) => {
       .from('reavaliacoes')
       .select('*')
       .eq('avaliacao_original_id', avaliacaoId)
-      .order('data_reavaliacao', { ascending: true }),
+      .order('created_at', { ascending: true }),
   ])
 
   if (origRes.error) throw origRes.error

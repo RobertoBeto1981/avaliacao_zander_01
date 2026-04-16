@@ -39,7 +39,11 @@ export default function ReevaluationDetails() {
   const [baseId, setBaseId] = useState<string>('')
   const [finalId, setFinalId] = useState<string>('')
 
-  const canSendWhatsApp = profile?.role === 'coordenador' || profile?.role === 'avaliador'
+  const canSendWhatsApp =
+    profile?.roles?.includes('coordenador') ||
+    profile?.role === 'coordenador' ||
+    profile?.roles?.includes('avaliador') ||
+    profile?.role === 'avaliador'
 
   useEffect(() => {
     if (!id) return
@@ -59,7 +63,7 @@ export default function ReevaluationDetails() {
         const reavs = hist.reavaliacoes || []
         const currentIndex = reavs.findIndex((r: any) => r.id === id)
 
-        setBaseId(currentIndex > 0 ? reavs[currentIndex - 1].id : 'original')
+        setBaseId(currentIndex > 0 ? reavs[currentIndex - 1].id : reavs[0]?.id || '')
         setFinalId(id)
       } catch (err: any) {
         toast({ title: 'Erro', description: err.message, variant: 'destructive' })
@@ -73,23 +77,23 @@ export default function ReevaluationDetails() {
 
   const points = useMemo(() => {
     if (!historyData) return []
-    const pts = []
-    if (historyData.original) {
-      pts.push({
-        id: 'original',
-        label: `Avaliação Inicial (${historyData.original.data_avaliacao ? format(new Date(historyData.original.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
-        date: historyData.original.data_avaliacao,
-        data: historyData.original.respostas || {},
-      })
-    }
-    ;(historyData.reavaliacoes || []).forEach((r: any, idx: number) => {
+    const pts: any[] = []
+
+    const reavs = historyData.reavaliacoes || []
+    let reavCount = 1
+
+    reavs.forEach((r: any, idx: number) => {
+      const isSnapshot = idx === 0 && (!r.evolucao || r.evolucao.length === 0)
+      const labelName = isSnapshot ? 'Avaliação Inicial' : `Reavaliação ${reavCount++}`
+
       pts.push({
         id: r.id,
-        label: `Reavaliação ${idx + 1} (${r.data_reavaliacao ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
+        label: `${labelName} (${r.data_reavaliacao ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
         date: r.data_reavaliacao,
         data: r.respostas_novas || {},
       })
     })
+
     return pts
   }, [historyData])
 
@@ -392,6 +396,28 @@ export default function ReevaluationDetails() {
                 health_insurance: 'Plano de Saúde',
                 discovery_source: 'Como nos conheceu',
                 session_duration: 'Duração da Sessão',
+                gender: 'Gênero',
+                data_nascimento: 'Data de Nascimento',
+                practice_time: 'Tempo de Prática',
+                modalities: 'Modalidades',
+                nutritional_status: 'Acompanhamento Nutricional',
+                supplements: 'Suplementos',
+                allergies: 'Alergias',
+                intolerances: 'Intolerâncias',
+                health_exams: 'Exames de Saúde',
+                diabetes: 'Diabetes',
+                hypertension: 'Hipertensão',
+                respiratory_pathology: 'Patologia Respiratória',
+                cardio_pathology: 'Patologia Cardiológica',
+                available_days: 'Dias Disponíveis',
+                enjoys_training: 'Gosta de Treinar',
+                dislikes_looking_at: 'Não gosta de olhar',
+                dislikes_training: 'Não gosta de treinar',
+                favorite_exercises: 'Exercícios Favoritos',
+                hated_exercises: 'Exercícios que Odeia',
+                emergency_contact: 'Contato de Emergência',
+                main_objective: 'Objetivo Principal',
+                target_date: 'Data Alvo',
               }
 
               const translatedKey = labelMap[key] || key.replace(/_/g, ' ')
