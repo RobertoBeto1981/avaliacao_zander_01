@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getReavaliacaoById, getAvaliacaoHistory, calculateEvolucao } from '@/services/reavaliacoes'
+import { calculateEvolucao } from '@/services/reavaliacoes'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,21 +50,43 @@ export default function ReevaluationDetails() {
     if (!id) return
     const load = async () => {
       try {
-        const reav = await getReavaliacaoById(id)
-        if (!reav) throw new Error('Reavaliação não encontrada')
+        const { data: reav, error: reavErr } = await supabase
+          .from('reavaliacoes')
+          .select('*, avaliacao:avaliacoes(*)')
+          .eq('id', id)
+          .single()
 
-        const hist = await getAvaliacaoHistory(reav.avaliacao_original_id)
+        if (reavErr || !reav) throw new Error('Reavaliação não encontrada')
+
+        const { data: allReavs, error: allErr } = await supabase
+          .from('reavaliacoes')
+          .select('*')
+          .eq('avaliacao_original_id', reav.avaliacao_original_id)
+          .order('created_at', { ascending: true })
+
+        if (allErr) throw new Error('Erro ao buscar histórico')
+
+        const initialEvaluation = {
+          id: reav.avaliacao.id,
+          data_reavaliacao: reav.avaliacao.data_avaliacao,
+          respostas_novas: reav.avaliacao.respostas || {},
+          isInitial: true,
+        }
+
+        const combinedHistory = [initialEvaluation, ...(allReavs || [])]
+
         setHistoryData({
-          ...hist,
+          reavaliacoes: combinedHistory,
           aluno_nome: reav.avaliacao?.nome_cliente,
           evo_id: reav.avaliacao?.evo_id,
           telefone: reav.avaliacao?.telefone_cliente,
         })
 
-        const reavs = hist.reavaliacoes || []
-        const currentIndex = reavs.findIndex((r: any) => r.id === id)
+        const currentIndex = combinedHistory.findIndex((r: any) => r.id === id)
 
-        setBaseId(currentIndex > 0 ? reavs[currentIndex - 1].id : reavs[0]?.id || '')
+        setBaseId(
+          currentIndex > 0 ? combinedHistory[currentIndex - 1].id : combinedHistory[0]?.id || '',
+        )
         setFinalId(id)
       } catch (err: any) {
         toast({ title: 'Erro', description: err.message, variant: 'destructive' })
@@ -82,8 +105,8 @@ export default function ReevaluationDetails() {
     const reavs = historyData.reavaliacoes || []
     let reavCount = 1
 
-    reavs.forEach((r: any, idx: number) => {
-      const isSnapshot = idx === 0 && (!r.evolucao || r.evolucao.length === 0)
+    reavs.forEach((r: any) => {
+      const isSnapshot = r.isInitial
       const labelName = isSnapshot ? 'Avaliação Inicial' : `Reavaliação ${reavCount++}`
 
       pts.push({

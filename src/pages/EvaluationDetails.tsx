@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { format, isValid } from 'date-fns'
 import { getEvaluationById } from '@/services/evaluations'
 import { Button } from '@/components/ui/button'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,6 +15,7 @@ import {
   Printer,
   History,
   MessageCircle,
+  TrendingUp,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
@@ -27,6 +29,7 @@ export default function EvaluationDetails() {
   const [loading, setLoading] = useState(true)
   const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [latestReavId, setLatestReavId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -34,6 +37,17 @@ export default function EvaluationDetails() {
       try {
         const ev = await getEvaluationById(id)
         setData(ev)
+
+        const { data: reavs } = await supabase
+          .from('reavaliacoes')
+          .select('id')
+          .eq('avaliacao_original_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (reavs && reavs.length > 0) {
+          setLatestReavId(reavs[0].id)
+        }
       } catch (err: any) {
         toast({ variant: 'destructive', title: 'Erro', description: err.message })
       } finally {
@@ -109,6 +123,18 @@ export default function EvaluationDetails() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+          {latestReavId && (
+            <Button
+              variant="outline"
+              asChild
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/30 flex-1 sm:flex-none"
+            >
+              <Link to={`/reevaluation/${latestReavId}`}>
+                <TrendingUp className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Comparativo</span>
+              </Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30 print:hidden flex-1 sm:flex-none"
@@ -156,88 +182,92 @@ export default function EvaluationDetails() {
         </div>
       </div>
 
-      {data.links_avaliacao && data.links_avaliacao.length > 0 && (
-        <Card className="print:hidden mb-6 border-blue-100 dark:border-blue-900 shadow-sm">
-          <CardHeader className="py-3 bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900">
-            <CardTitle className="text-base uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Links da Avaliação
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-4 flex flex-wrap gap-3">
-            {data.links_avaliacao[0].anamnese_url && (
-              <a
-                href={data.links_avaliacao[0].anamnese_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
-              >
-                📝 Anamnese
-              </a>
-            )}
-            {data.links_avaliacao[0].mapeamento_sintomas_url && (
-              <a
-                href={data.links_avaliacao[0].mapeamento_sintomas_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
-              >
-                🔍 Sintomas
-              </a>
-            )}
-            {data.links_avaliacao[0].mapeamento_dor_url && (
-              <a
-                href={data.links_avaliacao[0].mapeamento_dor_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
-              >
-                🎯 Mapa de Dor
-              </a>
-            )}
-            {data.links_avaliacao[0].bia_url && (
-              <a
-                href={data.links_avaliacao[0].bia_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
-              >
-                ⚖️ BIA
-              </a>
-            )}
-            {data.links_avaliacao[0].my_score_url && (
-              <a
-                href={data.links_avaliacao[0].my_score_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
-              >
-                📊 My Score
-              </a>
-            )}
-            {data.links_avaliacao[0].relatorio_pdf_url && (
-              <a
-                href={data.links_avaliacao[0].relatorio_pdf_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60 font-medium"
-              >
-                📄 Relatório PDF
-              </a>
-            )}
+      {(() => {
+        const isValidLink = (url: any) => typeof url === 'string' && url.trim() !== ''
+        const hasLinks =
+          data.links_avaliacao &&
+          data.links_avaliacao.length > 0 &&
+          (isValidLink(data.links_avaliacao[0].anamnese_url) ||
+            isValidLink(data.links_avaliacao[0].mapeamento_sintomas_url) ||
+            isValidLink(data.links_avaliacao[0].mapeamento_dor_url) ||
+            isValidLink(data.links_avaliacao[0].bia_url) ||
+            isValidLink(data.links_avaliacao[0].my_score_url) ||
+            isValidLink(data.links_avaliacao[0].relatorio_pdf_url))
 
-            {!data.links_avaliacao[0].anamnese_url &&
-              !data.links_avaliacao[0].mapeamento_sintomas_url &&
-              !data.links_avaliacao[0].mapeamento_dor_url &&
-              !data.links_avaliacao[0].bia_url &&
-              !data.links_avaliacao[0].my_score_url &&
-              !data.links_avaliacao[0].relatorio_pdf_url && (
-                <span className="text-muted-foreground text-sm italic">
-                  Nenhum link gerado. Edite a avaliação para adicionar.
-                </span>
+        if (!hasLinks) return null
+
+        return (
+          <Card className="print:hidden mb-6 border-blue-100 dark:border-blue-900 shadow-sm">
+            <CardHeader className="py-3 bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900">
+              <CardTitle className="text-base uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                Links da Avaliação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-4 flex flex-wrap gap-3">
+              {isValidLink(data.links_avaliacao[0].anamnese_url) && (
+                <a
+                  href={data.links_avaliacao[0].anamnese_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+                >
+                  📝 Anamnese
+                </a>
               )}
-          </CardContent>
-        </Card>
-      )}
+              {isValidLink(data.links_avaliacao[0].mapeamento_sintomas_url) && (
+                <a
+                  href={data.links_avaliacao[0].mapeamento_sintomas_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+                >
+                  🔍 Sintomas
+                </a>
+              )}
+              {isValidLink(data.links_avaliacao[0].mapeamento_dor_url) && (
+                <a
+                  href={data.links_avaliacao[0].mapeamento_dor_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+                >
+                  🎯 Mapa de Dor
+                </a>
+              )}
+              {isValidLink(data.links_avaliacao[0].bia_url) && (
+                <a
+                  href={data.links_avaliacao[0].bia_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+                >
+                  ⚖️ BIA
+                </a>
+              )}
+              {isValidLink(data.links_avaliacao[0].my_score_url) && (
+                <a
+                  href={data.links_avaliacao[0].my_score_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
+                >
+                  📊 My Score
+                </a>
+              )}
+              {isValidLink(data.links_avaliacao[0].relatorio_pdf_url) && (
+                <a
+                  href={data.links_avaliacao[0].relatorio_pdf_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60 font-medium"
+                >
+                  📄 Relatório PDF
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       <div className="print:block hidden mb-6 text-center border-b print:border-primary/50 pb-4">
         <h1 className="text-2xl font-bold uppercase print:text-black">
