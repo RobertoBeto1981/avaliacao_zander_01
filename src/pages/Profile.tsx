@@ -27,6 +27,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [password, setPassword] = useState('')
+  const [solicitado, setSolicitado] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -233,34 +234,55 @@ export default function Profile() {
             </div>
 
             {isProfessor && (
-              <div className="space-y-3 animate-fade-in-up">
-                <Label>Períodos de Trabalho (Professor)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
-                  {['Manhã', 'Tarde', 'Noite'].map((p) => (
-                    <div key={p} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`perfil-per-${p}`}
-                        checked={profile?.periodos?.includes(p)}
-                        onCheckedChange={(checked) => {
-                          const current = profile?.periodos || []
-                          if (checked) {
-                            setProfile({ ...profile, periodos: [...current, p] })
-                          } else {
-                            setProfile({
-                              ...profile,
-                              periodos: current.filter((x: string) => x !== p),
-                            })
-                          }
-                        }}
-                      />
-                      <Label
-                        htmlFor={`perfil-per-${p}`}
-                        className="cursor-pointer font-normal text-sm leading-none"
-                      >
-                        {p}
-                      </Label>
-                    </div>
-                  ))}
+              <div className="space-y-4 animate-fade-in-up">
+                <div className="space-y-3">
+                  <Label>Períodos de Trabalho (Professor)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 bg-muted/30 p-3 rounded-md border border-border/50">
+                    {['Manhã', 'Tarde', 'Noite'].map((p) => (
+                      <div key={p} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`perfil-per-${p}`}
+                          checked={profile?.periodos?.includes(p)}
+                          onCheckedChange={(checked) => {
+                            const current = profile?.periodos || []
+                            if (checked) {
+                              setProfile({ ...profile, periodos: [...current, p] })
+                            } else {
+                              setProfile({
+                                ...profile,
+                                periodos: current.filter((x: string) => x !== p),
+                              })
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`perfil-per-${p}`}
+                          className="cursor-pointer font-normal text-sm leading-none"
+                        >
+                          {p}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border space-y-3">
+                  <Label>Recebimento de Novos Alunos</Label>
+                  <p className="text-sm text-muted-foreground leading-snug">
+                    Sinalize para a coordenação que você está disponível para receber um novo aluno
+                    para montagem de treino.
+                  </p>
+                  <Button
+                    type="button"
+                    variant={solicitado ? 'secondary' : 'default'}
+                    onClick={() => {
+                      setSolicitado(true)
+                      toast({ title: 'Sucesso', description: 'Solicitação enviada à coordenação.' })
+                    }}
+                    disabled={solicitado}
+                  >
+                    {solicitado ? 'Aluno solicitado' : 'Solicitar aluno'}
+                  </Button>
                 </div>
               </div>
             )}

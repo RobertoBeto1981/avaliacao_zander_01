@@ -49,6 +49,7 @@ export function NovoAlunoDialog({
         evo_id: evoId,
         nome_cliente: nome.trim().toUpperCase(),
         telefone_cliente: telefone,
+        status: 'pendente',
       }
 
       if (isProfessor && profile?.id) {
