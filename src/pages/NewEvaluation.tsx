@@ -121,7 +121,11 @@ export default function NewEvaluation() {
         .from('avaliacoes')
         .select('id, nome_cliente, evo_id')
         .eq('evo_id', evoIdValue)
-        .single()
+        .eq('is_pre_avaliacao', false)
+        .not('data_avaliacao', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
       if (data) {
         setExistingEval(data)
