@@ -35,7 +35,7 @@ export default function EvaluationDetails() {
 
   const [data, setData] = useState<any>(null)
   const [snapshots, setSnapshots] = useState<any[]>([])
-  const [selectedSnapshotId, setSelectedSnapshotId] = useState<string>('latest')
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<string>('original')
 
   const [loading, setLoading] = useState(true)
   const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false)
@@ -58,6 +58,9 @@ export default function EvaluationDetails() {
         if (reavs && reavs.length > 0) {
           setSnapshots(reavs)
           setLatestReavId(reavs[reavs.length - 1].id)
+          setSelectedSnapshotId(reavs[reavs.length - 1].id)
+        } else {
+          setSelectedSnapshotId('original')
         }
       } catch (err: any) {
         toast({ variant: 'destructive', title: 'Erro', description: err.message })
@@ -69,10 +72,36 @@ export default function EvaluationDetails() {
   }, [id, toast])
 
   const displayData = useMemo(() => {
-    if (selectedSnapshotId === 'latest' || !data) return data
+    if (!data) return null
+    if (selectedSnapshotId === 'original') return data
 
-    const snap = snapshots.find((s) => s.id === selectedSnapshotId)
+    const snapIndex = snapshots.findIndex((s) => s.id === selectedSnapshotId)
+    const snap = snapshots[snapIndex]
     if (!snap) return data
+
+    const isInitial = snapIndex === 0
+    let mappedLinks: any[] = []
+
+    if (
+      snap.respostas_novas?.client_links &&
+      Object.keys(snap.respostas_novas.client_links).length > 0 &&
+      Object.values(snap.respostas_novas.client_links).some(
+        (v) => typeof v === 'string' && v.trim() !== '',
+      )
+    ) {
+      mappedLinks = [
+        {
+          anamnese_url: snap.respostas_novas.client_links.anamnese,
+          mapeamento_sintomas_url: snap.respostas_novas.client_links.symptoms,
+          mapeamento_dor_url: snap.respostas_novas.client_links.pain,
+          bia_url: snap.respostas_novas.client_links.bia,
+          my_score_url: snap.respostas_novas.client_links.myscore,
+          relatorio_pdf_url: snap.respostas_novas.client_links.pdf,
+        },
+      ]
+    } else if (isInitial) {
+      mappedLinks = data.links_avaliacao || []
+    }
 
     return {
       ...data,
@@ -81,18 +110,7 @@ export default function EvaluationDetails() {
       respostas: snap.respostas_novas || {},
       objectives: snap.respostas_novas?.objectives || data.objectives,
       periodo_treino: snap.respostas_novas?.periodo_treino || data.periodo_treino,
-      links_avaliacao: snap.respostas_novas?.client_links
-        ? [
-            {
-              anamnese_url: snap.respostas_novas.client_links.anamnese,
-              mapeamento_sintomas_url: snap.respostas_novas.client_links.symptoms,
-              mapeamento_dor_url: snap.respostas_novas.client_links.pain,
-              bia_url: snap.respostas_novas.client_links.bia,
-              my_score_url: snap.respostas_novas.client_links.myscore,
-              relatorio_pdf_url: snap.respostas_novas.client_links.pdf,
-            },
-          ]
-        : [],
+      links_avaliacao: mappedLinks,
     }
   }, [data, snapshots, selectedSnapshotId])
 
@@ -177,13 +195,6 @@ export default function EvaluationDetails() {
                     <SelectValue placeholder="Selecione a versão..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="latest">
-                      Estado Atual (
-                      {data.data_avaliacao
-                        ? format(new Date(data.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy')
-                        : 'Atual'}
-                      )
-                    </SelectItem>
                     {[...snapshots].reverse().map((snap, i) => {
                       const index = snapshots.length - 1 - i
                       return (
@@ -280,7 +291,7 @@ export default function EvaluationDetails() {
           <Card className="print:hidden mb-6 border-blue-100 dark:border-blue-900 shadow-sm">
             <CardHeader className="py-3 bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900">
               <CardTitle className="text-base uppercase tracking-wider text-blue-700 dark:text-blue-400">
-                Links da Avaliação {selectedSnapshotId !== 'latest' ? '(Registro Histórico)' : ''}
+                Links da Avaliação
               </CardTitle>
             </CardHeader>
             <CardContent className="py-4 flex flex-wrap gap-3">

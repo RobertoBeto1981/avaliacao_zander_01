@@ -211,9 +211,7 @@ export default function ReevaluationDetails() {
           <span
             className={cn(
               'text-sm',
-              changed
-                ? 'text-muted-foreground/60 line-through'
-                : 'text-foreground font-medium print:text-black',
+              changed ? 'text-muted-foreground' : 'text-foreground font-medium print:text-black',
             )}
           >
             {b}
@@ -535,8 +533,59 @@ export default function ReevaluationDetails() {
             </CardContent>
           </Card>
 
-          {/* Saúde */}
+          {/* Preferências de Treino */}
           <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid">
+            <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+              <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
+                Preferências de Treino
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+              <CompField
+                label="Dias Disponíveis"
+                baseVal={baseResp.available_days}
+                finalVal={finalResp.available_days}
+              />
+              <CompField
+                label="Tempo por Sessão"
+                baseVal={baseResp.session_duration}
+                finalVal={finalResp.session_duration}
+              />
+              <CompField
+                label="Como soube da academia"
+                baseVal={baseResp.discovery_source}
+                finalVal={finalResp.discovery_source}
+              />
+              <CompField
+                label="Gosta de Treinar"
+                baseVal={baseResp.enjoys_training}
+                finalVal={finalResp.enjoys_training}
+              />
+              <CompField
+                label="Incomoda no espelho"
+                baseVal={baseResp.dislikes_looking_at}
+                finalVal={finalResp.dislikes_looking_at}
+              />
+              <CompField
+                label="Não gosta de Treinar"
+                baseVal={baseResp.dislikes_training}
+                finalVal={finalResp.dislikes_training}
+              />
+              <CompField
+                label="Exercícios Favoritos"
+                baseVal={baseResp.favorite_exercises}
+                finalVal={finalResp.favorite_exercises}
+              />
+              <CompField
+                label="Exercícios que não gosta"
+                baseVal={baseResp.hated_exercises}
+                finalVal={finalResp.hated_exercises}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Saúde */}
+          <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid lg:col-span-2">
             <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
               <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
                 Saúde e Estilo de Vida
