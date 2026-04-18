@@ -186,6 +186,7 @@ export const createReavaliacao = async (
         periodo_treino: oldAvaliacao.periodo_treino,
       },
       evolucao: [],
+      created_at: oldAvaliacao.created_at || new Date().toISOString(),
     })
   }
 
@@ -196,6 +197,7 @@ export const createReavaliacao = async (
       data_reavaliacao: dataReavaliacao,
       respostas_novas: respostasNovas,
       evolucao: evolucao,
+      created_at: new Date().toISOString(),
     })
     .select()
     .single()

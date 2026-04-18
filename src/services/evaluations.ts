@@ -135,7 +135,7 @@ export const createPreAvaliacao = async (data: {
       if (data.telefone_cliente) {
         payload.telefone_cliente = data.telefone_cliente
       }
-      if (data.professor_id && !existing.professor_id) {
+      if (data.professor_id) {
         payload.professor_id = data.professor_id
       }
 
@@ -376,4 +376,29 @@ export const getPendingDesafioZander = async () => {
 
   if (error) throw error
   return data || []
+}
+
+export const requestStudentAssignment = async (avaliacaoId: string, professorId: string) => {
+  const { data, error } = await supabase
+    .from('professor_change_requests')
+    .insert({
+      avaliacao_id: avaliacaoId,
+      professor_id: professorId,
+      status: 'pendente',
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const getStudentRequestStatus = async (avaliacaoId: string, professorId: string) => {
+  const { data } = await supabase
+    .from('professor_change_requests')
+    .select('status')
+    .eq('avaliacao_id', avaliacaoId)
+    .eq('professor_id', professorId)
+    .eq('status', 'pendente')
+    .maybeSingle()
+  return data?.status || null
 }
