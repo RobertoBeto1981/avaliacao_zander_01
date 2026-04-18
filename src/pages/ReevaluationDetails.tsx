@@ -105,12 +105,13 @@ export default function ReevaluationDetails() {
         id: r.id,
         label: `${labelName} (${r.data_reavaliacao ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
         date: r.data_reavaliacao,
-        data:
-          {
-            ...r.respostas_novas,
-            objectives: r.respostas_novas?.objectives,
-            periodo_treino: r.respostas_novas?.periodo_treino,
-          } || {},
+        data: r.respostas_novas
+          ? {
+              ...r.respostas_novas,
+              objectives: r.respostas_novas.objectives,
+              periodo_treino: r.respostas_novas.periodo_treino,
+            }
+          : {},
       })
     })
 
