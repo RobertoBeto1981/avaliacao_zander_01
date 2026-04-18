@@ -117,6 +117,7 @@ export const createPreAvaliacao = async (data: {
   evo_id: string
   nome_cliente: string
   telefone_cliente?: string
+  professor_id?: string
 }) => {
   if (data.evo_id) {
     const { data: existing } = await supabase
@@ -133,6 +134,9 @@ export const createPreAvaliacao = async (data: {
       }
       if (data.telefone_cliente) {
         payload.telefone_cliente = data.telefone_cliente
+      }
+      if (data.professor_id && !existing.professor_id) {
+        payload.professor_id = data.professor_id
       }
 
       const { data: result, error } = await supabase
@@ -157,6 +161,7 @@ export const createPreAvaliacao = async (data: {
     data_reavaliacao: null,
     status: 'pendente',
     avaliador_id: null,
+    professor_id: data.professor_id || null,
   }
 
   const { data: result, error } = await supabase

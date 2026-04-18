@@ -275,9 +275,29 @@ export default function Profile() {
                   <Button
                     type="button"
                     variant={solicitado ? 'secondary' : 'default'}
-                    onClick={() => {
+                    onClick={async () => {
                       setSolicitado(true)
-                      toast({ title: 'Sucesso', description: 'Solicitação enviada à coordenação.' })
+                      try {
+                        const { data: coords } = await supabase
+                          .from('users')
+                          .select('id')
+                          .contains('roles', ['coordenador'])
+                        if (coords && coords.length > 0) {
+                          const notifications = coords.map((c: any) => ({
+                            user_id: c.id,
+                            title: 'Solicitação de Aluno',
+                            message: `O professor ${profile?.nome || 'um professor'} solicitou o envio de um novo aluno para montagem de treino.`,
+                            type: 'system',
+                          }))
+                          await supabase.from('notifications').insert(notifications)
+                        }
+                        toast({
+                          title: 'Sucesso',
+                          description: 'Solicitação enviada à coordenação.',
+                        })
+                      } catch (err) {
+                        console.error(err)
+                      }
                     }}
                     disabled={solicitado}
                   >

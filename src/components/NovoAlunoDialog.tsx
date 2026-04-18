@@ -45,6 +45,8 @@ export function NovoAlunoDialog({
     try {
       const isProfessor =
         profile?.roles?.includes('professor') || profile?.role?.toLowerCase() === 'professor'
+      const isProfessorDashboard = window.location.pathname.includes('/professor')
+
       const payload: any = {
         evo_id: evoId,
         nome_cliente: nome.trim().toUpperCase(),
@@ -52,7 +54,7 @@ export function NovoAlunoDialog({
         status: 'pendente',
       }
 
-      if (isProfessor && profile?.id) {
+      if (isProfessor && isProfessorDashboard && profile?.id) {
         payload.professor_id = profile.id
       }
 
