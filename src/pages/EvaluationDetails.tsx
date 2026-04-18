@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { format, isValid } from 'date-fns'
 import { getEvaluationById } from '@/services/evaluations'
@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Loader2,
   ArrowLeft,
@@ -25,7 +32,11 @@ export default function EvaluationDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+
   const [data, setData] = useState<any>(null)
+  const [snapshots, setSnapshots] = useState<any[]>([])
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<string>('latest')
+
   const [loading, setLoading] = useState(true)
   const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -40,13 +51,13 @@ export default function EvaluationDetails() {
 
         const { data: reavs } = await supabase
           .from('reavaliacoes')
-          .select('id')
+          .select('*')
           .eq('avaliacao_original_id', id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .order('created_at', { ascending: true })
 
         if (reavs && reavs.length > 0) {
-          setLatestReavId(reavs[0].id)
+          setSnapshots(reavs)
+          setLatestReavId(reavs[reavs.length - 1].id)
         }
       } catch (err: any) {
         toast({ variant: 'destructive', title: 'Erro', description: err.message })
@@ -57,6 +68,34 @@ export default function EvaluationDetails() {
     load()
   }, [id, toast])
 
+  const displayData = useMemo(() => {
+    if (selectedSnapshotId === 'latest' || !data) return data
+
+    const snap = snapshots.find((s) => s.id === selectedSnapshotId)
+    if (!snap) return data
+
+    return {
+      ...data,
+      data_avaliacao: snap.data_reavaliacao,
+      data_reavaliacao: null, // histórico não prevê próxima data
+      respostas: snap.respostas_novas || {},
+      objectives: snap.respostas_novas?.objectives || data.objectives,
+      periodo_treino: snap.respostas_novas?.periodo_treino || data.periodo_treino,
+      links_avaliacao: snap.respostas_novas?.client_links
+        ? [
+            {
+              anamnese_url: snap.respostas_novas.client_links.anamnese,
+              mapeamento_sintomas_url: snap.respostas_novas.client_links.symptoms,
+              mapeamento_dor_url: snap.respostas_novas.client_links.pain,
+              bia_url: snap.respostas_novas.client_links.bia,
+              my_score_url: snap.respostas_novas.client_links.myscore,
+              relatorio_pdf_url: snap.respostas_novas.client_links.pdf,
+            },
+          ]
+        : [],
+    }
+  }, [data, snapshots, selectedSnapshotId])
+
   if (loading)
     return (
       <div className="flex justify-center p-8">
@@ -66,7 +105,7 @@ export default function EvaluationDetails() {
   if (!data)
     return <div className="p-8 text-center text-muted-foreground">Avaliação não encontrada.</div>
 
-  const respostas = data.respostas || {}
+  const respostas = displayData.respostas || {}
   const anthropometry = respostas.anthropometry || {}
   const vo2Test = respostas.vo2_test || {}
 
@@ -76,8 +115,12 @@ export default function EvaluationDetails() {
     return isValid(d) ? d : null
   }
 
-  const evalDate = data.data_avaliacao ? new Date(data.data_avaliacao + 'T12:00:00') : null
-  const reevalDate = data.data_reavaliacao ? new Date(data.data_reavaliacao + 'T12:00:00') : null
+  const evalDate = displayData.data_avaliacao
+    ? new Date(displayData.data_avaliacao + 'T12:00:00')
+    : null
+  const reevalDate = displayData.data_reavaliacao
+    ? new Date(displayData.data_reavaliacao + 'T12:00:00')
+    : null
   const dobDate = parseDateString(respostas.data_nascimento)
 
   const handlePrint = () => {
@@ -85,7 +128,7 @@ export default function EvaluationDetails() {
   }
 
   const handleWhatsApp = () => {
-    if (!data.telefone_cliente) {
+    if (!displayData.telefone_cliente) {
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -93,11 +136,11 @@ export default function EvaluationDetails() {
       })
       return
     }
-    const phone = data.telefone_cliente.replace(/\D/g, '')
+    const phone = displayData.telefone_cliente.replace(/\D/g, '')
     const number = phone.startsWith('55') ? phone : `55${phone}`
-    const links = data.links_avaliacao?.[0] || {}
+    const links = displayData.links_avaliacao?.[0] || {}
 
-    let text = `Olá *${data.nome_cliente.split(' ')[0]}*, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n`
+    let text = `Olá *${displayData.nome_cliente.split(' ')[0]}*, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n`
     if (links.anamnese_url) text += `📝 *Anamnese:* ${links.anamnese_url}\n`
     if (links.mapeamento_sintomas_url) text += `🔍 *Sintomas:* ${links.mapeamento_sintomas_url}\n`
     if (links.mapeamento_dor_url) text += `🎯 *Dor:* ${links.mapeamento_dor_url}\n`
@@ -114,15 +157,52 @@ export default function EvaluationDetails() {
     <div className="container mx-auto py-8 animate-fade-in print:py-4 print:px-0">
       <div className="flex flex-wrap gap-4 items-center justify-between mb-6 print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0 mt-1 self-start"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{data.nome_cliente}</h1>
-            <p className="text-muted-foreground mt-1">ID EVO: {data.evo_id || 'Não informado'}</p>
+            <h1 className="text-3xl font-bold text-foreground">{displayData.nome_cliente}</h1>
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              <p className="text-muted-foreground text-sm">
+                ID EVO: {displayData.evo_id || 'Não informado'}
+              </p>
+              {snapshots.length > 0 && (
+                <Select value={selectedSnapshotId} onValueChange={setSelectedSnapshotId}>
+                  <SelectTrigger className="h-8 text-xs font-medium border-primary/20 bg-primary/5 text-primary w-[260px]">
+                    <SelectValue placeholder="Selecione a versão..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="latest">
+                      Estado Atual (
+                      {data.data_avaliacao
+                        ? format(new Date(data.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy')
+                        : 'Atual'}
+                      )
+                    </SelectItem>
+                    {[...snapshots].reverse().map((snap, i) => {
+                      const index = snapshots.length - 1 - i
+                      return (
+                        <SelectItem key={snap.id} value={snap.id}>
+                          {index === 0 ? 'Avaliação Inicial' : `Reavaliação ${index}`} (
+                          {snap.data_reavaliacao
+                            ? format(new Date(snap.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')
+                            : '-'}
+                          )
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+        <div className="flex flex-wrap gap-2 w-full xl:w-auto mt-4 xl:mt-0">
           {latestReavId && (
             <Button
               variant="outline"
@@ -185,14 +265,14 @@ export default function EvaluationDetails() {
       {(() => {
         const isValidLink = (url: any) => typeof url === 'string' && url.trim() !== ''
         const hasLinks =
-          data.links_avaliacao &&
-          data.links_avaliacao.length > 0 &&
-          (isValidLink(data.links_avaliacao[0].anamnese_url) ||
-            isValidLink(data.links_avaliacao[0].mapeamento_sintomas_url) ||
-            isValidLink(data.links_avaliacao[0].mapeamento_dor_url) ||
-            isValidLink(data.links_avaliacao[0].bia_url) ||
-            isValidLink(data.links_avaliacao[0].my_score_url) ||
-            isValidLink(data.links_avaliacao[0].relatorio_pdf_url))
+          displayData.links_avaliacao &&
+          displayData.links_avaliacao.length > 0 &&
+          (isValidLink(displayData.links_avaliacao[0].anamnese_url) ||
+            isValidLink(displayData.links_avaliacao[0].mapeamento_sintomas_url) ||
+            isValidLink(displayData.links_avaliacao[0].mapeamento_dor_url) ||
+            isValidLink(displayData.links_avaliacao[0].bia_url) ||
+            isValidLink(displayData.links_avaliacao[0].my_score_url) ||
+            isValidLink(displayData.links_avaliacao[0].relatorio_pdf_url))
 
         if (!hasLinks) return null
 
@@ -200,13 +280,13 @@ export default function EvaluationDetails() {
           <Card className="print:hidden mb-6 border-blue-100 dark:border-blue-900 shadow-sm">
             <CardHeader className="py-3 bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900">
               <CardTitle className="text-base uppercase tracking-wider text-blue-700 dark:text-blue-400">
-                Links da Avaliação
+                Links da Avaliação {selectedSnapshotId !== 'latest' ? '(Registro Histórico)' : ''}
               </CardTitle>
             </CardHeader>
             <CardContent className="py-4 flex flex-wrap gap-3">
-              {isValidLink(data.links_avaliacao[0].anamnese_url) && (
+              {isValidLink(displayData.links_avaliacao[0].anamnese_url) && (
                 <a
-                  href={data.links_avaliacao[0].anamnese_url}
+                  href={displayData.links_avaliacao[0].anamnese_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
@@ -214,9 +294,9 @@ export default function EvaluationDetails() {
                   📝 Anamnese
                 </a>
               )}
-              {isValidLink(data.links_avaliacao[0].mapeamento_sintomas_url) && (
+              {isValidLink(displayData.links_avaliacao[0].mapeamento_sintomas_url) && (
                 <a
-                  href={data.links_avaliacao[0].mapeamento_sintomas_url}
+                  href={displayData.links_avaliacao[0].mapeamento_sintomas_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
@@ -224,9 +304,9 @@ export default function EvaluationDetails() {
                   🔍 Sintomas
                 </a>
               )}
-              {isValidLink(data.links_avaliacao[0].mapeamento_dor_url) && (
+              {isValidLink(displayData.links_avaliacao[0].mapeamento_dor_url) && (
                 <a
-                  href={data.links_avaliacao[0].mapeamento_dor_url}
+                  href={displayData.links_avaliacao[0].mapeamento_dor_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
@@ -234,9 +314,9 @@ export default function EvaluationDetails() {
                   🎯 Mapa de Dor
                 </a>
               )}
-              {isValidLink(data.links_avaliacao[0].bia_url) && (
+              {isValidLink(displayData.links_avaliacao[0].bia_url) && (
                 <a
-                  href={data.links_avaliacao[0].bia_url}
+                  href={displayData.links_avaliacao[0].bia_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
@@ -244,9 +324,9 @@ export default function EvaluationDetails() {
                   ⚖️ BIA
                 </a>
               )}
-              {isValidLink(data.links_avaliacao[0].my_score_url) && (
+              {isValidLink(displayData.links_avaliacao[0].my_score_url) && (
                 <a
-                  href={data.links_avaliacao[0].my_score_url}
+                  href={displayData.links_avaliacao[0].my_score_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-medium"
@@ -254,9 +334,9 @@ export default function EvaluationDetails() {
                   📊 My Score
                 </a>
               )}
-              {isValidLink(data.links_avaliacao[0].relatorio_pdf_url) && (
+              {isValidLink(displayData.links_avaliacao[0].relatorio_pdf_url) && (
                 <a
-                  href={data.links_avaliacao[0].relatorio_pdf_url}
+                  href={displayData.links_avaliacao[0].relatorio_pdf_url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60 font-medium"
@@ -285,10 +365,10 @@ export default function EvaluationDetails() {
           </CardHeader>
           <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
-              <strong>Nome:</strong> {data.nome_cliente}
+              <strong>Nome:</strong> {displayData.nome_cliente}
             </p>
             <p>
-              <strong>Telefone:</strong> {data.telefone_cliente || '-'}
+              <strong>Telefone:</strong> {displayData.telefone_cliente || '-'}
             </p>
             <p>
               <strong>Data Nasc.:</strong>{' '}
@@ -306,7 +386,8 @@ export default function EvaluationDetails() {
               {reevalDate && isValid(reevalDate) ? format(reevalDate, 'dd/MM/yyyy') : '-'}
             </p>
             <div className="print:hidden">
-              <strong>Status:</strong> <Badge className="ml-1">{data.status || 'pendente'}</Badge>
+              <strong>Status:</strong>{' '}
+              <Badge className="ml-1">{displayData.status || 'pendente'}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -319,10 +400,10 @@ export default function EvaluationDetails() {
           </CardHeader>
           <CardContent className="space-y-1.5 py-3 print:py-2 print:px-3 print:text-black">
             <p>
-              <strong>Objetivos:</strong> {data.objectives?.join(', ') || '-'}
+              <strong>Objetivos:</strong> {displayData.objectives?.join(', ') || '-'}
             </p>
             <p>
-              <strong>Período:</strong> {data.periodo_treino || '-'}
+              <strong>Período:</strong> {displayData.periodo_treino || '-'}
             </p>
             <p>
               <strong>Frequência Semanal:</strong> {respostas.training_frequency || '-'}

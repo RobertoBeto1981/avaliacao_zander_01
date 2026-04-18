@@ -1,161 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 
 export function calculateEvolucao(oldData: any, newData: any) {
-  const evolucao: any[] = []
-
-  // Sleep
-  const sleepLevels = ['Menos de 6h', '6h', '7h', '8h', 'Mais de 8h']
-  const oldSleep = sleepLevels.indexOf(oldData.sleep_hours || '')
-  const newSleep = sleepLevels.indexOf(newData.sleep_hours || '')
-  if (oldSleep !== -1 && newSleep !== -1 && oldSleep !== newSleep) {
-    evolucao.push({
-      campo: 'Tempo de Sono',
-      status: newSleep > oldSleep ? 'melhorou' : 'piorou',
-      de: oldData.sleep_hours,
-      para: newData.sleep_hours,
-    })
-  }
-
-  // Freq
-  const freqLevels = ['NENHUMA', '1-2 VEZES', '3-4 VEZES', '5-6 VEZES', 'DIARIAMENTE']
-  const oldFreq = freqLevels.indexOf(oldData.training_frequency || '')
-  const newFreq = freqLevels.indexOf(newData.training_frequency || '')
-  if (oldFreq !== -1 && newFreq !== -1 && oldFreq !== newFreq) {
-    evolucao.push({
-      campo: 'Frequência de Treino',
-      status: newFreq > oldFreq ? 'melhorou' : 'piorou',
-      de: oldData.training_frequency,
-      para: newData.training_frequency,
-    })
-  }
-
-  // Act
-  const actLevels = [
-    'SEDENTÁRIO',
-    'DESTREINADO',
-    'LEVEMENTE ATIVO',
-    'MODERADAMENTE ATIVO',
-    'MUITO ATIVO',
-  ]
-  const oldAct = actLevels.indexOf(oldData.activity_level || '')
-  const newAct = actLevels.indexOf(newData.activity_level || '')
-  if (oldAct !== -1 && newAct !== -1 && oldAct !== newAct) {
-    evolucao.push({
-      campo: 'Nível de Atividade',
-      status: newAct > oldAct ? 'melhorou' : 'piorou',
-      de: oldData.activity_level,
-      para: newData.activity_level,
-    })
-  }
-
-  // Smoke
-  const oldSmoke = oldData.smoking?.choice
-  const newSmoke = newData.smoking?.choice
-  if (oldSmoke !== newSmoke && oldSmoke !== undefined && newSmoke !== undefined) {
-    evolucao.push({
-      campo: 'Tabagismo',
-      status: newSmoke ? 'piorou' : 'melhorou',
-      de: oldSmoke ? 'Fumante' : 'Não fumante',
-      para: newSmoke ? 'Fumante' : 'Não fumante',
-    })
-  }
-
-  // Meds
-  const oldMeds = oldData.medications?.choice
-  const newMeds = newData.medications?.choice
-  if (oldMeds !== newMeds && oldMeds !== undefined && newMeds !== undefined) {
-    evolucao.push({
-      campo: 'Medicamentos Contínuos',
-      status: newMeds ? 'piorou' : 'melhorou',
-      de: oldMeds ? 'Usa' : 'Não usa',
-      para: newMeds ? 'Usa' : 'Não usa',
-    })
-  }
-
-  // Pain
-  const oldPain = oldData.pains?.choice
-  const newPain = newData.pains?.choice
-  if (oldPain !== newPain && oldPain !== undefined && newPain !== undefined) {
-    evolucao.push({
-      campo: 'Dores Articulares/Musculares',
-      status: newPain ? 'piorou' : 'melhorou',
-      de: oldPain ? 'Com dores' : 'Sem dores',
-      para: newPain ? 'Com dores' : 'Sem dores',
-    })
-  }
-
-  // VO2 Max
-  const oldVo2 = oldData.vo2_test?.vo2_max
-  const newVo2 = newData.vo2_test?.vo2_max
-  if (oldVo2 && newVo2 && oldVo2 !== newVo2) {
-    const o = parseFloat(oldVo2)
-    const n = parseFloat(newVo2)
-    evolucao.push({
-      campo: 'VO² Máximo',
-      status: n > o ? 'melhorou' : n < o ? 'piorou' : 'manteve',
-      de: `${oldVo2} ml/kg/min`,
-      para: `${newVo2} ml/kg/min`,
-    })
-  }
-
-  // VO2 Classification
-  const oldClass = oldData.vo2_test?.classification
-  const newClass = newData.vo2_test?.classification
-  if (oldClass && newClass && oldClass !== newClass) {
-    const classLevels = ['Fraco', 'Regular', 'Bom', 'Excelente', 'Superior']
-    const oIdx = classLevels.indexOf(oldClass)
-    const nIdx = classLevels.indexOf(newClass)
-    let status = 'manteve'
-    if (oIdx !== -1 && nIdx !== -1) {
-      status = nIdx > oIdx ? 'melhorou' : nIdx < oIdx ? 'piorou' : 'manteve'
-    }
-    evolucao.push({
-      campo: 'Classificação VO²',
-      status: status,
-      de: oldClass,
-      para: newClass,
-    })
-  }
-
-  // Antropometria
-  const anthroFields = [
-    { key: 'weight', label: 'Peso (kg)', reverse: false },
-    { key: 'waist', label: 'Cintura (cm)', reverse: true },
-    { key: 'abdomen', label: 'Abdômen (cm)', reverse: true },
-    { key: 'hips', label: 'Quadril (cm)', reverse: true },
-  ]
-
-  const oldAnt = oldData.anthropometry || {}
-  const newAnt = newData.anthropometry || {}
-
-  anthroFields.forEach((field) => {
-    const oVal = parseFloat(oldAnt[field.key])
-    const nVal = parseFloat(newAnt[field.key])
-    if (!isNaN(oVal) && !isNaN(nVal) && oVal !== nVal) {
-      let status = 'manteve'
-      if (nVal < oVal) status = field.reverse ? 'melhorou' : 'piorou'
-      if (nVal > oVal) status = field.reverse ? 'piorou' : 'melhorou'
-
-      // Ajuste para peso: ganhar peso pode ser o objetivo se for hipertrofia
-      if (field.key === 'weight') {
-        const goal = newData.main_objective || ''
-        if (goal.toLowerCase().includes('hipertrofia') || goal.toLowerCase().includes('ganho')) {
-          status = nVal > oVal ? 'melhorou' : 'piorou'
-        } else {
-          status = nVal < oVal ? 'melhorou' : 'piorou'
-        }
-      }
-
-      evolucao.push({
-        campo: field.label,
-        status: status,
-        de: String(oVal),
-        para: String(nVal),
-      })
-    }
-  })
-
-  return evolucao
+  // Mantemos a função para retrocompatibilidade, mas não a usaremos mais na UI do comparativo
+  // pois a nova UI usa campos fixos lado a lado sem julgamento de valor.
+  return []
 }
 
 export const createReavaliacao = async (
@@ -170,12 +18,19 @@ export const createReavaliacao = async (
     .eq('id', avaliacaoId)
     .single()
 
+  const { data: oldLinks } = await supabase
+    .from('links_avaliacao')
+    .select('*')
+    .eq('avaliacao_id', avaliacaoId)
+    .maybeSingle()
+
   const { data: existingReavs } = await supabase
     .from('reavaliacoes')
     .select('id')
     .eq('avaliacao_original_id', avaliacaoId)
     .order('created_at', { ascending: true })
 
+  // Se é a primeira reavaliação, salva o snapshot da avaliação original
   if (oldAvaliacao && existingReavs && existingReavs.length === 0) {
     await supabase.from('reavaliacoes').insert({
       avaliacao_original_id: avaliacaoId,
@@ -184,12 +39,23 @@ export const createReavaliacao = async (
         ...oldAvaliacao.respostas,
         objectives: oldAvaliacao.objectives,
         periodo_treino: oldAvaliacao.periodo_treino,
+        client_links: oldLinks
+          ? {
+              symptoms: oldLinks.mapeamento_sintomas_url,
+              pain: oldLinks.mapeamento_dor_url,
+              bia: oldLinks.bia_url,
+              myscore: oldLinks.my_score_url,
+              pdf: oldLinks.relatorio_pdf_url,
+              anamnese: oldLinks.anamnese_url,
+            }
+          : null,
       },
       evolucao: [],
       created_at: oldAvaliacao.created_at || new Date().toISOString(),
     })
   }
 
+  // Cria o snapshot da reavaliação atual (já contém client_links dentro de respostasNovas)
   const { data, error } = await supabase
     .from('reavaliacoes')
     .insert({
@@ -227,6 +93,7 @@ export const createReavaliacao = async (
 
   await supabase.from('avaliacoes').update(updatePayload).eq('id', avaliacaoId)
 
+  // Atualiza a tabela de links para a versão atual (latest)
   if (client_links) {
     await supabase
       .from('links_avaliacao')
@@ -275,7 +142,7 @@ export const getReavaliacaoById = async (id: string) => {
   const { data, error } = await supabase
     .from('reavaliacoes')
     .select(
-      '*, avaliacao:avaliacao_original_id (nome_cliente, telefone_cliente, evo_id, professor_id, avaliador_id)',
+      '*, avaliacao:avaliacao_original_id (id, nome_cliente, telefone_cliente, evo_id, professor_id, avaliador_id)',
     )
     .eq('id', id)
     .single()

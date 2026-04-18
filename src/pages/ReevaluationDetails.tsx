@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { calculateEvolucao } from '@/services/reavaliacoes'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,9 +15,7 @@ import {
   ArrowLeft,
   MessageCircle,
   FileText,
-  TrendingUp,
-  TrendingDown,
-  Minus,
+  Printer,
   CalendarDays,
   User,
   Activity,
@@ -52,7 +49,9 @@ export default function ReevaluationDetails() {
       try {
         const { data: reav, error: reavErr } = await supabase
           .from('reavaliacoes')
-          .select('*, avaliacao:avaliacoes(*)')
+          .select(
+            '*, avaliacao:avaliacoes(id, nome_cliente, evo_id, telefone_cliente, data_avaliacao, respostas)',
+          )
           .eq('id', id)
           .single()
 
@@ -66,17 +65,11 @@ export default function ReevaluationDetails() {
 
         if (allErr) throw new Error('Erro ao buscar histórico')
 
-        const initialEvaluation = {
-          id: reav.avaliacao.id,
-          data_reavaliacao: reav.avaliacao.data_avaliacao,
-          respostas_novas: reav.avaliacao.respostas || {},
-          isInitial: true,
-        }
-
-        const combinedHistory = [initialEvaluation, ...(allReavs || [])]
+        const combinedHistory = [...(allReavs || [])]
 
         setHistoryData({
           reavaliacoes: combinedHistory,
+          avaliacao: reav.avaliacao,
           aluno_nome: reav.avaliacao?.nome_cliente,
           evo_id: reav.avaliacao?.evo_id,
           telefone: reav.avaliacao?.telefone_cliente,
@@ -103,17 +96,21 @@ export default function ReevaluationDetails() {
     const pts: any[] = []
 
     const reavs = historyData.reavaliacoes || []
-    let reavCount = 1
 
-    reavs.forEach((r: any) => {
-      const isSnapshot = r.isInitial
-      const labelName = isSnapshot ? 'Avaliação Inicial' : `Reavaliação ${reavCount++}`
+    reavs.forEach((r: any, idx: number) => {
+      const isSnapshot = idx === 0
+      const labelName = isSnapshot ? 'Avaliação Inicial' : `Reavaliação ${idx}`
 
       pts.push({
         id: r.id,
         label: `${labelName} (${r.data_reavaliacao ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
         date: r.data_reavaliacao,
-        data: r.respostas_novas || {},
+        data:
+          {
+            ...r.respostas_novas,
+            objectives: r.respostas_novas?.objectives,
+            periodo_treino: r.respostas_novas?.periodo_treino,
+          } || {},
       })
     })
 
@@ -123,16 +120,11 @@ export default function ReevaluationDetails() {
   const basePoint = points.find((p) => p.id === baseId)
   const finalPoint = points.find((p) => p.id === finalId)
 
-  const evolucaoDinamica = useMemo(() => {
-    if (!basePoint || !finalPoint) return []
-    return calculateEvolucao(basePoint.data, finalPoint.data)
-  }, [basePoint, finalPoint])
-
   const getFileName = () => {
     if (!historyData) return 'RELATORIO_EVOLUCAO'
     const evoId = historyData.evo_id || 'SEM-ID'
     const nome = historyData.aluno_nome?.replace(/\s+/g, '_').toUpperCase() || 'ALUNO'
-    return `${evoId}_${nome}_EVOLUCAO`
+    return `${evoId}_${nome}_COMPARATIVO`
   }
 
   const handleSendWhatsApp = () => {
@@ -147,7 +139,7 @@ export default function ReevaluationDetails() {
     let phone = historyData.telefone.replace(/\D/g, '')
     if (!phone.startsWith('55')) phone = '55' + phone
 
-    const text = `Olá *${historyData.aluno_nome.split(' ')[0]}*, tudo bem?\n\nSegue o seu Relatório Comparativo de Evolução!\n\n(Por favor, anexe o arquivo PDF gerado)\n\nMuito obrigado por sua dedicação na Zander Academia. Estamos juntos nessa jornada! 💙`
+    const text = `Olá *${historyData.aluno_nome.split(' ')[0]}*, tudo bem?\n\nSegue o seu Relatório Comparativo de Evolução Física!\n\n(Por favor, anexe o arquivo PDF gerado)\n\nMuito obrigado por sua dedicação na Zander Academia. Estamos juntos nessa jornada! 💙`
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
   }
@@ -172,12 +164,81 @@ export default function ReevaluationDetails() {
 
   if (!historyData || !basePoint || !finalPoint) return null
 
+  const baseResp = basePoint.data || {}
+  const finalResp = finalPoint.data || {}
+
+  const baseAnthro = baseResp.anthropometry || {}
+  const finalAnthro = finalResp.anthropometry || {}
+
+  const baseVo2 = baseResp.vo2_test || {}
+  const finalVo2 = finalResp.vo2_test || {}
+
+  const CompField = ({
+    label,
+    baseVal,
+    finalVal,
+    suffix = '',
+  }: {
+    label: string
+    baseVal: any
+    finalVal: any
+    suffix?: string
+  }) => {
+    const renderVal = (v: any) => {
+      if (v === undefined || v === null || v === '') return '-'
+      if (typeof v === 'boolean') return v ? 'Sim' : 'Não'
+      if (Array.isArray(v)) return v.length > 0 ? v.join(', ') : '-'
+      if (typeof v === 'object' && v.choice !== undefined) {
+        let str = v.choice === true ? 'Sim' : v.choice === false ? 'Não' : String(v.choice)
+        const extra = v.list || v.reason || v.amount || v.other || v.observation || v.notes
+        if (extra) str += ` - ${extra}`
+        return str
+      }
+      return String(v) + suffix
+    }
+
+    const b = renderVal(baseVal)
+    const f = renderVal(finalVal)
+    const changed = b !== f
+
+    return (
+      <div className="flex flex-col py-2 border-b border-border/40 last:border-0 print:border-gray-200">
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500 mb-1">
+          {label}
+        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'text-sm',
+              changed
+                ? 'text-muted-foreground/60 line-through'
+                : 'text-foreground font-medium print:text-black',
+            )}
+          >
+            {b}
+          </span>
+          {changed && (
+            <>
+              <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm font-bold text-foreground print:text-black">{f}</span>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="container mx-auto py-8 max-w-4xl animate-fade-in space-y-8">
+    <div className="container mx-auto py-8 max-w-5xl animate-fade-in space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0 self-start mt-1"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -189,18 +250,30 @@ export default function ReevaluationDetails() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleGeneratePDF}>
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar PDF
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={handleGeneratePDF}
+            className="flex-1 sm:flex-none border-primary/50 text-primary hover:bg-primary/10"
+          >
+            <Printer className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">PDF Comparativo</span>
           </Button>
+          {historyData?.avaliacao?.id && (
+            <Button variant="outline" asChild className="flex-1 sm:flex-none">
+              <Link to={`/evaluation/${historyData.avaliacao.id}`}>
+                <FileText className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Ver Ficha Completa</span>
+              </Link>
+            </Button>
+          )}
           {canSendWhatsApp && (
             <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none"
               onClick={handleSendWhatsApp}
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              WhatsApp
+              <MessageCircle className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">WhatsApp</span>
             </Button>
           )}
         </div>
@@ -214,7 +287,7 @@ export default function ReevaluationDetails() {
           className="h-16 mb-4 grayscale"
         />
         <h1 className="text-3xl font-bold text-black uppercase tracking-widest">
-          Relatório de Evolução Física
+          Comparativo de Evolução Física
         </h1>
         <h2 className="text-xl font-semibold text-gray-700 mt-2">{historyData.aluno_nome}</h2>
         <p className="text-gray-500 mt-1">EVO: {historyData.evo_id || 'N/A'}</p>
@@ -275,193 +348,237 @@ export default function ReevaluationDetails() {
         </CardContent>
       </Card>
 
-      {/* Evolução Dinâmica */}
-      <Card className="border-border/50 print:border-none print:shadow-none">
-        <CardHeader className="print:px-0">
-          <CardTitle className="text-2xl print:text-black border-b pb-2">
-            Comparativo de Resultados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="print:px-0">
-          {evolucaoDinamica.length > 0 ? (
-            <div className="grid gap-4">
-              {evolucaoDinamica.map((ev: any, i: number) => (
-                <div
-                  key={i}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border rounded-xl bg-background/50 print:bg-white print:border-gray-200 shadow-sm gap-4 transition-all hover:shadow-md"
-                >
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-lg text-foreground print:text-black">
-                      {ev.campo}
-                    </h4>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="bg-muted text-muted-foreground px-3 py-1.5 rounded-md text-sm font-medium">
-                        {ev.de || 'N/A'}
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0" />
-                      <div
-                        className={cn(
-                          'px-3 py-1.5 rounded-md text-sm font-bold shadow-sm',
-                          ev.status === 'melhorou'
-                            ? 'bg-green-100 text-green-700 print:bg-gray-100 print:text-black'
-                            : ev.status === 'piorou'
-                              ? 'bg-red-100 text-red-700 print:bg-gray-100 print:text-black'
-                              : 'bg-blue-100 text-blue-700 print:bg-gray-100 print:text-black',
-                        )}
-                      >
-                        {ev.para || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="shrink-0 flex items-center justify-end">
-                    {ev.status === 'melhorou' && (
-                      <span className="flex items-center text-green-600 bg-green-100/50 px-4 py-2 rounded-full text-sm font-bold print:border print:border-green-300">
-                        <TrendingUp className="w-5 h-5 mr-2" /> Melhorou
-                      </span>
-                    )}
-                    {ev.status === 'piorou' && (
-                      <span className="flex items-center text-red-600 bg-red-100/50 px-4 py-2 rounded-full text-sm font-bold print:border print:border-red-300">
-                        <TrendingDown className="w-5 h-5 mr-2" /> Piorou
-                      </span>
-                    )}
-                    {ev.status === 'manteve' && (
-                      <span className="flex items-center text-blue-600 bg-blue-100/50 px-4 py-2 rounded-full text-sm font-bold print:border print:border-blue-300">
-                        <Minus className="w-5 h-5 mr-2" /> Manteve
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center p-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/10">
-              <Activity className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium">
-                Nenhuma alteração registrada entre as avaliações selecionadas.
-              </p>
-              <p className="text-sm opacity-70">
-                Os dados analisados (antropometria, hábitos, etc.) se mantiveram inalterados.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Comparative Content Sections */}
+      <div className="grid gap-6 print:block print:space-y-6">
+        {/* Antropometria */}
+        <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid">
+          <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+            <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
+              Antropometria Comparativa
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
+            <CompField
+              label="Peso"
+              baseVal={baseAnthro.weight}
+              finalVal={finalAnthro.weight}
+              suffix=" kg"
+            />
+            <CompField
+              label="Altura"
+              baseVal={baseAnthro.height}
+              finalVal={finalAnthro.height}
+              suffix=" m"
+            />
+            <CompField
+              label="Ombros"
+              baseVal={baseAnthro.shoulders}
+              finalVal={finalAnthro.shoulders}
+              suffix=" cm"
+            />
+            <CompField
+              label="Tórax"
+              baseVal={baseAnthro.chest}
+              finalVal={finalAnthro.chest}
+              suffix=" cm"
+            />
+            <CompField
+              label="Cintura"
+              baseVal={baseAnthro.waist}
+              finalVal={finalAnthro.waist}
+              suffix=" cm"
+            />
+            <CompField
+              label="Abdômen"
+              baseVal={baseAnthro.abdomen}
+              finalVal={finalAnthro.abdomen}
+              suffix=" cm"
+            />
+            <CompField
+              label="Quadril"
+              baseVal={baseAnthro.hips}
+              finalVal={finalAnthro.hips}
+              suffix=" cm"
+            />
+            <CompField
+              label="Braço Dir. (Rel)"
+              baseVal={baseAnthro.right_arm_relaxed}
+              finalVal={finalAnthro.right_arm_relaxed}
+              suffix=" cm"
+            />
+            <CompField
+              label="Braço Dir. (Con)"
+              baseVal={baseAnthro.right_arm_flexed}
+              finalVal={finalAnthro.right_arm_flexed}
+              suffix=" cm"
+            />
+            <CompField
+              label="Antebraço Dir."
+              baseVal={baseAnthro.right_forearm}
+              finalVal={finalAnthro.right_forearm}
+              suffix=" cm"
+            />
+            <CompField
+              label="Braço Esq. (Rel)"
+              baseVal={baseAnthro.left_arm_relaxed}
+              finalVal={finalAnthro.left_arm_relaxed}
+              suffix=" cm"
+            />
+            <CompField
+              label="Braço Esq. (Con)"
+              baseVal={baseAnthro.left_arm_flexed}
+              finalVal={finalAnthro.left_arm_flexed}
+              suffix=" cm"
+            />
+            <CompField
+              label="Antebraço Esq."
+              baseVal={baseAnthro.left_forearm}
+              finalVal={finalAnthro.left_forearm}
+              suffix=" cm"
+            />
+            <CompField
+              label="Coxa Dir."
+              baseVal={baseAnthro.right_thigh}
+              finalVal={finalAnthro.right_thigh}
+              suffix=" cm"
+            />
+            <CompField
+              label="Coxa Esq."
+              baseVal={baseAnthro.left_thigh}
+              finalVal={finalAnthro.left_thigh}
+              suffix=" cm"
+            />
+            <CompField
+              label="Panturrilha Dir."
+              baseVal={baseAnthro.right_calf}
+              finalVal={finalAnthro.right_calf}
+              suffix=" cm"
+            />
+            <CompField
+              label="Panturrilha Esq."
+              baseVal={baseAnthro.left_calf}
+              finalVal={finalAnthro.left_calf}
+              suffix=" cm"
+            />
+          </CardContent>
+        </Card>
 
-      {/* Respostas Finais */}
-      <Card className="border-border/50 print:border-none print:shadow-none print:break-before-page">
-        <CardHeader className="print:px-0">
-          <CardTitle className="text-2xl print:text-black border-b pb-2">
-            Detalhes da Avaliação Final ({finalPoint.label})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="print:px-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.entries(finalPoint.data || {}).map(([key, value]) => {
-              if (!value || (typeof value === 'object' && Object.keys(value).length === 0))
-                return null
-              if (
-                [
-                  'objectives',
-                  'periodo_treino',
-                  'final_observations',
-                  'professor_observations',
-                  'client_links',
-                ].includes(key)
-              )
-                return null
+        {/* VO2 */}
+        {(baseVo2.enabled || finalVo2.enabled) && (
+          <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid">
+            <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+              <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
+                Teste de VO² (Step Test)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
+              <CompField
+                label="Batimentos (15s)"
+                baseVal={baseVo2.beats_15s}
+                finalVal={finalVo2.beats_15s}
+              />
+              <CompField
+                label="VO² Máximo"
+                baseVal={baseVo2.vo2_max}
+                finalVal={finalVo2.vo2_max}
+                suffix=" ml/kg/min"
+              />
+              <CompField
+                label="Classificação"
+                baseVal={baseVo2.classification}
+                finalVal={finalVo2.classification}
+              />
+            </CardContent>
+          </Card>
+        )}
 
-              let displayValue = String(value)
-              if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
-              if (Array.isArray(value)) displayValue = value.join(', ')
-              if (typeof value === 'object' && !Array.isArray(value)) {
-                const obj = value as any
-                if (obj.choice !== undefined) {
-                  displayValue = `${obj.choice === true ? 'Sim' : obj.choice === false ? 'Não' : obj.choice}`
-                  if (
-                    obj.list ||
-                    obj.reason ||
-                    obj.amount ||
-                    obj.other ||
-                    obj.observation ||
-                    obj.notes
-                  ) {
-                    displayValue += ` - ${obj.list || obj.reason || obj.amount || obj.other || obj.observation || obj.notes}`
-                  }
-                } else if (obj.choices) {
-                  displayValue = obj.choices.join(', ')
-                  if (obj.list) displayValue += ` - ${obj.list}`
-                } else if (key === 'vo2_test' || obj.vo2_max) {
-                  displayValue = obj.enabled
-                    ? `VO² Máx: ${obj.vo2_max} ml/kg/min (${obj.classification})`
-                    : 'Não realizado'
-                } else if (key === 'anthropometry' || obj.weight) {
-                  displayValue = `Peso: ${obj.weight || '-'}kg | Altura: ${obj.height || '-'}m`
-                } else if (key === 'hemodynamics' || obj.systolic_bp) {
-                  displayValue = `PA: ${obj.systolic_bp || '-'}x${obj.diastolic_bp || '-'} | FC: ${obj.heart_rate || '-'}`
-                } else {
-                  displayValue = JSON.stringify(value)
-                }
-              }
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:block print:space-y-6">
+          {/* Treinamento */}
+          <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid">
+            <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+              <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
+                Treinamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 gap-x-6 gap-y-2">
+              <CompField
+                label="Objetivos"
+                baseVal={baseResp.objectives}
+                finalVal={finalResp.objectives}
+              />
+              <CompField
+                label="Período"
+                baseVal={baseResp.periodo_treino}
+                finalVal={finalResp.periodo_treino}
+              />
+              <CompField
+                label="Frequência Semanal"
+                baseVal={baseResp.training_frequency}
+                finalVal={finalResp.training_frequency}
+              />
+              <CompField
+                label="Nível de Atividade"
+                baseVal={baseResp.activity_level}
+                finalVal={finalResp.activity_level}
+              />
+              <CompField
+                label="Tempo de Prática"
+                baseVal={baseResp.practice_time}
+                finalVal={finalResp.practice_time}
+              />
+              <CompField
+                label="Modalidades"
+                baseVal={baseResp.modalities}
+                finalVal={finalResp.modalities}
+              />
+            </CardContent>
+          </Card>
 
-              const labelMap: Record<string, string> = {
-                training_frequency: 'Frequência de Treino',
-                activity_level: 'Nível de Atividade',
-                sleep_hours: 'Horas de Sono',
-                meals_per_day: 'Refeições/Dia',
-                alcohol: 'Consumo de Álcool',
-                smoking: 'Tabagismo',
-                medications: 'Medicamentos',
-                pains: 'Dores',
-                surgeries: 'Cirurgias',
-                anthropometry: 'Antropometria (Geral)',
-                vo2_test: 'Teste VO²',
-                hemodynamics: 'Hemodinâmica',
-                health_insurance: 'Plano de Saúde',
-                discovery_source: 'Como nos conheceu',
-                session_duration: 'Duração da Sessão',
-                gender: 'Gênero',
-                data_nascimento: 'Data de Nascimento',
-                practice_time: 'Tempo de Prática',
-                modalities: 'Modalidades',
-                nutritional_status: 'Acompanhamento Nutricional',
-                supplements: 'Suplementos',
-                allergies: 'Alergias',
-                intolerances: 'Intolerâncias',
-                health_exams: 'Exames de Saúde',
-                diabetes: 'Diabetes',
-                hypertension: 'Hipertensão',
-                respiratory_pathology: 'Patologia Respiratória',
-                cardio_pathology: 'Patologia Cardiológica',
-                available_days: 'Dias Disponíveis',
-                enjoys_training: 'Gosta de Treinar',
-                dislikes_looking_at: 'Não gosta de olhar',
-                dislikes_training: 'Não gosta de treinar',
-                favorite_exercises: 'Exercícios Favoritos',
-                hated_exercises: 'Exercícios que Odeia',
-                emergency_contact: 'Contato de Emergência',
-                main_objective: 'Objetivo Principal',
-                target_date: 'Data Alvo',
-              }
-
-              const translatedKey = labelMap[key] || key.replace(/_/g, ' ')
-
-              return (
-                <div
-                  key={key}
-                  className="p-4 bg-muted/30 border border-border/50 rounded-lg shadow-sm print:bg-white print:border-gray-300 print:shadow-none break-inside-avoid"
-                >
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 print:text-gray-500">
-                    {translatedKey}
-                  </p>
-                  <p className="font-semibold text-sm text-foreground print:text-black">
-                    {displayValue}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+          {/* Saúde */}
+          <Card className="border-border/50 print:border-2 print:border-primary print:shadow-none print:break-inside-avoid">
+            <CardHeader className="py-4 bg-muted/20 print:bg-primary/10 border-b border-border/50 print:border-primary/50">
+              <CardTitle className="text-lg print:text-base uppercase tracking-wider print:text-black font-bold">
+                Saúde e Estilo de Vida
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+              <CompField
+                label="Refeições/dia"
+                baseVal={baseResp.meals_per_day}
+                finalVal={finalResp.meals_per_day}
+              />
+              <CompField
+                label="Sono"
+                baseVal={baseResp.sleep_hours}
+                finalVal={finalResp.sleep_hours}
+              />
+              <CompField label="Álcool" baseVal={baseResp.alcohol} finalVal={finalResp.alcohol} />
+              <CompField label="Fumante" baseVal={baseResp.smoking} finalVal={finalResp.smoking} />
+              <CompField label="Dores" baseVal={baseResp.pains} finalVal={finalResp.pains} />
+              <CompField
+                label="Medicamentos"
+                baseVal={baseResp.medications}
+                finalVal={finalResp.medications}
+              />
+              <CompField
+                label="Diabético"
+                baseVal={baseResp.diabetes}
+                finalVal={finalResp.diabetes}
+              />
+              <CompField
+                label="Hipertenso"
+                baseVal={baseResp.hypertension}
+                finalVal={finalResp.hypertension}
+              />
+              <CompField
+                label="Alergias"
+                baseVal={baseResp.allergies}
+                finalVal={finalResp.allergies}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       <div className="hidden print:block mt-12 text-center text-sm text-gray-500 border-t pt-4">
         Zander Academia - Relatório gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}
