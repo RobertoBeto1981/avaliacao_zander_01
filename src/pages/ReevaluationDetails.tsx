@@ -101,9 +101,19 @@ export default function ReevaluationDetails() {
       const isSnapshot = idx === 0
       const labelName = isSnapshot ? 'Avaliação Inicial' : `Reavaliação ${idx}`
 
+      let formattedDate = '-'
+      if (r.data_reavaliacao) {
+        const d = new Date(
+          r.data_reavaliacao.includes('T') ? r.data_reavaliacao : r.data_reavaliacao + 'T12:00:00',
+        )
+        if (!isNaN(d.getTime())) {
+          formattedDate = format(d, 'dd/MM/yyyy')
+        }
+      }
+
       pts.push({
         id: r.id,
-        label: `${labelName} (${r.data_reavaliacao ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy') : '-'})`,
+        label: `${labelName} (${formattedDate})`,
         date: r.data_reavaliacao,
         data: r.respostas_novas
           ? {

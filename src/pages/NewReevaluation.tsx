@@ -59,27 +59,42 @@ export default function NewReevaluation() {
           },
         }
 
-        if (flatPrev.data_nascimento) {
-          flatPrev.data_nascimento = format(
-            new Date(flatPrev.data_nascimento + 'T12:00:00'),
-            'dd/MM/yyyy',
-          )
+        const safeFormat = (val: any) => {
+          if (!val) return val
+          if (typeof val === 'string' && val.includes('/')) return val
+          try {
+            const d = new Date(val.includes('T') ? val : val + 'T12:00:00')
+            return isValid(d) ? format(d, 'dd/MM/yyyy') : val
+          } catch (e) {
+            return val
+          }
         }
-        if (flatPrev.target_date) {
-          flatPrev.target_date = format(new Date(flatPrev.target_date + 'T12:00:00'), 'dd/MM/yyyy')
+
+        const safeDate = (val: any) => {
+          if (!val) return undefined
+          if (typeof val === 'string' && val.includes('/')) {
+            const parts = val.split('/')
+            if (parts.length === 3) {
+              const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00`)
+              if (isValid(d)) return d
+            }
+          }
+          try {
+            const d = new Date(val.includes('T') ? val : val + 'T12:00:00')
+            if (isValid(d)) return d
+            const d2 = new Date(val)
+            return isValid(d2) ? d2 : undefined
+          } catch (e) {
+            return undefined
+          }
         }
-        if (flatPrev.data_avaliacao) {
-          flatPrev.data_avaliacao = format(
-            new Date(flatPrev.data_avaliacao + 'T12:00:00'),
-            'dd/MM/yyyy',
-          )
-        }
-        if (flatPrev.data_reavaliacao) {
-          flatPrev.data_reavaliacao = format(
-            new Date(flatPrev.data_reavaliacao + 'T12:00:00'),
-            'dd/MM/yyyy',
-          )
-        }
+
+        if (flatPrev.data_nascimento)
+          flatPrev.data_nascimento = safeFormat(flatPrev.data_nascimento)
+        if (flatPrev.target_date) flatPrev.target_date = safeFormat(flatPrev.target_date)
+        if (flatPrev.data_avaliacao) flatPrev.data_avaliacao = safeFormat(flatPrev.data_avaliacao)
+        if (flatPrev.data_reavaliacao)
+          flatPrev.data_reavaliacao = safeFormat(flatPrev.data_reavaliacao)
 
         setPrevData(flatPrev)
 
@@ -89,9 +104,7 @@ export default function NewReevaluation() {
           telefone_cliente: data.telefone_cliente || '',
           data_avaliacao: new Date(), // Hoje
           data_reavaliacao: new Date(new Date().setDate(new Date().getDate() + 90)), // +90 dias
-          data_nascimento: respostas.data_nascimento
-            ? new Date(respostas.data_nascimento)
-            : undefined,
+          data_nascimento: safeDate(respostas.data_nascimento),
           gender: respostas.gender || '',
 
           // Demais campos não são preenchidos na reavaliação para obrigar o avaliador a perguntar

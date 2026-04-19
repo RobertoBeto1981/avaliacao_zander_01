@@ -129,15 +129,34 @@ export default function EvaluationDetails() {
 
   const parseDateString = (dateStr: any) => {
     if (!dateStr) return null
-    const d = new Date(dateStr)
-    return isValid(d) ? d : null
+    if (typeof dateStr === 'string' && dateStr.includes('/')) {
+      const parts = dateStr.split('/')
+      if (parts.length === 3) {
+        const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00`)
+        if (isValid(d)) return d
+      }
+    }
+    const d = new Date(
+      typeof dateStr === 'string' && !dateStr.includes('T') ? dateStr + 'T12:00:00' : dateStr,
+    )
+    if (isValid(d)) return d
+    const d2 = new Date(dateStr)
+    return isValid(d2) ? d2 : null
   }
 
   const evalDate = displayData.data_avaliacao
-    ? new Date(displayData.data_avaliacao + 'T12:00:00')
+    ? new Date(
+        displayData.data_avaliacao.includes('T')
+          ? displayData.data_avaliacao
+          : displayData.data_avaliacao + 'T12:00:00',
+      )
     : null
   const reevalDate = displayData.data_reavaliacao
-    ? new Date(displayData.data_reavaliacao + 'T12:00:00')
+    ? new Date(
+        displayData.data_reavaliacao.includes('T')
+          ? displayData.data_reavaliacao
+          : displayData.data_reavaliacao + 'T12:00:00',
+      )
     : null
   const dobDate = parseDateString(respostas.data_nascimento)
 
@@ -200,8 +219,22 @@ export default function EvaluationDetails() {
                       return (
                         <SelectItem key={snap.id} value={snap.id}>
                           {index === 0 ? 'Avaliação Inicial' : `Reavaliação ${index}`} (
-                          {snap.data_reavaliacao
-                            ? format(new Date(snap.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')
+                          {snap.data_reavaliacao &&
+                          !isNaN(
+                            new Date(
+                              snap.data_reavaliacao.includes('T')
+                                ? snap.data_reavaliacao
+                                : snap.data_reavaliacao + 'T12:00:00',
+                            ).getTime(),
+                          )
+                            ? format(
+                                new Date(
+                                  snap.data_reavaliacao.includes('T')
+                                    ? snap.data_reavaliacao
+                                    : snap.data_reavaliacao + 'T12:00:00',
+                                ),
+                                'dd/MM/yyyy',
+                              )
                             : '-'}
                           )
                         </SelectItem>
