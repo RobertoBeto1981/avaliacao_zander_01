@@ -1,11 +1,17 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.4'
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -42,18 +48,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'avaliacao_acompanhamentos_autor_id_fkey'
-            columns: ['autor_id']
+            foreignKeyName: "avaliacao_acompanhamentos_autor_id_fkey"
+            columns: ["autor_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'avaliacao_acompanhamentos_avaliacao_id_fkey'
-            columns: ['avaliacao_id']
+            foreignKeyName: "avaliacao_acompanhamentos_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -87,18 +93,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'avaliacao_history_avaliacao_id_fkey'
-            columns: ['avaliacao_id']
+            foreignKeyName: "avaliacao_history_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'avaliacao_history_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "avaliacao_history_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -120,7 +126,7 @@ export type Database = {
           periodo_treino: string | null
           professor_id: string | null
           respostas: Json | null
-          status: Database['public']['Enums']['avaliacao_status'] | null
+          status: Database["public"]["Enums"]["avaliacao_status"] | null
           telefone_cliente: string | null
         }
         Insert: {
@@ -140,7 +146,7 @@ export type Database = {
           periodo_treino?: string | null
           professor_id?: string | null
           respostas?: Json | null
-          status?: Database['public']['Enums']['avaliacao_status'] | null
+          status?: Database["public"]["Enums"]["avaliacao_status"] | null
           telefone_cliente?: string | null
         }
         Update: {
@@ -160,23 +166,23 @@ export type Database = {
           periodo_treino?: string | null
           professor_id?: string | null
           respostas?: Json | null
-          status?: Database['public']['Enums']['avaliacao_status'] | null
+          status?: Database["public"]["Enums"]["avaliacao_status"] | null
           telefone_cliente?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: 'avaliacoes_avaliador_id_fkey'
-            columns: ['avaliador_id']
+            foreignKeyName: "avaliacoes_avaliador_id_fkey"
+            columns: ["avaliador_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'avaliacoes_professor_id_fkey'
-            columns: ['professor_id']
+            foreignKeyName: "avaliacoes_professor_id_fkey"
+            columns: ["professor_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -216,11 +222,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'bulk_messages_sender_id_fkey'
-            columns: ['sender_id']
+            foreignKeyName: "bulk_messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -395,11 +401,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'links_avaliacao_avaliacao_id_fkey'
-            columns: ['avaliacao_id']
+            foreignKeyName: "links_avaliacao_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -490,18 +496,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'notifications_bulk_message_id_fkey'
-            columns: ['bulk_message_id']
+            foreignKeyName: "notifications_bulk_message_id_fkey"
+            columns: ["bulk_message_id"]
             isOneToOne: false
-            referencedRelation: 'bulk_messages'
-            referencedColumns: ['id']
+            referencedRelation: "bulk_messages"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'notifications_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -529,18 +535,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'professor_change_requests_avaliacao_id_fkey'
-            columns: ['avaliacao_id']
+            foreignKeyName: "professor_change_requests_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'professor_change_requests_professor_id_fkey'
-            columns: ['professor_id']
+            foreignKeyName: "professor_change_requests_professor_id_fkey"
+            columns: ["professor_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -571,11 +577,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'reavaliacoes_avaliacao_original_id_fkey'
-            columns: ['avaliacao_original_id']
+            foreignKeyName: "reavaliacoes_avaliacao_original_id_fkey"
+            columns: ["avaliacao_original_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -586,11 +592,11 @@ export type Database = {
           foto_url: string | null
           id: string
           nome: string
-          pending_role: Database['public']['Enums']['user_role'] | null
+          pending_role: Database["public"]["Enums"]["user_role"] | null
           pending_roles: string[] | null
           periodo: string | null
           periodos: string[] | null
-          role: Database['public']['Enums']['user_role']
+          role: Database["public"]["Enums"]["user_role"]
           roles: string[] | null
           telefone: string | null
         }
@@ -600,11 +606,11 @@ export type Database = {
           foto_url?: string | null
           id: string
           nome: string
-          pending_role?: Database['public']['Enums']['user_role'] | null
+          pending_role?: Database["public"]["Enums"]["user_role"] | null
           pending_roles?: string[] | null
           periodo?: string | null
           periodos?: string[] | null
-          role: Database['public']['Enums']['user_role']
+          role: Database["public"]["Enums"]["user_role"]
           roles?: string[] | null
           telefone?: string | null
         }
@@ -614,11 +620,11 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nome?: string
-          pending_role?: Database['public']['Enums']['user_role'] | null
+          pending_role?: Database["public"]["Enums"]["user_role"] | null
           pending_roles?: string[] | null
           periodo?: string | null
           periodos?: string[] | null
-          role?: Database['public']['Enums']['user_role']
+          role?: Database["public"]["Enums"]["user_role"]
           roles?: string[] | null
           telefone?: string | null
         }
@@ -690,11 +696,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'videos_agendados_avaliacao_id_fkey'
-            columns: ['avaliacao_id']
+            foreignKeyName: "videos_agendados_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
             isOneToOne: false
-            referencedRelation: 'avaliacoes'
-            referencedColumns: ['id']
+            referencedRelation: "avaliacoes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -733,8 +739,13 @@ export type Database = {
       }
     }
     Enums: {
-      avaliacao_status: 'pendente' | 'em_progresso' | 'concluido'
-      user_role: 'coordenador' | 'professor' | 'avaliador' | 'fisioterapeuta' | 'nutricionista'
+      avaliacao_status: "pendente" | "em_progresso" | "concluido"
+      user_role:
+        | "coordenador"
+        | "professor"
+        | "avaliador"
+        | "fisioterapeuta"
+        | "nutricionista"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -742,31 +753,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -775,23 +788,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -800,23 +813,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -825,46 +838,53 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      avaliacao_status: ['pendente', 'em_progresso', 'concluido'],
-      user_role: ['coordenador', 'professor', 'avaliador', 'fisioterapeuta', 'nutricionista'],
+      avaliacao_status: ["pendente", "em_progresso", "concluido"],
+      user_role: [
+        "coordenador",
+        "professor",
+        "avaliador",
+        "fisioterapeuta",
+        "nutricionista",
+      ],
     },
   },
 } as const
+
 
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
@@ -1219,7 +1239,7 @@ export const Constants = {
 //       GROUP BY u.id
 //       ORDER BY COUNT(a.id) ASC
 //       LIMIT 1;
-//
+//   
 //       -- Se não encontrar por período, pega qualquer professor ativo com menos avaliações
 //       IF selected_prof_id IS NULL THEN
 //         SELECT u.id INTO selected_prof_id
@@ -1230,19 +1250,19 @@ export const Constants = {
 //         ORDER BY COUNT(a.id) ASC
 //         LIMIT 1;
 //       END IF;
-//
+//   
 //       NEW.professor_id := selected_prof_id;
 //     END IF;
-//
+//   
 //     -- Define status inicial se estiver nulo (mesmo para pré-avaliação, garantindo a exibição correta no painel do professor)
 //     IF NEW.status IS NULL THEN
 //       NEW.status := 'pendente';
 //     END IF;
-//
+//   
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION delete_user_completely(uuid)
 //   CREATE OR REPLACE FUNCTION public.delete_user_completely(target_user_id uuid)
 //    RETURNS void
@@ -1256,38 +1276,38 @@ export const Constants = {
 //     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND 'coordenador' = ANY(roles)) THEN
 //       RAISE EXCEPTION 'Apenas coordenadores podem excluir usuários do sistema.';
 //     END IF;
-//
+//   
 //     -- Redistribute professor's avaliacoes
 //     FOR v_av IN SELECT * FROM public.avaliacoes WHERE professor_id = target_user_id AND status IN ('pendente', 'em_progresso') LOOP
 //       selected_prof_id := NULL;
-//
+//       
 //       -- Tenta encontrar professor pelo mesmo periodo
 //       IF v_av.periodo_treino IS NOT NULL THEN
 //         SELECT u.id INTO selected_prof_id
 //         FROM public.users u
 //         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//         WHERE 'professor' = ANY(u.roles)
-//           AND v_av.periodo_treino = ANY(u.periodos)
-//           AND u.ativo = true
+//         WHERE 'professor' = ANY(u.roles) 
+//           AND v_av.periodo_treino = ANY(u.periodos) 
+//           AND u.ativo = true 
 //           AND u.id != target_user_id
 //         GROUP BY u.id
 //         ORDER BY COUNT(a.id) ASC
 //         LIMIT 1;
 //       END IF;
-//
+//   
 //       -- Se não encontrar no mesmo periodo, busca o com menor carga
 //       IF selected_prof_id IS NULL THEN
 //         SELECT u.id INTO selected_prof_id
 //         FROM public.users u
 //         LEFT JOIN public.avaliacoes a ON a.professor_id = u.id AND a.status IN ('pendente', 'em_progresso')
-//         WHERE 'professor' = ANY(u.roles)
-//           AND u.ativo = true
+//         WHERE 'professor' = ANY(u.roles) 
+//           AND u.ativo = true 
 //           AND u.id != target_user_id
 //         GROUP BY u.id
 //         ORDER BY COUNT(a.id) ASC
 //         LIMIT 1;
 //       END IF;
-//
+//   
 //       -- Atualiza
 //       IF selected_prof_id IS NOT NULL THEN
 //         UPDATE public.avaliacoes SET professor_id = selected_prof_id WHERE id = v_av.id;
@@ -1295,12 +1315,12 @@ export const Constants = {
 //         UPDATE public.avaliacoes SET professor_id = NULL WHERE id = v_av.id;
 //       END IF;
 //     END LOOP;
-//
+//   
 //     -- Remove from auth.users (cascades to public.users but preserves evaluations)
 //     DELETE FROM auth.users WHERE id = target_user_id;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION force_uppercase_names()
 //   CREATE OR REPLACE FUNCTION public.force_uppercase_names()
 //    RETURNS trigger
@@ -1323,7 +1343,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION handle_new_user_custom()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user_custom()
 //    RETURNS trigger
@@ -1335,7 +1355,7 @@ export const Constants = {
 //     v_periodos text[];
 //   BEGIN
 //     IF NEW.raw_user_meta_data->>'nome' IS NOT NULL THEN
-//
+//       
 //       -- Trata o array de roles do metadado JSON
 //       IF NEW.raw_user_meta_data->'roles' IS NOT NULL AND jsonb_array_length(NEW.raw_user_meta_data->'roles') > 0 THEN
 //         SELECT array_agg(x::text) INTO v_roles FROM jsonb_array_elements_text(NEW.raw_user_meta_data->'roles') x;
@@ -1344,14 +1364,14 @@ export const Constants = {
 //       ELSE
 //         v_roles := ARRAY['professor'];
 //       END IF;
-//
+//   
 //       -- Trata o array de periodos
 //       IF NEW.raw_user_meta_data->'periodos' IS NOT NULL AND jsonb_array_length(NEW.raw_user_meta_data->'periodos') > 0 THEN
 //         SELECT array_agg(x::text) INTO v_periodos FROM jsonb_array_elements_text(NEW.raw_user_meta_data->'periodos') x;
 //       ELSE
 //         v_periodos := '{}'::text[];
 //       END IF;
-//
+//   
 //       INSERT INTO public.users (id, email, nome, telefone, role, roles, periodo, periodos)
 //       VALUES (
 //         NEW.id,
@@ -1373,7 +1393,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION log_acompanhamento_changes()
 //   CREATE OR REPLACE FUNCTION public.log_acompanhamento_changes()
 //    RETURNS trigger
@@ -1407,7 +1427,7 @@ export const Constants = {
 //     RETURN NULL;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION log_avaliacao_updates()
 //   CREATE OR REPLACE FUNCTION public.log_avaliacao_updates()
 //    RETURNS trigger
@@ -1427,7 +1447,7 @@ export const Constants = {
 //         jsonb_build_object('old_status', OLD.status, 'new_status', NEW.status)
 //       );
 //     END IF;
-//
+//   
 //     IF OLD.professor_id IS DISTINCT FROM NEW.professor_id AND NEW.professor_id IS NOT NULL THEN
 //        INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
 //        VALUES (
@@ -1438,11 +1458,11 @@ export const Constants = {
 //          jsonb_build_object('old_professor', OLD.professor_id, 'new_professor', NEW.professor_id)
 //        );
 //     END IF;
-//
+//   
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION log_new_client_history()
 //   CREATE OR REPLACE FUNCTION public.log_new_client_history()
 //    RETURNS trigger
@@ -1459,9 +1479,9 @@ export const Constants = {
 //         SELECT role::text, nome INTO v_role, v_nome
 //         FROM public.users
 //         WHERE id = current_user_id;
-//
+//   
 //         v_first_name := split_part(v_nome, ' ', 1);
-//
+//   
 //         INSERT INTO public.avaliacao_history (avaliacao_id, user_id, action_type, description, metadata)
 //         VALUES (
 //           NEW.id,
@@ -1483,7 +1503,7 @@ export const Constants = {
 //       RETURN NEW;
 //     END;
 //     $function$
-//
+//   
 // FUNCTION notify_desafio_zander_activation()
 //   CREATE OR REPLACE FUNCTION public.notify_desafio_zander_activation()
 //    RETURNS trigger
@@ -1503,7 +1523,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION notify_professor_on_assignment()
 //   CREATE OR REPLACE FUNCTION public.notify_professor_on_assignment()
 //    RETURNS trigger
@@ -1523,7 +1543,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION prevent_role_update()
 //   CREATE OR REPLACE FUNCTION public.prevent_role_update()
 //    RETURNS trigger
@@ -1535,22 +1555,22 @@ export const Constants = {
 //     IF auth.uid() IS NULL THEN
 //       RETURN NEW;
 //     END IF;
-//
+//   
 //     -- Permite se quem está alterando for um coordenador
 //     IF EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'coordenador') THEN
 //       RETURN NEW;
 //     END IF;
-//
+//   
 //     -- Se não for coordenador e estiver tentando alterar o próprio cargo, reverte a alteração
 //     -- mas permite que outras colunas (nome, telefone, pending_role) sejam atualizadas
 //     IF NEW.role IS DISTINCT FROM OLD.role THEN
 //       NEW.role = OLD.role;
 //     END IF;
-//
+//   
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION reset_desafio_on_concluido()
 //   CREATE OR REPLACE FUNCTION public.reset_desafio_on_concluido()
 //    RETURNS trigger
@@ -1564,7 +1584,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION reset_user_password(text)
 //   CREATE OR REPLACE FUNCTION public.reset_user_password(p_email text)
 //    RETURNS void
@@ -1575,10 +1595,10 @@ export const Constants = {
 //     v_user_id uuid;
 //   BEGIN
 //     SELECT id INTO v_user_id FROM auth.users WHERE email = lower(trim(p_email));
-//
+//     
 //     IF v_user_id IS NOT NULL THEN
 //       UPDATE auth.users
-//       SET
+//       SET 
 //         encrypted_password = extensions.crypt('teste1234', extensions.gen_salt('bf', 10)),
 //         updated_at = NOW(),
 //         email_confirmed_at = COALESCE(email_confirmed_at, NOW())
@@ -1588,7 +1608,7 @@ export const Constants = {
 //     END IF;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION schedule_videos_for_avaliacao()
 //   CREATE OR REPLACE FUNCTION public.schedule_videos_for_avaliacao()
 //    RETURNS trigger
@@ -1603,14 +1623,14 @@ export const Constants = {
 //     FROM public.video_automations_config
 //     WHERE is_active = true
 //       AND NOT EXISTS (
-//         SELECT 1 FROM public.videos_agendados
+//         SELECT 1 FROM public.videos_agendados 
 //         WHERE avaliacao_id = NEW.id AND dias_apos_avaliacao = public.video_automations_config.dias_trigger
 //       );
-//
+//     
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION send_bulk_message(text[], text, text, text, text, text)
 //   CREATE OR REPLACE FUNCTION public.send_bulk_message(p_target_roles text[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text, p_file_url text DEFAULT NULL::text, p_file_name text DEFAULT NULL::text)
 //    RETURNS void
@@ -1622,15 +1642,15 @@ export const Constants = {
 //       v_bulk_id UUID;
 //   BEGIN
 //       v_sender_id := auth.uid();
-//
+//   
 //       IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND 'coordenador' = ANY(roles)) THEN
 //         RAISE EXCEPTION 'Apenas coordenadores podem enviar comunicados.';
 //       END IF;
-//
+//   
 //       INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority, file_url, file_name)
 //       VALUES (v_sender_id, array_to_string(p_target_roles, ', '), p_title, p_message, p_priority, p_file_url, p_file_name)
 //       RETURNING id INTO v_bulk_id;
-//
+//   
 //       IF 'todos' = ANY(p_target_roles) THEN
 //         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
 //         SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id FROM public.users WHERE id != v_sender_id;
@@ -1642,7 +1662,7 @@ export const Constants = {
 //       END IF;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION send_internal_communication(text[], uuid[], text, text, text, text, text)
 //   CREATE OR REPLACE FUNCTION public.send_internal_communication(p_target_roles text[], p_target_users uuid[], p_title text, p_message text, p_priority text DEFAULT 'normal'::text, p_file_url text DEFAULT NULL::text, p_file_name text DEFAULT NULL::text)
 //    RETURNS void
@@ -1655,11 +1675,11 @@ export const Constants = {
 //       v_role_text text;
 //   BEGIN
 //       v_sender_id := auth.uid();
-//
+//   
 //       IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = v_sender_id AND ativo = true) THEN
 //         RAISE EXCEPTION 'Apenas usuários ativos podem enviar comunicados.';
 //       END IF;
-//
+//   
 //       v_role_text := array_to_string(p_target_roles, ', ');
 //       IF array_length(p_target_users, 1) > 0 THEN
 //         IF v_role_text = '' THEN
@@ -1668,17 +1688,17 @@ export const Constants = {
 //           v_role_text := v_role_text || ', usuarios_especificos';
 //         END IF;
 //       END IF;
-//
+//   
 //       INSERT INTO public.bulk_messages (sender_id, target_role, title, message, priority, file_url, file_name)
 //       VALUES (v_sender_id, COALESCE(NULLIF(v_role_text, ''), 'nenhum'), p_title, p_message, p_priority, p_file_url, p_file_name)
 //       RETURNING id INTO v_bulk_id;
-//
+//   
 //       -- Insert for roles
 //       IF array_length(p_target_roles, 1) > 0 THEN
 //         IF 'todos' = ANY(p_target_roles) THEN
 //           INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
-//           SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id
-//           FROM public.users
+//           SELECT id, p_title, p_message, 'message', p_priority, v_bulk_id 
+//           FROM public.users 
 //           WHERE id != v_sender_id;
 //         ELSE
 //           INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
@@ -1688,7 +1708,7 @@ export const Constants = {
 //             AND id != v_sender_id;
 //         END IF;
 //       END IF;
-//
+//   
 //       -- Insert for specific users
 //       IF array_length(p_target_users, 1) > 0 THEN
 //         INSERT INTO public.notifications (user_id, title, message, type, priority, bulk_message_id)
@@ -1696,13 +1716,13 @@ export const Constants = {
 //         FROM public.users
 //         WHERE id = ANY(p_target_users) AND id != v_sender_id
 //         AND NOT EXISTS (
-//           SELECT 1 FROM public.notifications n
+//           SELECT 1 FROM public.notifications n 
 //           WHERE n.user_id = public.users.id AND n.bulk_message_id = v_bulk_id
 //         );
 //       END IF;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION set_desafio_zander_activation_date()
 //   CREATE OR REPLACE FUNCTION public.set_desafio_zander_activation_date()
 //    RETURNS trigger
@@ -1718,7 +1738,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 
 // --- TRIGGERS ---
 // Table: avaliacao_acompanhamentos
@@ -1753,3 +1773,4 @@ export const Constants = {
 //   CREATE UNIQUE INDEX video_automations_config_dias_trigger_key ON public.video_automations_config USING btree (dias_trigger)
 // Table: videos_agendados
 //   CREATE UNIQUE INDEX videos_agendados_avaliacao_dias_key ON public.videos_agendados USING btree (avaliacao_id, dias_apos_avaliacao)
+
