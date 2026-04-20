@@ -146,11 +146,16 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
       })
       return
     }
+
+    // Atualização otimista para feedback imediato na UI
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
+
     try {
       await markAsRead(id)
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
     } catch (e) {
       console.error(e)
+      // Reverter em caso de erro
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: false } : n)))
     }
   }
 

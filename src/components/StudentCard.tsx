@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -43,6 +44,35 @@ export function StudentCard({
   const isAvaliador = currentUserRoles.includes('avaliador')
   const { toast } = useToast()
   const [isRequesting, setIsRequesting] = useState(false)
+  const [hasRequested, setHasRequested] = useState(false)
+  const [isLoadingRequest, setIsLoadingRequest] = useState(true)
+
+  useEffect(() => {
+    if (isProfessor && ev.professor_id !== currentUserId) {
+      const checkRequest = async () => {
+        try {
+          const { data } = await supabase
+            .from('professor_change_requests')
+            .select('id, status')
+            .eq('avaliacao_id', ev.id)
+            .eq('professor_id', currentUserId)
+            .eq('status', 'pendente')
+            .maybeSingle()
+
+          if (data) {
+            setHasRequested(true)
+          }
+        } catch (error) {
+          console.error(error)
+        } finally {
+          setIsLoadingRequest(false)
+        }
+      }
+      checkRequest()
+    } else {
+      setIsLoadingRequest(false)
+    }
+  }, [ev.id, currentUserId, isProfessor, ev.professor_id])
 
   // Regra: Professor edita apenas situação "TREINO" se o aluno foi distribuído para ele
   const canEditTreino = isCoordenador || (isProfessor && ev.professor_id === currentUserId)
@@ -72,9 +102,11 @@ export function StudentCard({
     try {
       setIsRequesting(true)
       await requestProfessorChange(ev.id, currentUserId)
+      setHasRequested(true)
       toast({ title: 'Solicitação enviada', description: 'O coordenador foi notificado.' })
     } catch (e: any) {
-      if (e.code === '23505') {
+      if (e.code === '23505' || e.message?.includes('duplicate key')) {
+        setHasRequested(true)
         toast({ title: 'Aviso', description: 'Você já solicitou este aluno.' })
       } else {
         toast({ variant: 'destructive', title: 'Erro', description: e.message })
@@ -228,11 +260,17 @@ export function StudentCard({
         {isProfessor && ev.professor_id !== currentUserId && (
           <Button
             variant="outline"
-            className="w-full text-xs font-bold h-8 border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20"
+            className="w-full text-xs font-bold h-8 border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 disabled:opacity-50"
             onClick={handleSolicitar}
-            disabled={isRequesting}
+            disabled={isRequesting || isLoadingRequest || hasRequested}
           >
-            {isRequesting ? 'Solicitando...' : 'Solicitar Aluno'}
+            {isLoadingRequest
+              ? 'Carregando...'
+              : hasRequested
+                ? 'Aluno Solicitado'
+                : isRequesting
+                  ? 'Solicitando...'
+                  : 'Solicitar Aluno'}
           </Button>
         )}
         <div className="flex items-center justify-between w-full bg-zinc-800/50 p-2 rounded-md border border-zinc-700/50">
