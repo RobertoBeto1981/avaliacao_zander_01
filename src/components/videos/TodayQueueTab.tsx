@@ -221,6 +221,9 @@ export function TodayQueueTab() {
     (q) => !processedKeys.has(q.agendado_id || `${q.avaliacao.id}_${q.config.dias_trigger}`),
   ).length
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   if (loading) {
     return (
       <div className="p-8 text-center text-muted-foreground animate-pulse">
