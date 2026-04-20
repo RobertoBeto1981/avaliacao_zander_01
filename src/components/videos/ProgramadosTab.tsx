@@ -26,6 +26,9 @@ export function ProgramadosTab() {
       try {
         const videos = await getScheduledVideos()
 
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
         const formatted = videos
           .filter((v) => v.status === 'pendente' && v.avaliacoes?.data_avaliacao)
           .map((v) => {
@@ -44,6 +47,7 @@ export function ProgramadosTab() {
               status: v.status,
             }
           })
+          .filter((v) => v.data_estimada > today) // Exclui vídeos atrasados e os de hoje (centralizados na Fila do Dia)
           .sort((a, b) => {
             const dateA = a.data_estimada.getTime()
             const dateB = b.data_estimada.getTime()
@@ -139,10 +143,6 @@ export function ProgramadosTab() {
                 </TableRow>
               ) : (
                 filteredItems.map((item) => {
-                  const isLate = item.data_estimada && item.data_estimada < today
-                  const isToday =
-                    item.data_estimada && item.data_estimada.getTime() === today.getTime()
-
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
@@ -164,19 +164,6 @@ export function ProgramadosTab() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span>{format(item.data_estimada, 'dd/MM/yyyy')}</span>
-                          {isLate && (
-                            <Badge
-                              variant="destructive"
-                              className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
-                            >
-                              <AlertCircle className="w-3 h-3" /> Atrasado
-                            </Badge>
-                          )}
-                          {isToday && (
-                            <Badge className="bg-[#84cc16] text-zinc-900 text-[10px] py-0 px-1.5 h-4 hover:bg-[#84cc16]">
-                              Hoje
-                            </Badge>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell>

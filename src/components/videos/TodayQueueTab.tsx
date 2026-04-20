@@ -10,7 +10,15 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { PlayCircle, MessageCircle, CheckCircle2, ListTodo, Send, Trophy } from 'lucide-react'
+import {
+  PlayCircle,
+  MessageCircle,
+  CheckCircle2,
+  ListTodo,
+  Send,
+  Trophy,
+  AlertCircle,
+} from 'lucide-react'
 import { getPendingVideosForToday, logVideoSent } from '@/services/videos'
 import { getPendingDesafioZander, markDesafioZanderSent } from '@/services/evaluations'
 import { useToast } from '@/hooks/use-toast'
@@ -69,10 +77,7 @@ export function TodayQueueTab() {
 
       const validVideos = videos.filter((v: any) => {
         if (!v.avaliacao?.data_avaliacao) return false
-        const dataAvaliacao = new Date(v.avaliacao.data_avaliacao + 'T00:00:00')
-        const dataEstimada = new Date(dataAvaliacao)
-        dataEstimada.setDate(dataEstimada.getDate() + v.config.dias_trigger)
-        return dataEstimada >= today
+        return true // getPendingVideosForToday already filters by triggerDate <= today, which includes today and delayed videos
       })
 
       setQueue(validVideos)
@@ -299,12 +304,24 @@ export function TodayQueueTab() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={isProcessed ? 'default' : 'secondary'}
-                          className={isProcessed ? 'bg-green-500 hover:bg-green-600' : ''}
-                        >
-                          {isProcessed ? 'Enviado Hoje' : 'Pendente'}
-                        </Badge>
+                        <div className="flex gap-2 items-center">
+                          <Badge
+                            variant={isProcessed ? 'default' : 'secondary'}
+                            className={isProcessed ? 'bg-green-500 hover:bg-green-600' : ''}
+                          >
+                            {isProcessed ? 'Enviado' : 'Pendente'}
+                          </Badge>
+                          {!isProcessed &&
+                            item.data_estimada &&
+                            item.data_estimada.getTime() < today.getTime() && (
+                              <Badge
+                                variant="destructive"
+                                className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
+                              >
+                                <AlertCircle className="w-3 h-3" /> Atrasado
+                              </Badge>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
