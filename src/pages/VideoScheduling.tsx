@@ -1,10 +1,11 @@
-import { PlaySquare, Settings, History, ListTodo, MessageSquare, CalendarClock } from 'lucide-react'
+import { PlaySquare, History, ListTodo, CalendarClock, Zap } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VideoConfigTab } from '@/components/videos/VideoConfigTab'
 import { HistoryTab } from '@/components/videos/HistoryTab'
 import { TodayQueueTab } from '@/components/videos/TodayQueueTab'
 import { MessageTemplatesTab } from '@/components/videos/MessageTemplatesTab'
 import { ProgramadosTab } from '@/components/videos/ProgramadosTab'
+import { ManualClientMessagingTab } from '@/components/videos/ManualClientMessagingTab'
 
 export default function VideoScheduling() {
   return (
@@ -14,15 +15,15 @@ export default function VideoScheduling() {
           <PlaySquare className="w-8 h-8" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Automação de Vídeos</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Automação de Vídeos & Mensagens</h1>
           <p className="text-muted-foreground text-lg">
-            Centro de comando para configuração de envio automático de vídeos educativos.
+            Centro de comando unificado para disparo de vídeos e comunicação direta com alunos.
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="queue" className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 w-full max-w-3xl flex flex-wrap h-auto justify-start gap-1">
+        <TabsList className="bg-muted/50 p-1 w-full max-w-4xl flex flex-wrap h-auto justify-start gap-1">
           <TabsTrigger value="queue" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <ListTodo className="w-4 h-4" />
             <span className="hidden sm:inline">Fila do Dia</span>
@@ -32,13 +33,9 @@ export default function VideoScheduling() {
             <CalendarClock className="w-4 h-4" />
             Programados
           </TabsTrigger>
-          <TabsTrigger value="configs" className="flex items-center gap-2 flex-1 min-w-[120px]">
-            <Settings className="w-4 h-4" />
-            Gatilhos
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2 flex-1 min-w-[120px]">
-            <MessageSquare className="w-4 h-4" />
-            Mensagens
+          <TabsTrigger value="central" className="flex items-center gap-2 flex-1 min-w-[160px]">
+            <Zap className="w-4 h-4" />
+            Central de Automação
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2 flex-1 min-w-[120px]">
             <History className="w-4 h-4" />
@@ -58,17 +55,37 @@ export default function VideoScheduling() {
         </TabsContent>
 
         <TabsContent
-          value="configs"
+          value="central"
           className="m-0 focus-visible:outline-none focus-visible:ring-0"
         >
-          <VideoConfigTab />
-        </TabsContent>
+          <div className="space-y-12">
+            <ManualClientMessagingTab />
 
-        <TabsContent
-          value="templates"
-          className="m-0 focus-visible:outline-none focus-visible:ring-0"
-        >
-          <MessageTemplatesTab />
+            <div className="space-y-4">
+              <div className="border-b border-border/50 pb-2">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  Gatilhos de Vídeo (Automáticos)
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure os dias e os vídeos que serão adicionados automaticamente na Fila do Dia
+                  conforme o tempo da avaliação.
+                </p>
+              </div>
+              <VideoConfigTab />
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-b border-border/50 pb-2">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  Templates de Sistema
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure as mensagens disparadas por ações fixas do sistema (ex: Envio de Links).
+                </p>
+              </div>
+              <MessageTemplatesTab />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent
