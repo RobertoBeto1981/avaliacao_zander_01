@@ -4,17 +4,27 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { Send, X, MessageSquare, CheckCircle2, Search } from 'lucide-react'
+import {
+  Send,
+  X,
+  MessageSquare,
+  CheckCircle2,
+  Search,
+  ListTodo,
+  ChevronsUpDown,
+} from 'lucide-react'
 
 export function ManualClientMessagingTab() {
   const { toast } = useToast()
@@ -23,10 +33,11 @@ export function ManualClientMessagingTab() {
   const [targetUsers, setTargetUsers] = useState<string[]>([])
   const [avaliacoes, setAvaliacoes] = useState<any[]>([])
   const [fetching, setFetching] = useState(true)
-  const [selectedUserId, setSelectedUserId] = useState('none')
+  const [openCombobox, setOpenCombobox] = useState(false)
   const [sendQueue, setSendQueue] = useState<any[]>([])
 
   const filterOptions = [
+    { id: 'all', label: 'Todos os Clientes' },
     { id: '1', label: 'Clientes (1 Dia após avaliação)' },
     { id: '7', label: 'Clientes (7 Dias após avaliação)' },
     { id: '15', label: 'Clientes (15 Dias após avaliação)' },
@@ -39,7 +50,7 @@ export function ManualClientMessagingTab() {
     async function load() {
       const { data } = await supabase
         .from('avaliacoes')
-        .select('id, nome_cliente, telefone_cliente, data_avaliacao')
+        .select('id, nome_cliente, telefone_cliente, data_avaliacao, evo_id')
         .order('data_avaliacao', { ascending: false })
 
       if (data) {
@@ -70,10 +81,9 @@ export function ManualClientMessagingTab() {
   }
 
   const handleAddUser = (userId: string) => {
-    if (userId !== 'none' && !targetUsers.includes(userId)) {
+    if (userId && !targetUsers.includes(userId)) {
       setTargetUsers([...targetUsers, userId])
     }
-    setTimeout(() => setSelectedUserId('none'), 10)
   }
 
   const handleRemoveUser = (userId: string) => {
@@ -109,16 +119,24 @@ export function ManualClientMessagingTab() {
     today.setHours(0, 0, 0, 0)
 
     targetFilters.forEach((daysStr) => {
-      const days = parseInt(daysStr)
-      const targetDate = new Date(today)
-      targetDate.setDate(targetDate.getDate() - days)
-      const targetDateStr = targetDate.toISOString().split('T')[0]
+      if (daysStr === 'all') {
+        avaliacoes.forEach((client) => {
+          if (client.telefone_cliente) {
+            selectedClients.set(client.id, client)
+          }
+        })
+      } else {
+        const days = parseInt(daysStr)
+        const targetDate = new Date(today)
+        targetDate.setDate(targetDate.getDate() - days)
+        const targetDateStr = targetDate.toISOString().split('T')[0]
 
-      avaliacoes.forEach((client) => {
-        if (client.data_avaliacao === targetDateStr && client.telefone_cliente) {
-          selectedClients.set(client.id, client)
-        }
-      })
+        avaliacoes.forEach((client) => {
+          if (client.data_avaliacao === targetDateStr && client.telefone_cliente) {
+            selectedClients.set(client.id, client)
+          }
+        })
+      }
     })
 
     const queue = Array.from(selectedClients.values()).map((client) => {
@@ -212,34 +230,66 @@ export function ManualClientMessagingTab() {
               <Label className="font-semibold flex items-center gap-2 text-foreground">
                 Selecionar Clientes Manualmente
               </Label>
-              <Select value={selectedUserId} onValueChange={handleAddUser}>
-                <SelectTrigger className="h-11">
-                  <SelectValue
-                    placeholder={
-                      fetching
-                        ? 'Carregando base de clientes...'
-                        : 'Busque e selecione um cliente...'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  <SelectItem value="none" className="text-muted-foreground italic">
-                    Selecione um cliente na lista...
-                  </SelectItem>
-                  {avaliacoes.map((a) => (
-                    <SelectItem key={a.id} value={a.id} className="cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{a.nome_cliente}</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {a.data_avaliacao
-                            ? new Date(a.data_avaliacao).toLocaleDateString('pt-BR')
-                            : 'Sem data'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    className="w-full justify-between h-11 border-input bg-background hover:bg-muted/50"
+                    disabled={fetching}
+                  >
+                    <span className="truncate text-muted-foreground">
+                      {fetching ? 'Carregando base de clientes...' : 'Busque por nome ou ID EVO...'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
+                  <Command
+                    filter={(value, search) => {
+                      const normalizedValue = value.toLowerCase()
+                      const normalizedSearch = search.toLowerCase()
+                      return normalizedValue.includes(normalizedSearch) ? 1 : 0
+                    }}
+                  >
+                    <CommandInput placeholder="Buscar cliente..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {avaliacoes.map((a) => {
+                          const searchValue = `${a.nome_cliente} ${a.evo_id || ''} ${a.id}`
+                          return (
+                            <CommandItem
+                              key={a.id}
+                              value={searchValue}
+                              onSelect={() => {
+                                handleAddUser(a.id)
+                                setOpenCombobox(false)
+                              }}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <span className="font-medium flex-1 truncate">{a.nome_cliente}</span>
+                              {a.evo_id && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] whitespace-nowrap"
+                                >
+                                  EVO: {a.evo_id}
+                                </Badge>
+                              )}
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
               {targetUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4 p-3 bg-muted/20 rounded-lg border border-border/50 min-h-[48px]">
