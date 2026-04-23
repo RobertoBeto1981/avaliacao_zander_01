@@ -27,10 +27,25 @@ import {
   SmilePlus,
 } from 'lucide-react'
 
-export function ManualClientMessagingTab() {
+export function ManualClientMessagingTab({
+  initialMessage = '',
+  onMessageChange,
+}: {
+  initialMessage?: string
+  onMessageChange?: (msg: string) => void
+}) {
   const { toast } = useToast()
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(initialMessage)
   const [targetFilters, setTargetFilters] = useState<string[]>([])
+
+  useEffect(() => {
+    setMessage(initialMessage)
+  }, [initialMessage])
+
+  const handleMessageChange = (val: string) => {
+    setMessage(val)
+    onMessageChange?.(val)
+  }
   const [targetUsers, setTargetUsers] = useState<string[]>([])
   const [avaliacoes, setAvaliacoes] = useState<any[]>([])
   const [fetching, setFetching] = useState(true)
@@ -162,6 +177,37 @@ export function ManualClientMessagingTab() {
       title: 'Fila Gerada',
       description: `${queue.length} destinatários preparados com sucesso.`,
     })
+
+    // Salvar na biblioteca de mensagens
+    const saveToLibrary = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const userId = sessionData?.session?.user?.id
+
+        if (userId) {
+          const { data: existing } = await supabase
+            .from('bulk_messages')
+            .select('id')
+            .eq('target_role', 'clientes')
+            .eq('message', message.trim())
+            .eq('hidden_from_library', false)
+            .limit(1)
+
+          if (!existing || existing.length === 0) {
+            await supabase.from('bulk_messages').insert({
+              sender_id: userId,
+              target_role: 'clientes',
+              title: 'Mensagem para Clientes',
+              message: message.trim(),
+              priority: 'normal',
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao salvar na biblioteca', err)
+      }
+    }
+    saveToLibrary()
   }
 
   const EmojiPicker = ({
@@ -391,7 +437,7 @@ export function ManualClientMessagingTab() {
             <Textarea
               id="manual-message-textarea"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => handleMessageChange(e.target.value)}
               placeholder="Olá {{nome}}, tudo bem? Passando para avisar que..."
               className="min-h-[120px] resize-y text-sm"
             />
@@ -399,7 +445,7 @@ export function ManualClientMessagingTab() {
               <EmojiPicker
                 targetId="manual-message-textarea"
                 text={message}
-                onChange={(val) => setMessage(val)}
+                onChange={(val) => handleMessageChange(val)}
               />
               <p className="text-xs text-muted-foreground mt-2 max-w-[70%] text-right">
                 Dica de variável: Use{' '}
