@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVideoConfigs } from '@/services/videos'
+import { getVideoConfigs, deleteVideoConfig } from '@/services/videos'
 import { ConfigCard } from './ConfigCard'
 
 const STANDARD_TRIGGERS = [1, 7, 30, 60, 90]
@@ -28,6 +28,16 @@ export function VideoConfigTab() {
     if (!isNaN(val) && val > 0 && !triggers.includes(val)) {
       setTriggers((prev) => [...prev, val].sort((a, b) => a - b))
       setNewTrigger('')
+    }
+  }
+
+  const handleDeleteTrigger = async (days: number) => {
+    if (!confirm('Tem certeza que deseja excluir este gatilho?')) return
+    try {
+      await deleteVideoConfig(days)
+      setTriggers((prev) => prev.filter((t) => t !== days))
+    } catch (e: any) {
+      alert('Erro ao excluir gatilho: ' + e.message)
     }
   }
 
@@ -81,7 +91,32 @@ export function VideoConfigTab() {
 
       {triggers.map((days) => {
         const config = configs.find((c) => c.dias_trigger === days)
-        return <ConfigCard key={days} triggerDays={days} initialConfig={config} />
+        return (
+          <div key={days} className="relative group">
+            <ConfigCard triggerDays={days} initialConfig={config} />
+            <button
+              onClick={() => handleDeleteTrigger(days)}
+              title="Excluir Gatilho"
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
+        )
       })}
     </div>
   )

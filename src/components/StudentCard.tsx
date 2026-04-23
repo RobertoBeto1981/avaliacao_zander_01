@@ -579,9 +579,7 @@ export function EditarAvaliacaoDialog({
         <DialogHeader>
           <DialogTitle>Editar Avaliação</DialogTitle>
           <DialogDescription className="text-zinc-400">
-            {noEval
-              ? 'Aviso sobre o cliente'
-              : 'Selecione qual avaliação física você deseja editar.'}
+            {noEval ? 'Aviso sobre o aluno' : 'Selecione qual avaliação física você deseja editar.'}
           </DialogDescription>
         </DialogHeader>
         <div className="py-6">
@@ -591,8 +589,7 @@ export function EditarAvaliacaoDialog({
             </div>
           ) : noEval ? (
             <div className="text-center p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 text-amber-400 text-sm">
-              Cliente não tem avaliação ou não realizou nenhuma avaliação, então por isso não é
-              possível editar.
+              Aluno não realizou nenhuma avaliação
             </div>
           ) : (
             <div className="space-y-3">

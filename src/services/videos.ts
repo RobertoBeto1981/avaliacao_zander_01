@@ -34,6 +34,15 @@ export const getScheduledVideos = async () => {
   return data || []
 }
 
+export const deleteVideoConfig = async (dias_trigger: number) => {
+  const { error } = await supabase
+    .from('video_automations_config')
+    .delete()
+    .eq('dias_trigger', dias_trigger)
+
+  if (error) throw error
+}
+
 export const getVideoConfigs = async () => {
   const { data, error } = await supabase
     .from('video_automations_config')

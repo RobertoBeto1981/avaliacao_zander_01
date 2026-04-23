@@ -21,11 +21,13 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InternalCommunications } from '@/components/InternalCommunications'
 import { SentCommunications } from '@/components/SentCommunications'
+import { MessageLibrary } from '@/components/MessageLibrary'
 
 export default function Communications() {
   const { profile } = useAuth()
   const { toast } = useToast()
 
+  const [activeTab, setActiveTab] = useState('enviar')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [priority, setPriority] = useState('normal')
@@ -181,8 +183,8 @@ export default function Communications() {
         </div>
       </div>
 
-      <Tabs defaultValue="enviar" className="space-y-6">
-        <TabsList className="bg-zinc-900 border border-zinc-800/50">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-zinc-900 border border-zinc-800/50 flex flex-wrap h-auto">
           <TabsTrigger
             value="enviar"
             className="data-[state=active]:bg-zinc-800 data-[state=active]:text-[#84cc16]"
@@ -201,6 +203,12 @@ export default function Communications() {
           >
             Histórico e Rastreio
           </TabsTrigger>
+          <TabsTrigger
+            value="biblioteca"
+            className="data-[state=active]:bg-zinc-800 data-[state=active]:text-[#84cc16]"
+          >
+            Biblioteca de Mensagens
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="caixa" className="m-0 focus-visible:outline-none focus-visible:ring-0">
@@ -212,6 +220,20 @@ export default function Communications() {
           className="m-0 focus-visible:outline-none focus-visible:ring-0"
         >
           <SentCommunications />
+        </TabsContent>
+
+        <TabsContent
+          value="biblioteca"
+          className="m-0 focus-visible:outline-none focus-visible:ring-0"
+        >
+          <MessageLibrary
+            onReuse={(t, m) => {
+              setTitle(t)
+              setMessage(m)
+              setActiveTab('enviar')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="enviar" className="m-0 focus-visible:outline-none focus-visible:ring-0">
