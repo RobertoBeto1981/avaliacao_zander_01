@@ -38,9 +38,11 @@ export function MessageTemplatesTab() {
   const handleSave = async (id: string, title: string, text: string) => {
     setSavingId(id)
     try {
+      // Normaliza para assegurar que emojis compostos sejam formatados corretamente antes do banco
+      const normalizedText = text.normalize('NFC')
       const { error } = await supabase
         .from('message_templates')
-        .update({ title, template: text, updated_at: new Date().toISOString() })
+        .update({ title, template: normalizedText, updated_at: new Date().toISOString() })
         .eq('id', id)
       if (error) throw error
       toast({

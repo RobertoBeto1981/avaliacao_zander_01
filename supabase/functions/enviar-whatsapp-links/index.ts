@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     })
 
     const { data: avaliacao, error } = await supabaseClient
@@ -62,9 +62,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const firstName = avaliacao.nome_cliente.trim().split(' ')[0]
-    
-    const { data: tplData } = await supabaseClient.from('message_templates').select('template').eq('id', 'links_avaliacao').single()
-    let text = tplData?.template || `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada!`
+
+    const { data: tplData } = await supabaseClient
+      .from('message_templates')
+      .select('template')
+      .eq('id', 'links_avaliacao')
+      .single()
+    let text =
+      tplData?.template ||
+      `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada!`
 
     let linksStr = ''
     if (links.anamnese_url) linksStr += `*Anamnese:* ${links.anamnese_url}\n`
@@ -77,6 +83,7 @@ Deno.serve(async (req: Request) => {
       .replace(/\{\{\s*nome\s*\}\}/gi, firstName)
       .replace(/\{\{\s*nome_cliente\s*\}\}/gi, avaliacao.nome_cliente.trim())
       .replace(/\{\{\s*links\s*\}\}/gi, linksStr.trim())
+      .normalize('NFC') // Normaliza a string para UTF-8 de forma segura, garantindo que emojis não sejam corrompidos
 
     const waToken = Deno.env.get('WHATSAPP_TOKEN')
     const waPhoneId = Deno.env.get('WHATSAPP_PHONE_ID')
@@ -85,26 +92,27 @@ Deno.serve(async (req: Request) => {
       console.warn('WhatsApp credentials not set. Simulating success.')
       return new Response(
         JSON.stringify({ success: true, simulated: true, message: 'Simulado com sucesso' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } },
       )
     }
 
-    const requestBody = JSON.stringify({
+    // Evita o TextEncoder manual que pode corromper headers dependendo do ambiente Deno/Cloud
+    const requestBodyObj = {
       messaging_product: 'whatsapp',
       to: phone,
       type: 'text',
       text: {
-        body: message
-      }
-    })
+        body: message,
+      },
+    }
 
     const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${waToken}`,
-        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${waToken}`,
+        'Content-Type': 'application/json',
       },
-      body: new TextEncoder().encode(requestBody)
+      body: JSON.stringify(requestBodyObj),
     })
 
     const waData = await waRes.json()
@@ -114,15 +122,13 @@ Deno.serve(async (req: Request) => {
       throw new Error(waData.error?.message || 'Falha ao enviar mensagem pelo WhatsApp')
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: waData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
+    return new Response(JSON.stringify({ success: true, data: waData }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+    })
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+    })
   }
 })

@@ -24,6 +24,7 @@ import {
   Search,
   ListTodo,
   ChevronsUpDown,
+  SmilePlus,
 } from 'lucide-react'
 
 export function ManualClientMessagingTab() {
@@ -141,7 +142,8 @@ export function ManualClientMessagingTab() {
 
     const queue = Array.from(selectedClients.values()).map((client) => {
       const firstName = client.nome_cliente.trim().split(' ')[0]
-      const msg = message.replace(/\{\{\s*nome\s*\}\}/gi, firstName)
+      // Normaliza para assegurar processamento correto de Emojis em URIs
+      const msg = message.replace(/\{\{\s*nome\s*\}\}/gi, firstName).normalize('NFC')
       return { ...client, compiledMessage: msg, sent: false }
     })
 
@@ -161,6 +163,204 @@ export function ManualClientMessagingTab() {
       description: `${queue.length} destinatários preparados com sucesso.`,
     })
   }
+
+  const EmojiPicker = ({
+    targetId,
+    text,
+    onChange,
+  }: {
+    targetId: string
+    text: string
+    onChange: (val: string) => void
+  }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          className="h-8 border-border/50 text-muted-foreground hover:text-foreground mt-2"
+        >
+          <SmilePlus className="w-4 h-4 mr-2" />
+          Emoji
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[320px] p-2 grid grid-cols-8 gap-1 max-h-[220px] overflow-y-auto"
+        align="start"
+      >
+        {[
+          '😀',
+          '😂',
+          '🤣',
+          '😊',
+          '😍',
+          '🥰',
+          '😘',
+          '😜',
+          '😎',
+          '🤩',
+          '🥳',
+          '😏',
+          '😒',
+          '😞',
+          '😔',
+          '😟',
+          '😕',
+          '🙁',
+          '😣',
+          '😖',
+          '😫',
+          '😩',
+          '🥺',
+          '😢',
+          '😭',
+          '😤',
+          '😠',
+          '😡',
+          '🤬',
+          '🤯',
+          '😳',
+          '🥵',
+          '🥶',
+          '😱',
+          '😨',
+          '😰',
+          '😥',
+          '😓',
+          '🤗',
+          '🤔',
+          '🤭',
+          '🤫',
+          '🤥',
+          '😶',
+          '😐',
+          '😑',
+          '😬',
+          '🙄',
+          '😯',
+          '😦',
+          '😧',
+          '😮',
+          '😲',
+          '🥱',
+          '😴',
+          '🤤',
+          '😪',
+          '😵',
+          '🤐',
+          '🥴',
+          '🤢',
+          '🤮',
+          '🤧',
+          '😷',
+          '🤒',
+          '🤕',
+          '🤑',
+          '🤠',
+          '😈',
+          '👿',
+          '👹',
+          '👺',
+          '🤡',
+          '💩',
+          '👻',
+          '💀',
+          '☠️',
+          '👽',
+          '👾',
+          '🤖',
+          '🎃',
+          '😺',
+          '😸',
+          '😹',
+          '😻',
+          '😼',
+          '😽',
+          '🙀',
+          '😿',
+          '😾',
+          '❤️',
+          '🧡',
+          '💛',
+          '💚',
+          '💙',
+          '💜',
+          '🖤',
+          '🤍',
+          '🤎',
+          '💔',
+          '❣️',
+          '💕',
+          '💞',
+          '💓',
+          '💗',
+          '💖',
+          '💘',
+          '💝',
+          '💟',
+          '☮️',
+          '✝️',
+          '💪',
+          '🏋️',
+          '🏃',
+          '🤸',
+          '🚴',
+          '🎯',
+          '🏆',
+          '🏅',
+          '🥇',
+          '🥈',
+          '🥉',
+          '🔥',
+          '✨',
+          '🌟',
+          '💫',
+          '💥',
+          '💯',
+          '✅',
+          '❌',
+          '⚠️',
+          '🛑',
+          '👍',
+          '👎',
+          '👏',
+          '🙌',
+          '👐',
+          '🤝',
+          '🙏',
+          '🚨',
+          '📝',
+          '🩺',
+          '⚖️',
+          '📊',
+          '📌',
+        ].map((e) => (
+          <button
+            key={e}
+            onClick={() => {
+              const textarea = document.getElementById(targetId) as HTMLTextAreaElement
+              if (textarea) {
+                const start = textarea.selectionStart
+                const end = textarea.selectionEnd
+                const newText = text.substring(0, start) + e + text.substring(end)
+                onChange(newText)
+                setTimeout(() => {
+                  textarea.focus()
+                  textarea.setSelectionRange(start + e.length, start + e.length)
+                }, 10)
+              } else {
+                onChange(text + e)
+              }
+            }}
+            className="hover:bg-muted p-1.5 rounded text-lg flex items-center justify-center transition-colors"
+          >
+            {e}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
 
   const handleSendWa = (clientId: string, phone: string, msg: string) => {
     let cleanPhone = phone.replace(/\D/g, '')
@@ -189,16 +389,24 @@ export function ManualClientMessagingTab() {
           <div className="space-y-2">
             <Label className="font-semibold text-foreground">Mensagem Personalizada</Label>
             <Textarea
+              id="manual-message-textarea"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Olá {{nome}}, tudo bem? Passando para avisar que..."
               className="min-h-[120px] resize-y text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              Dica de variável: Use{' '}
-              <code className="bg-muted px-1 rounded font-mono">{'{{nome}}'}</code> para preencher
-              automaticamente o primeiro nome do cliente.
-            </p>
+            <div className="flex items-start justify-between">
+              <EmojiPicker
+                targetId="manual-message-textarea"
+                text={message}
+                onChange={(val) => setMessage(val)}
+              />
+              <p className="text-xs text-muted-foreground mt-2 max-w-[70%] text-right">
+                Dica de variável: Use{' '}
+                <code className="bg-muted px-1 rounded font-mono">{'{{nome}}'}</code> para preencher
+                automaticamente o primeiro nome do cliente.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
