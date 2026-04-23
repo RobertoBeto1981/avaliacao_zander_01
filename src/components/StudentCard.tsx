@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,12 +11,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Clock, MessageSquare, Edit, Activity, Scale, HeartPulse, Target } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+  Clock,
+  MessageSquare,
+  Edit,
+  Activity,
+  Scale,
+  HeartPulse,
+  Target,
+  FileEdit,
+  Loader2,
+} from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { requestProfessorChange } from '@/services/professor_requests'
 import { calculateDeadline } from '@/lib/holidays'
 import { useToast } from '@/hooks/use-toast'
+import { updateEvaluationFull } from '@/services/evaluations'
+import { getAvaliacaoHistory } from '@/services/reavaliacoes'
 
 interface StudentCardProps {
   ev: any
@@ -46,6 +68,8 @@ export function StudentCard({
   const [isRequesting, setIsRequesting] = useState(false)
   const [hasRequested, setHasRequested] = useState(false)
   const [isLoadingRequest, setIsLoadingRequest] = useState(true)
+  const [isEditCadastroOpen, setIsEditCadastroOpen] = useState(false)
+  const [isEditAvaliacaoOpen, setIsEditAvaliacaoOpen] = useState(false)
 
   useEffect(() => {
     if (isProfessor && ev.professor_id !== currentUserId) {
@@ -298,47 +322,282 @@ export function StudentCard({
         <div className="flex gap-1.5 w-full pt-1">
           <Button
             variant="outline"
-            className="flex-[1.2] bg-zinc-700 hover:bg-zinc-600 border-zinc-600 text-white font-bold text-[11px] h-9 px-0 min-w-0 overflow-hidden"
+            className="flex-[1] bg-zinc-700 hover:bg-zinc-600 border-zinc-600 text-white font-bold text-[11px] h-9 px-1 min-w-0 overflow-hidden"
             onClick={() => onAnotacoesClick(ev)}
           >
             <MessageSquare className="w-3.5 h-3.5 sm:mr-1.5 shrink-0" />
-            <span className="truncate px-1">Anotações</span>
+            <span className="truncate hidden sm:inline">Anotações</span>
           </Button>
 
           <Button
-            className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-9 px-0 min-w-0 overflow-hidden"
+            className="flex-[1.2] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-9 px-1 min-w-0 overflow-hidden"
             asChild
           >
-            <Link to={`/evaluation/${ev.id}`} className="truncate px-1">
-              Avaliação
+            <Link to={`/evaluation/${ev.id}`} className="flex items-center justify-center">
+              <span className="truncate">Avaliação</span>
             </Link>
           </Button>
 
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              'flex-[0.4] shrink-0 h-9 border-[#84cc16] text-[#84cc16] bg-transparent hover:bg-[#84cc16]/10',
-              !canEditButton && 'opacity-40 cursor-not-allowed grayscale',
-            )}
-            asChild={canEditButton}
-            onClick={(e) => {
-              if (!canEditButton) e.preventDefault()
-            }}
-          >
-            {canEditButton ? (
-              <Link to={`/evaluation/edit/${ev.id}`}>
-                <Edit className="w-4 h-4 shrink-0" />
-              </Link>
-            ) : (
-              <button type="button" disabled>
-                <Edit className="w-4 h-4 shrink-0" />
-              </button>
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="w-9 h-9 shrink-0 border-blue-500/50 text-blue-400 bg-transparent hover:bg-blue-500/10"
+                onClick={() => setIsEditCadastroOpen(true)}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Editar Cadastro</TooltipContent>
+          </Tooltip>
+
+          {(isCoordenador || isAvaliador) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-9 h-9 shrink-0 border-[#84cc16]/50 text-[#84cc16] bg-transparent hover:bg-[#84cc16]/10"
+                  onClick={() => setIsEditAvaliacaoOpen(true)}
+                >
+                  <FileEdit className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Editar Avaliação</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </CardFooter>
+
+      <EditarCadastroDialog
+        open={isEditCadastroOpen}
+        onOpenChange={setIsEditCadastroOpen}
+        ev={ev}
+      />
+      <EditarAvaliacaoDialog
+        open={isEditAvaliacaoOpen}
+        onOpenChange={setIsEditAvaliacaoOpen}
+        ev={ev}
+      />
     </Card>
+  )
+}
+
+function EditarCadastroDialog({
+  open,
+  onOpenChange,
+  ev,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  ev: any
+}) {
+  const [evoId, setEvoId] = useState(ev.evo_id || '')
+  const [nome, setNome] = useState(ev.nome_cliente || '')
+  const [telefone, setTelefone] = useState(ev.telefone_cliente || '')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (open) {
+      setEvoId(ev.evo_id || '')
+      setNome(ev.nome_cliente || '')
+      setTelefone(ev.telefone_cliente || '')
+    }
+  }, [open, ev])
+
+  const handleSave = async () => {
+    if (!nome) {
+      toast({ title: 'Atenção', description: 'Nome é obrigatório.', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      await updateEvaluationFull(
+        ev.id,
+        { evo_id: evoId, nome_cliente: nome.trim().toUpperCase(), telefone_cliente: telefone },
+        null,
+      )
+      toast({ title: 'Sucesso', description: 'Cadastro atualizado com sucesso.' })
+      onOpenChange(false)
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px] border-zinc-800 bg-zinc-900 text-white">
+        <DialogHeader>
+          <DialogTitle>Editar Cadastro</DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            Atualize as informações básicas do aluno.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor={`evo_id_${ev.id}`}>ID EVO</Label>
+            <Input
+              id={`evo_id_${ev.id}`}
+              value={evoId}
+              onChange={(e) => setEvoId(e.target.value)}
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`nome_${ev.id}`}>Nome do Cliente *</Label>
+            <Input
+              id={`nome_${ev.id}`}
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`tel_${ev.id}`}>Telefone</Label>
+            <Input
+              id={`tel_${ev.id}`}
+              value={telefone}
+              onChange={(e) => setTelefone(formatPhone(e.target.value))}
+              maxLength={19}
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={loading || !nome}
+            className="bg-[#84cc16] text-zinc-900 hover:bg-[#65a30d]"
+          >
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditarAvaliacaoDialog({
+  open,
+  onOpenChange,
+  ev,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  ev: any
+}) {
+  const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState<{ original: any; reavaliacoes: any[] }>({
+    original: null,
+    reavaliacoes: [],
+  })
+  const [selectedId, setSelectedId] = useState<string>('')
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (open && ev.id) {
+      setLoading(true)
+      getAvaliacaoHistory(ev.id)
+        .then((res) => {
+          setHistory(res)
+          setSelectedId(res.original?.id || '')
+          setLoading(false)
+        })
+        .catch((e) => {
+          console.error(e)
+          setLoading(false)
+        })
+    }
+  }, [open, ev.id])
+
+  const handleEdit = () => {
+    if (!selectedId) return
+    if (selectedId === history.original?.id) {
+      navigate(`/evaluation/edit/${selectedId}`)
+    } else {
+      navigate(`/reevaluation/edit/${selectedId}`)
+    }
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px] border-zinc-800 bg-zinc-900 text-white">
+        <DialogHeader>
+          <DialogTitle>Editar Avaliação</DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            Selecione qual avaliação física você deseja editar.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-6">
+          {loading ? (
+            <div className="flex justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-[#84cc16]" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Label>Selecione a avaliação</Label>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                  {history.original && (
+                    <SelectItem value={history.original.id}>
+                      Avaliação Principal (
+                      {history.original.data_avaliacao
+                        ? format(
+                            new Date(history.original.data_avaliacao + 'T12:00:00'),
+                            'dd/MM/yyyy',
+                          )
+                        : 'Sem data'}
+                      )
+                    </SelectItem>
+                  )}
+                  {history.reavaliacoes.map((r, idx) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      Reavaliação {idx + 1} (
+                      {r.data_reavaliacao
+                        ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')
+                        : 'Sem data'}
+                      )
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleEdit}
+            disabled={loading || !selectedId}
+            className="bg-[#84cc16] text-zinc-900 hover:bg-[#65a30d]"
+          >
+            Editar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

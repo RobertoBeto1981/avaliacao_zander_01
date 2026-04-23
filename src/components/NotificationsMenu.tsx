@@ -263,30 +263,28 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
           </div>
           {view === 'active' && (
             <div className="px-4 pb-2 flex justify-between items-center">
-              {unreadCount > 0 ? (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground p-0 hover:text-primary"
-                  onClick={handleMarkAllAsRead}
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  Marcar Todas Lidas
-                </Button>
-              ) : (
-                <div />
-              )}
-              {activeItems.some((n) => n.is_read && !n.is_archived && n.type !== 'alert') && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground p-0 hover:text-primary"
-                  onClick={handleArchiveAllRead}
-                >
-                  <Archive className="w-3 h-3 mr-1" />
-                  Limpar Lidas
-                </Button>
-              )}
+              <Button
+                variant="link"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground p-0 hover:text-primary disabled:opacity-50"
+                onClick={handleMarkAllAsRead}
+                disabled={unreadCount === 0}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Marcar Todas Lidas
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground p-0 hover:text-primary disabled:opacity-50"
+                onClick={handleArchiveAllRead}
+                disabled={
+                  !activeItems.some((n) => n.is_read && !n.is_archived && n.type !== 'alert')
+                }
+              >
+                <Archive className="w-3 h-3 mr-1" />
+                Limpar Lidas
+              </Button>
             </div>
           )}
         </div>
