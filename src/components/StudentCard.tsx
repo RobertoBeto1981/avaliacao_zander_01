@@ -504,15 +504,30 @@ export function EditarAvaliacaoDialog({
     reavaliacoes: [],
   })
   const [selectedId, setSelectedId] = useState<string>('')
+  const [selectedType, setSelectedType] = useState<'original' | 'reavaliacao'>('original')
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (open && ev.id) {
+    if (open && ev?.id) {
+      if (ev.is_pre_avaliacao || !ev.data_avaliacao) {
+        setHistory({ original: ev, reavaliacoes: [] })
+        setSelectedId('')
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       getAvaliacaoHistory(ev.id)
         .then((res) => {
           setHistory(res)
-          setSelectedId(res.original?.id || '')
+          if (res.reavaliacoes.length > 0) {
+            const last = res.reavaliacoes[res.reavaliacoes.length - 1]
+            setSelectedId(last.id)
+            setSelectedType('reavaliacao')
+          } else if (res.original) {
+            setSelectedId(res.original.id)
+            setSelectedType('original')
+          }
           setLoading(false)
         })
         .catch((e) => {
@@ -520,11 +535,11 @@ export function EditarAvaliacaoDialog({
           setLoading(false)
         })
     }
-  }, [open, ev.id])
+  }, [open, ev])
 
   const handleEdit = () => {
     if (!selectedId) return
-    if (selectedId === history.original?.id) {
+    if (selectedType === 'original') {
       navigate(`/evaluation/edit/${selectedId}`)
     } else {
       navigate(`/reevaluation/edit/${selectedId}`)
@@ -532,13 +547,41 @@ export function EditarAvaliacaoDialog({
     onOpenChange(false)
   }
 
+  const items: { id: string; label: string; date: string | null; type: string }[] = []
+  if (
+    history.reavaliacoes.length === 0 &&
+    history.original &&
+    !history.original.is_pre_avaliacao &&
+    history.original.data_avaliacao
+  ) {
+    items.push({
+      id: history.original.id,
+      label: 'Avaliação Inicial',
+      date: history.original.data_avaliacao,
+      type: 'original',
+    })
+  } else if (history.reavaliacoes.length > 0) {
+    history.reavaliacoes.forEach((r, idx) => {
+      items.push({
+        id: r.id,
+        label: idx === 0 ? 'Avaliação Inicial' : `Reavaliação ${idx}`,
+        date: r.data_reavaliacao,
+        type: 'reavaliacao',
+      })
+    })
+  }
+
+  const noEval = !ev || ev.is_pre_avaliacao || !ev.data_avaliacao
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] border-zinc-800 bg-zinc-900 text-white">
         <DialogHeader>
           <DialogTitle>Editar Avaliação</DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Selecione qual avaliação física você deseja editar.
+            {noEval
+              ? 'Aviso sobre o cliente'
+              : 'Selecione qual avaliação física você deseja editar.'}
           </DialogDescription>
         </DialogHeader>
         <div className="py-6">
@@ -546,31 +589,31 @@ export function EditarAvaliacaoDialog({
             <div className="flex justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-[#84cc16]" />
             </div>
+          ) : noEval ? (
+            <div className="text-center p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 text-amber-400 text-sm">
+              Cliente não tem avaliação ou não realizou nenhuma avaliação, então por isso não é
+              possível editar.
+            </div>
           ) : (
             <div className="space-y-3">
               <Label>Selecione a avaliação</Label>
-              <Select value={selectedId} onValueChange={setSelectedId}>
+              <Select
+                value={selectedId}
+                onValueChange={(val) => {
+                  setSelectedId(val)
+                  const item = items.find((i) => i.id === val)
+                  if (item) setSelectedType(item.type as any)
+                }}
+              >
                 <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                  {history.original && (
-                    <SelectItem value={history.original.id}>
-                      Avaliação Inicial (
-                      {history.original.data_avaliacao
-                        ? format(
-                            new Date(history.original.data_avaliacao + 'T12:00:00'),
-                            'dd/MM/yyyy',
-                          )
-                        : 'Sem data'}
-                      )
-                    </SelectItem>
-                  )}
-                  {history.reavaliacoes.map((r, idx) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      Reavaliação {idx + 1} (
-                      {r.data_reavaliacao
-                        ? format(new Date(r.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')
+                <SelectContent className="bg-zinc-800 border-zinc-700 text-white max-h-[200px]">
+                  {items.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.label} (
+                      {item.date
+                        ? format(new Date(item.date + 'T12:00:00'), 'dd/MM/yyyy')
                         : 'Sem data'}
                       )
                     </SelectItem>
@@ -586,15 +629,17 @@ export function EditarAvaliacaoDialog({
             onClick={() => onOpenChange(false)}
             className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
           >
-            Cancelar
+            {noEval ? 'Fechar' : 'Cancelar'}
           </Button>
-          <Button
-            onClick={handleEdit}
-            disabled={loading || !selectedId}
-            className="bg-[#84cc16] text-zinc-900 hover:bg-[#65a30d]"
-          >
-            Editar
-          </Button>
+          {!noEval && (
+            <Button
+              onClick={handleEdit}
+              disabled={loading || !selectedId}
+              className="bg-[#84cc16] text-zinc-900 hover:bg-[#65a30d]"
+            >
+              Editar
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

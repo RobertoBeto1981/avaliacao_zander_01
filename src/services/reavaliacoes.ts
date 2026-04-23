@@ -149,3 +149,61 @@ export const getReavaliacaoById = async (id: string) => {
   if (error) throw error
   return data
 }
+
+export const updateReavaliacaoFull = async (
+  id: string,
+  data_reavaliacao: string,
+  respostas_novas: any,
+) => {
+  const { data: reav } = await supabase.from('reavaliacoes').select('*').eq('id', id).single()
+  if (!reav) throw new Error('Reavaliação não encontrada')
+
+  const { data, error } = await supabase
+    .from('reavaliacoes')
+    .update({ data_reavaliacao, respostas_novas })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+
+  const { data: latest } = await supabase
+    .from('reavaliacoes')
+    .select('id')
+    .eq('avaliacao_original_id', reav.avaliacao_original_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (latest && latest.id === id) {
+    const { objectives, periodo_treino, client_links, ...restRespostas } = respostas_novas
+    const newReavDate = new Date(data_reavaliacao + 'T12:00:00')
+    newReavDate.setDate(newReavDate.getDate() + 90)
+    const nextReavDateStr = newReavDate.toISOString().split('T')[0]
+
+    await supabase
+      .from('avaliacoes')
+      .update({
+        data_avaliacao: data_reavaliacao,
+        data_reavaliacao: nextReavDateStr,
+        objectives: objectives,
+        periodo_treino: periodo_treino,
+        respostas: restRespostas,
+      })
+      .eq('id', reav.avaliacao_original_id)
+
+    if (client_links) {
+      await supabase
+        .from('links_avaliacao')
+        .update({
+          mapeamento_sintomas_url: client_links.symptoms || '',
+          mapeamento_dor_url: client_links.pain || '',
+          bia_url: client_links.bia || '',
+          my_score_url: client_links.myscore || '',
+        })
+        .eq('avaliacao_id', reav.avaliacao_original_id)
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+  return data
+}

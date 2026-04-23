@@ -13,6 +13,7 @@ import NewEvaluation from './pages/NewEvaluation'
 import EditEvaluation from './pages/EditEvaluation'
 import EvaluationDetails from './pages/EvaluationDetails'
 import NewReevaluation from './pages/NewReevaluation'
+import EditReevaluation from './pages/EditReevaluation'
 import ReevaluationDetails from './pages/ReevaluationDetails'
 import ProfessorDashboard from './pages/ProfessorDashboard'
 import RoleDashboard from './pages/RoleDashboard'
@@ -282,6 +283,16 @@ const AppRoutes = () => (
           <PrivateRoute>
             <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
               <NewReevaluation />
+            </RoleGuard>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/reevaluation/edit/:id"
+        element={
+          <PrivateRoute>
+            <RoleGuard allowedRoles={['avaliador', 'coordenador', 'professor']}>
+              <EditReevaluation />
             </RoleGuard>
           </PrivateRoute>
         }
