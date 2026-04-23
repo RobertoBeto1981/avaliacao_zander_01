@@ -12,6 +12,7 @@ import {
   History,
   MessageCircle,
   Edit,
+  FileEdit,
   Download,
   Trash2,
   Trophy,
@@ -66,6 +67,7 @@ import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
 import { supabase } from '@/lib/supabase/client'
 import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
+import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
@@ -86,6 +88,8 @@ export default function CoordinatorDashboard() {
 
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
+  const [editCadastroEv, setEditCadastroEv] = useState<any>(null)
+  const [editAvaliacaoEv, setEditAvaliacaoEv] = useState<any>(null)
   const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
   const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString())
   const [searchTerm, setSearchTerm] = useState('')
@@ -126,6 +130,10 @@ export default function CoordinatorDashboard() {
 
   useEffect(() => {
     initializeData()
+
+    const handleUpdate = () => loadData()
+    window.addEventListener('avaliacao_updated', handleUpdate)
+    return () => window.removeEventListener('avaliacao_updated', handleUpdate)
   }, [initializeData])
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -636,12 +644,23 @@ export default function CoordinatorDashboard() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                            asChild
+                            className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                            onClick={() => setEditCadastroEv(ev)}
                           >
-                            <Link to={`/evaluation/edit/${ev.id}`}>
-                              <Edit className="w-4 h-4" />
-                            </Link>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar Cadastro</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-[#84cc16] hover:text-[#84cc16] hover:bg-[#84cc16]/10"
+                            onClick={() => setEditAvaliacaoEv(ev)}
+                          >
+                            <FileEdit className="w-4 h-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Editar Avaliação</TooltipContent>
@@ -1015,6 +1034,25 @@ export default function CoordinatorDashboard() {
         nomeCliente={historyEval?.nome || ''}
         evoId={historyEval?.evo_id}
       />
+
+      {editCadastroEv && (
+        <EditarCadastroDialog
+          open={!!editCadastroEv}
+          onOpenChange={(open) => {
+            if (!open) setEditCadastroEv(null)
+          }}
+          ev={editCadastroEv}
+        />
+      )}
+      {editAvaliacaoEv && (
+        <EditarAvaliacaoDialog
+          open={!!editAvaliacaoEv}
+          onOpenChange={(open) => {
+            if (!open) setEditAvaliacaoEv(null)
+          }}
+          ev={editAvaliacaoEv}
+        />
+      )}
     </div>
   )
 }

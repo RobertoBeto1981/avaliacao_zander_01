@@ -384,7 +384,7 @@ export function StudentCard({
   )
 }
 
-function EditarCadastroDialog({
+export function EditarCadastroDialog({
   open,
   onOpenChange,
   ev,
@@ -489,7 +489,7 @@ function EditarCadastroDialog({
   )
 }
 
-function EditarAvaliacaoDialog({
+export function EditarAvaliacaoDialog({
   open,
   onOpenChange,
   ev,
@@ -556,7 +556,7 @@ function EditarAvaliacaoDialog({
                 <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
                   {history.original && (
                     <SelectItem value={history.original.id}>
-                      Avaliação Principal (
+                      Avaliação Inicial (
                       {history.original.data_avaliacao
                         ? format(
                             new Date(history.original.data_avaliacao + 'T12:00:00'),

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,8 +12,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ListFilter, AlertCircle, Edit, Trash2 } from 'lucide-react'
+import { ListFilter, AlertCircle, Edit, FileEdit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
 
 function addWorkingDays(startDate: Date, days: number) {
   const date = new Date(startDate)
@@ -36,6 +38,9 @@ export function DashboardTable({
   onDelete?: (id: string) => void
   hideActions?: boolean
 }) {
+  const [editCadastroEv, setEditCadastroEv] = useState<any>(null)
+  const [editAvaliacaoEv, setEditAvaliacaoEv] = useState<any>(null)
+
   return (
     <Card className="border-border/50 shadow-sm overflow-hidden">
       <CardHeader className="bg-muted/30 border-b border-border/50 flex flex-row items-center gap-2 py-4">
@@ -73,12 +78,20 @@ export function DashboardTable({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-primary hover:bg-primary/10"
-                              asChild
+                              className="h-7 w-7 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                              onClick={() => setEditCadastroEv(ev)}
+                              title="Editar Cadastro"
                             >
-                              <Link to={`/evaluation/edit/${ev.id}`} title="Editar">
-                                <Edit className="w-3.5 h-3.5" />
-                              </Link>
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-[#84cc16] hover:text-[#84cc16] hover:bg-[#84cc16]/10"
+                              onClick={() => setEditAvaliacaoEv(ev)}
+                              title="Editar Avaliação"
+                            >
+                              <FileEdit className="w-3.5 h-3.5" />
                             </Button>
                             {onDelete && (
                               <Button
@@ -215,6 +228,21 @@ export function DashboardTable({
           )}
         </div>
       </CardContent>
+
+      {editCadastroEv && (
+        <EditarCadastroDialog
+          open={!!editCadastroEv}
+          onOpenChange={(open) => !open && setEditCadastroEv(null)}
+          ev={editCadastroEv}
+        />
+      )}
+      {editAvaliacaoEv && (
+        <EditarAvaliacaoDialog
+          open={!!editAvaliacaoEv}
+          onOpenChange={(open) => !open && setEditAvaliacaoEv(null)}
+          ev={editAvaliacaoEv}
+        />
+      )}
     </Card>
   )
 }
