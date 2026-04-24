@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
-import { createPreAvaliacao } from '@/services/evaluations'
+import { supabase } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
 
@@ -47,19 +47,27 @@ export function NovoAlunoDialog({
         profile?.roles?.includes('professor') || profile?.role?.toLowerCase() === 'professor'
       const isProfessorDashboard = window.location.pathname.includes('/professor')
 
-      const payload: any = {
-        evo_id: evoId,
-        nome_cliente: nome.trim().toUpperCase(),
-        telefone_cliente: telefone,
-        status: 'pendente',
-      }
-
+      let profId = null
       if (isProfessor && isProfessorDashboard && profile?.id) {
-        payload.professor_id = profile.id
+        profId = profile.id
       }
 
-      await createPreAvaliacao(payload)
-      toast({ title: 'Sucesso', description: 'Aluno registrado com sucesso.' })
+      const { data, error } = await supabase.rpc('upsert_aluno_dialog', {
+        p_evo_id: evoId,
+        p_nome_cliente: nome.trim().toUpperCase(),
+        p_telefone_cliente: telefone,
+        p_professor_id: profId,
+      })
+
+      if (error) throw error
+
+      if (data && !data.success) {
+        toast({ title: 'Atenção', description: data.message, variant: 'destructive' })
+        setLoading(false)
+        return
+      }
+
+      toast({ title: 'Sucesso', description: data?.message || 'Aluno registrado com sucesso.' })
       setEvoId('')
       setNome('')
       setTelefone('')

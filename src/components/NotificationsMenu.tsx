@@ -4,36 +4,35 @@ import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { calculateDeadline } from '@/lib/holidays'
 import { isAfter, startOfDay } from 'date-fns'
-import {
-  getNotifications,
-  markAsRead,
-  archiveNotification,
-  archiveAllReadNotifications,
-} from '@/services/notifications'
+import { getNotifications, markAsRead } from '@/services/notifications'
 import { getPendingAcompanhamentos } from '@/services/acompanhamentos'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function NotificationsMenu({ profile }: { profile: any }) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [notifications, setNotifications] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([])
+  const [archivedAlerts, setArchivedAlerts] = useState<string[]>([])
 
   useEffect(() => {
     if (user) {
       try {
-        const saved = localStorage.getItem(`dismissed_alerts_${user.id}`)
-        if (saved) {
-          setDismissedAlerts(JSON.parse(saved))
-        }
+        const savedDismissed = localStorage.getItem(`dismissed_alerts_${user.id}`)
+        if (savedDismissed) setDismissedAlerts(JSON.parse(savedDismissed))
+
+        const savedArchived = localStorage.getItem(`archived_alerts_${user.id}`)
+        if (savedArchived) setArchivedAlerts(JSON.parse(savedArchived))
       } catch (e) {
-        console.error('Error parsing dismissed alerts', e)
+        console.error('Error parsing alerts state', e)
       }
     }
   }, [user])
@@ -67,6 +66,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
             message: `A avaliação de ${ev.nome_cliente} está atrasada para a montagem de treino.`,
             type: 'alert',
             is_read: false,
+            is_archived: false,
             created_at: ev.created_at || new Date().toISOString(),
           }))
         }
@@ -86,6 +86,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
           message: `Prazo: ${dateFormatted} - ${t.observacao.substring(0, 40)}${t.observacao.length > 40 ? '...' : ''} (Cliente: ${t.avaliacao?.nome_cliente || 'Desconhecido'})`,
           type: 'alert',
           is_read: false,
+          is_archived: false,
           created_at: t.created_at || new Date().toISOString(),
         }
       })
@@ -134,35 +135,50 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     }
   }, [open])
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+
     if (id.startsWith('alert-') || id.startsWith('task-')) {
       setDismissedAlerts((prev) => {
         if (prev.includes(id)) return prev
         const next = [...prev, id]
-        if (user) {
-          localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
-        }
+        if (user) localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
         return next
       })
       return
     }
 
-    // Atualização otimista para feedback imediato na UI
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
 
     try {
       await markAsRead(id)
     } catch (e) {
       console.error(e)
-      // Reverter em caso de erro
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: false } : n)))
     }
   }
 
-  const handleArchive = async (id: string) => {
+  const handleArchive = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+
+    if (id.startsWith('alert-') || id.startsWith('task-')) {
+      if (!dismissedAlerts.includes(id)) {
+        handleMarkAsRead(id)
+      }
+      setArchivedAlerts((prev) => {
+        if (prev.includes(id)) return prev
+        const next = [...prev, id]
+        if (user) localStorage.setItem(`archived_alerts_${user.id}`, JSON.stringify(next))
+        return next
+      })
+      return
+    }
+
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, is_archived: true, is_read: true } : n)),
+    )
     try {
-      await archiveNotification(id)
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_archived: true } : n)))
+      await supabase.from('notifications').update({ is_archived: true, is_read: true }).eq('id', id)
     } catch (e) {
       console.error(e)
     }
@@ -171,10 +187,35 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   const handleArchiveAllRead = async () => {
     if (!user) return
     try {
-      await archiveAllReadNotifications(user.id)
+      await supabase
+        .from('notifications')
+        .update({ is_archived: true })
+        .eq('user_id', user.id)
+        .eq('is_read', true)
+        .eq('is_archived', false)
+
       setNotifications((prev) => prev.map((n) => (n.is_read ? { ...n, is_archived: true } : n)))
+
+      const readAlertsIds = alerts
+        .filter((a) => dismissedAlerts.includes(a.id) && !archivedAlerts.includes(a.id))
+        .map((a) => a.id)
+
+      if (readAlertsIds.length > 0) {
+        setArchivedAlerts((prev) => {
+          const next = Array.from(new Set([...prev, ...readAlertsIds]))
+          localStorage.setItem(`archived_alerts_${user.id}`, JSON.stringify(next))
+          return next
+        })
+      }
+
+      toast({ title: 'Sucesso', description: 'Notificações lidas foram arquivadas.' })
     } catch (e) {
       console.error(e)
+      toast({
+        title: 'Erro',
+        description: 'Falha ao arquivar notificações.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -186,6 +227,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
         .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('is_read', false)
+
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
 
       const newDismissed = alerts.map((a) => a.id)
@@ -194,27 +236,37 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
         localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
         return next
       })
+
+      toast({ title: 'Sucesso', description: 'Todas marcadas como lidas.' })
     } catch (e) {
       console.error(e)
     }
   }
 
-  const activeItems = [
-    ...alerts.map((a) => ({ ...a, is_read: dismissedAlerts.includes(a.id) })),
-    ...notifications.filter((n) => !n.is_archived),
-  ].sort((a, b) => {
-    if (a.type === 'alert' && b.type !== 'alert') return -1
-    if (b.type === 'alert' && a.type !== 'alert') return 1
+  const allItems = [
+    ...alerts.map((a) => ({
+      ...a,
+      is_read: dismissedAlerts.includes(a.id),
+      is_archived: archivedAlerts.includes(a.id),
+    })),
+    ...notifications,
+  ]
 
-    const aHigh = a.priority === 'high' && !a.is_read
-    const bHigh = b.priority === 'high' && !b.is_read
-    if (aHigh && !bHigh) return -1
-    if (bHigh && !aHigh) return 1
+  const activeItems = allItems
+    .filter((n) => !n.is_archived)
+    .sort((a, b) => {
+      if (a.type === 'alert' && b.type !== 'alert') return -1
+      if (b.type === 'alert' && a.type !== 'alert') return 1
 
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
+      const aHigh = a.priority === 'high' && !a.is_read
+      const bHigh = b.priority === 'high' && !b.is_read
+      if (aHigh && !bHigh) return -1
+      if (bHigh && !aHigh) return 1
 
-  const archivedItems = notifications
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+  const archivedItems = allItems
     .filter((n) => n.is_archived)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
@@ -278,9 +330,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                 size="sm"
                 className="h-6 text-xs text-muted-foreground p-0 hover:text-primary disabled:opacity-50"
                 onClick={handleArchiveAllRead}
-                disabled={
-                  !activeItems.some((n) => n.is_read && !n.is_archived && n.type !== 'alert')
-                }
+                disabled={!activeItems.some((n) => n.is_read)}
               >
                 <Archive className="w-3 h-3 mr-1" />
                 Limpar Lidas
@@ -308,9 +358,9 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
               {displayItems.map((notif) => (
                 <div
                   key={notif.id}
-                  onClick={() => {
+                  onClick={(e) => {
                     if (!notif.is_read) {
-                      handleMarkAsRead(notif.id)
+                      handleMarkAsRead(notif.id, e)
                     }
                   }}
                   className={cn(
@@ -395,36 +445,28 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                         minute: '2-digit',
                       })}
                     </p>
-                    {notif.type !== 'alert' && view === 'active' && notif.is_read && (
-                      <div className="pt-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleArchive(notif.id)
-                          }}
-                        >
-                          <Archive className="h-3 w-3 mr-1.5" />
-                          Arquivar
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                  <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                     {!notif.is_read && (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-primary hover:bg-primary/20"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleMarkAsRead(notif.id)
-                        }}
+                        onClick={(e) => handleMarkAsRead(notif.id, e)}
                         title="Marcar como lida"
                       >
                         <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {view === 'active' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => handleArchive(notif.id, e)}
+                        title="Arquivar notificação"
+                      >
+                        <Archive className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
