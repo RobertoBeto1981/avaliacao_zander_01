@@ -187,13 +187,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
   const handleArchiveAllRead = async () => {
     if (!user) return
     try {
-      await supabase
-        .from('notifications')
-        .update({ is_archived: true })
-        .eq('user_id', user.id)
-        .eq('is_read', true)
-        .eq('is_archived', false)
-
+      // Atualiza a UI imediatamente para melhor responsividade
       setNotifications((prev) => prev.map((n) => (n.is_read ? { ...n, is_archived: true } : n)))
 
       const readAlertsIds = alerts
@@ -207,6 +201,13 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
           return next
         })
       }
+
+      await supabase
+        .from('notifications')
+        .update({ is_archived: true })
+        .eq('user_id', user.id)
+        .eq('is_read', true)
+        .eq('is_archived', false)
 
       toast({ title: 'Sucesso', description: 'Notificações lidas foram arquivadas.' })
     } catch (e) {
@@ -446,27 +447,29 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                       })}
                     </p>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                     {!notif.is_read && (
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-primary hover:bg-primary/20"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-primary hover:bg-primary/20"
                         onClick={(e) => handleMarkAsRead(notif.id, e)}
                         title="Marcar como lida"
                       >
-                        <Check className="h-4 w-4" />
+                        <Check className="h-3 w-3 mr-1" />
+                        Lida
                       </Button>
                     )}
                     {view === 'active' && (
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/10"
                         onClick={(e) => handleArchive(notif.id, e)}
                         title="Arquivar notificação"
                       >
-                        <Archive className="h-4 w-4" />
+                        <Archive className="h-3 w-3 mr-1" />
+                        Arquivar
                       </Button>
                     )}
                   </div>

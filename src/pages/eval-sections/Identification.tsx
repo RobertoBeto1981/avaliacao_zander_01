@@ -7,7 +7,7 @@ import { FDatePicker, FMultiSelect } from '@/components/shared/FormAdvanced'
 import { PREFERRED_TIMES, OBJECTIVES, GENDERS } from '@/constants/options'
 import { Button } from '@/components/ui/button'
 import { Search, Loader2 } from 'lucide-react'
-import { getPreAvaliacaoByEvoId } from '@/services/evaluations'
+import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 
 export function IdentificationFields({
@@ -37,7 +37,20 @@ export function IdentificationFields({
     if (!evoId) return
     setIsSearching(true)
     try {
-      const preEval = await getPreAvaliacaoByEvoId(evoId)
+      const cleanEvoId = String(evoId).trim()
+
+      const { data: preEval, error } = await supabase
+        .from('avaliacoes')
+        .select('*')
+        .eq('evo_id', cleanEvoId)
+        .eq('is_pre_avaliacao', true)
+        .in('status', ['pendente', 'em_progresso'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) throw error
+
       if (preEval) {
         setValue('nome_cliente', preEval.nome_cliente)
         if (preEval.telefone_cliente) {
