@@ -13,10 +13,11 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   let targetId = existingId
 
   if (!targetId && avaliacao.evo_id) {
+    const cleanEvo = String(avaliacao.evo_id).trim()
     const { data: existingPre } = await supabase
       .from('avaliacoes')
       .select('id')
-      .eq('evo_id', avaliacao.evo_id)
+      .eq('evo_id', cleanEvo)
       .eq('is_pre_avaliacao', true)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -119,11 +120,13 @@ export const createPreAvaliacao = async (data: {
   telefone_cliente?: string
   professor_id?: string
 }) => {
-  if (data.evo_id) {
+  const cleanEvo = data.evo_id ? String(data.evo_id).trim() : null
+
+  if (cleanEvo) {
     const { data: existing } = await supabase
       .from('avaliacoes')
       .select('*')
-      .eq('evo_id', data.evo_id)
+      .eq('evo_id', cleanEvo)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -144,16 +147,51 @@ export const createPreAvaliacao = async (data: {
         .update(payload)
         .eq('id', existing.id)
         .select()
-        .single()
 
       if (error) throw error
+
+      if (!result || result.length === 0) {
+        if (data.professor_id) {
+          const rpcPayload: any = {
+            p_evo_id: cleanEvo,
+            p_nome_cliente: data.nome_cliente,
+            p_telefone_cliente: data.telefone_cliente || '',
+            p_professor_id: data.professor_id,
+          }
+          const { data: rpcRes, error: rpcErr } = await supabase.rpc(
+            'upsert_aluno_dialog',
+            rpcPayload,
+          )
+
+          if (rpcErr) throw rpcErr
+
+          const responsePayload = rpcRes as any
+          if (responsePayload && responsePayload.success === false) {
+            throw new Error(
+              responsePayload.message || 'Este ID EVO já está vinculado a outro professor.',
+            )
+          }
+
+          const { data: finalFetch } = await supabase
+            .from('avaliacoes')
+            .select('*')
+            .eq('id', existing.id)
+            .maybeSingle()
+
+          window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+          return finalFetch || existing
+        } else {
+          throw new Error('Sem permissão para atualizar este cadastro ou registro não encontrado.')
+        }
+      }
+
       window.dispatchEvent(new CustomEvent('avaliacao_updated'))
-      return result
+      return result[0]
     }
   }
 
   const payload: any = {
-    evo_id: data.evo_id,
+    evo_id: cleanEvo,
     nome_cliente: data.nome_cliente,
     telefone_cliente: data.telefone_cliente,
     is_pre_avaliacao: true,
@@ -176,10 +214,11 @@ export const createPreAvaliacao = async (data: {
 }
 
 export const getPreAvaliacaoByEvoId = async (evoId: string) => {
+  const cleanEvo = String(evoId).trim()
   const { data, error } = await supabase
     .from('avaliacoes')
     .select('id, nome_cliente, telefone_cliente')
-    .eq('evo_id', evoId)
+    .eq('evo_id', cleanEvo)
     .eq('is_pre_avaliacao', true)
     .order('created_at', { ascending: false })
     .limit(1)

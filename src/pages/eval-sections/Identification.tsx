@@ -41,15 +41,22 @@ export function IdentificationFields({
 
       const { data: preEval, error } = await supabase
         .from('avaliacoes')
-        .select('*')
+        .select('id, nome_cliente, telefone_cliente')
         .eq('evo_id', cleanEvoId)
         .eq('is_pre_avaliacao', true)
-        .in('status', ['pendente', 'em_progresso'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
 
-      if (error) throw error
+      if (error) {
+        toast({
+          title: 'Erro de Carga',
+          description:
+            'Não foi possível carregar os dados deste ID EVO. Pode haver uma inconsistência no banco.',
+          variant: 'destructive',
+        })
+        return
+      }
 
       if (preEval) {
         setValue('nome_cliente', preEval.nome_cliente)

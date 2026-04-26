@@ -116,11 +116,12 @@ export default function NewEvaluation() {
 
   useEffect(() => {
     const checkEvoId = async () => {
-      if (!evoIdValue || evoIdValue.length < 2 || isNaoCliente) return
+      const cleanEvo = String(evoIdValue || '').trim()
+      if (!cleanEvo || cleanEvo.length < 1 || isNaoCliente) return
       const { data } = await supabase
         .from('avaliacoes')
         .select('id, nome_cliente, evo_id')
-        .eq('evo_id', evoIdValue)
+        .eq('evo_id', cleanEvo)
         .eq('is_pre_avaliacao', false)
         .not('data_avaliacao', 'is', null)
         .order('created_at', { ascending: false })
