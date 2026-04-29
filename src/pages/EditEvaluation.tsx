@@ -163,8 +163,9 @@ export default function EditEvaluation() {
     })
   }
 
-  const onSubmit = async (data: EvaluationFormValues) => {
+  const onSubmit = async (submittedData: EvaluationFormValues) => {
     try {
+      const mergedData = { ...form.getValues(), ...submittedData }
       const originalEval = await getEvaluationById(id!)
       const originalRespostas = originalEval?.respostas || {}
 
@@ -178,33 +179,25 @@ export default function EditEvaluation() {
         objectives,
         client_links,
         ...rest
-      } = data
+      } = mergedData
 
       const respostasToSave: any = { ...originalRespostas, ...rest }
-      if (respostasToSave.target_date && isValid(respostasToSave.target_date)) {
-        respostasToSave.target_date = format(respostasToSave.target_date, 'yyyy-MM-dd')
-      } else {
-        respostasToSave.target_date = null
+
+      const safeFormat = (d: any) => {
+        if (!d) return null
+        const dateObj = typeof d === 'string' ? new Date(d) : d
+        return isValid(dateObj) ? format(dateObj, 'yyyy-MM-dd') : null
       }
 
-      if (respostasToSave.data_nascimento && isValid(respostasToSave.data_nascimento)) {
-        respostasToSave.data_nascimento = format(respostasToSave.data_nascimento, 'yyyy-MM-dd')
-      } else {
-        respostasToSave.data_nascimento = null
-      }
+      respostasToSave.target_date = safeFormat(respostasToSave.target_date)
+      respostasToSave.data_nascimento = safeFormat(respostasToSave.data_nascimento)
 
       const avaliacao = {
         evo_id,
         nome_cliente,
         telefone_cliente,
-        data_avaliacao:
-          data_avaliacao && isValid(data_avaliacao)
-            ? format(data_avaliacao, 'yyyy-MM-dd')
-            : new Date().toISOString().split('T')[0],
-        data_reavaliacao:
-          data_reavaliacao && isValid(data_reavaliacao)
-            ? format(data_reavaliacao, 'yyyy-MM-dd')
-            : new Date().toISOString().split('T')[0],
+        data_avaliacao: safeFormat(data_avaliacao) || new Date().toISOString().split('T')[0],
+        data_reavaliacao: safeFormat(data_reavaliacao) || new Date().toISOString().split('T')[0],
         periodo_treino,
         objectives,
         respostas: respostasToSave,
@@ -274,7 +267,10 @@ export default function EditEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8 pb-20">
-          <fieldset disabled={isProfessorMode} className="space-y-8">
+          <div
+            {...(isProfessorMode ? { inert: '' } : {})}
+            className={`space-y-8 ${isProfessorMode ? 'opacity-60 pointer-events-none' : ''}`}
+          >
             <IdentificationFields />
             <TrainingHistoryFields />
             <CurrentLifestyleFields />
@@ -282,7 +278,7 @@ export default function EditEvaluation() {
             <TrainingFields />
             <AnthropometryFields disabled={isProfessorMode} />
             <VO2TestFields disabled={isProfessorMode} />
-          </fieldset>
+          </div>
 
           <LinksFields isProfessor={isProfessorMode} isAvaliador={isAvaliadorMode} />
 

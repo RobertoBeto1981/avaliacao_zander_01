@@ -4,16 +4,33 @@ export const evaluationSchema = z.object({
   evo_id: z.string().optional(),
   nome_cliente: z.string().min(2, 'Obrigatório'),
   telefone_cliente: z.string().min(8, 'Obrigatório'),
-  data_avaliacao: z.date({ required_error: 'Obrigatório' }),
-  data_reavaliacao: z.date(),
+  data_avaliacao: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+      return arg
+    },
+    z.date({ required_error: 'Obrigatório' }),
+  ),
+  data_reavaliacao: z.preprocess((arg) => {
+    if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+    return arg
+  }, z.date()),
   periodo_treino: z.string().optional(),
   objectives: z.array(z.string()).default([]),
 
-  data_nascimento: z.date().optional().nullable(),
+  data_nascimento: z.preprocess((arg) => {
+    if (!arg) return null
+    if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+    return arg
+  }, z.date().optional().nullable()),
   gender: z.string().optional(),
 
   main_objective: z.string().optional(),
-  target_date: z.date().optional().nullable(),
+  target_date: z.preprocess((arg) => {
+    if (!arg) return null
+    if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+    return arg
+  }, z.date().optional().nullable()),
   training_frequency: z.string().optional(),
   activity_level: z.string().optional(),
   practice_time: z.string().optional(),
