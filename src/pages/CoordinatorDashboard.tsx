@@ -74,6 +74,7 @@ export default function CoordinatorDashboard() {
   const [users, setUsers] = useState<any[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [cycleFilter, setCycleFilter] = useState<string>('all')
   const [professorRequests, setProfessorRequests] = useState<any[]>([])
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
@@ -366,13 +367,30 @@ export default function CoordinatorDashboard() {
       em_progresso: 2,
       concluido: 3,
     }
+    const today = startOfDay(new Date())
     const result = evaluations.filter((ev) => {
       const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
       const matchSearch =
         searchTerm === '' ||
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm)
-      return matchStatus && matchSearch
+
+      let matchCycle = true
+      if (cycleFilter !== 'all') {
+        if (!ev.data_avaliacao) {
+          matchCycle = false
+        } else {
+          const evalDate = new Date(ev.data_avaliacao + 'T12:00:00')
+          const daysSinceEval = differenceInDays(today, evalDate)
+
+          if (cycleFilter === '30') matchCycle = daysSinceEval >= 0 && daysSinceEval <= 29
+          else if (cycleFilter === '60') matchCycle = daysSinceEval >= 30 && daysSinceEval <= 59
+          else if (cycleFilter === '90') matchCycle = daysSinceEval >= 60 && daysSinceEval <= 90
+          else if (cycleFilter === 'over_90') matchCycle = daysSinceEval > 90
+        }
+      }
+
+      return matchStatus && matchSearch && matchCycle
     })
     return result.sort((a, b) => {
       const statusA = a.status || 'pendente'
@@ -526,7 +544,7 @@ export default function CoordinatorDashboard() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filtrar por Status" />
               </SelectTrigger>
               <SelectContent>
@@ -534,6 +552,18 @@ export default function CoordinatorDashboard() {
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="em_progresso">Em Progresso</SelectItem>
                 <SelectItem value="concluido">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={cycleFilter} onValueChange={setCycleFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Ciclo de Avaliação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Ciclos</SelectItem>
+                <SelectItem value="30">Até 30 dias (Verde)</SelectItem>
+                <SelectItem value="60">De 31 a 60 dias (Amarelo)</SelectItem>
+                <SelectItem value="90">De 61 a 90 dias (Vermelho)</SelectItem>
+                <SelectItem value="over_90">Mais de 90 dias (Vencido)</SelectItem>
               </SelectContent>
             </Select>
           </div>

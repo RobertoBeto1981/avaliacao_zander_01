@@ -111,6 +111,33 @@ export function StudentCard({
   const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
   const reevalDate = ev.data_reavaliacao ? new Date(ev.data_reavaliacao + 'T12:00:00') : null
 
+  let reevalColorClass = 'text-[#84cc16]'
+  let reevalDotClass = 'bg-[#84cc16]'
+  let isPulsing = false
+
+  if (!ev.is_pre_avaliacao && ev.data_reavaliacao && evalDate) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const timeDiff = today.getTime() - evalDate.getTime()
+    const daysSinceEval = Math.floor(timeDiff / (1000 * 3600 * 24))
+
+    if (daysSinceEval <= 29) {
+      reevalColorClass = 'text-[#84cc16]'
+      reevalDotClass = 'bg-[#84cc16]'
+    } else if (daysSinceEval <= 59) {
+      reevalColorClass = 'text-amber-500'
+      reevalDotClass = 'bg-amber-500'
+    } else if (daysSinceEval <= 90) {
+      reevalColorClass = 'text-destructive'
+      reevalDotClass = 'bg-destructive'
+    } else {
+      reevalColorClass = 'text-destructive font-bold'
+      reevalDotClass = 'bg-destructive'
+      isPulsing = true
+    }
+  }
+
   let prazoTreino = null
   if (
     ev.desafio_zander_status &&
@@ -232,8 +259,14 @@ export function StudentCard({
             <span className="text-zinc-400 text-[10px] font-bold tracking-wider block mb-1">
               REAVALIAÇÃO
             </span>
-            <div className="flex items-center gap-1.5 font-bold text-[#84cc16] text-[15px]">
-              <div className="w-2 h-2 rounded-full bg-[#84cc16]"></div>
+            <div
+              className={cn(
+                'flex items-center gap-1.5 font-bold text-[15px]',
+                reevalColorClass,
+                isPulsing && 'animate-pulse',
+              )}
+            >
+              <div className={cn('w-2 h-2 rounded-full', reevalDotClass)}></div>
               {reevalDate ? format(reevalDate, 'dd/MM/yyyy') : '-'}
             </div>
           </div>

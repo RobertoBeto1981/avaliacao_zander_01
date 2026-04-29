@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { ListFilter, AlertCircle, Edit, FileEdit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
+import { differenceInDays, startOfDay } from 'date-fns'
 
 function addWorkingDays(startDate: Date, days: number) {
   const date = new Date(startDate)
@@ -136,15 +137,61 @@ export function DashboardTable({
                     <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm mt-1">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Data Avaliação
+                          Avaliação
                         </span>
                         <span className="font-medium">
                           {isPre || !ev.data_avaliacao ? (
                             <span className="text-muted-foreground">-</span>
                           ) : (
-                            format(new Date(ev.data_avaliacao + 'T00:00:00'), 'dd/MM/yyyy')
+                            format(new Date(ev.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy')
                           )}
                         </span>
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
+                          Reavaliação
+                        </span>
+                        {!isPre && ev.data_reavaliacao && ev.data_avaliacao ? (
+                          (() => {
+                            const today = startOfDay(new Date())
+                            const evalDate = new Date(ev.data_avaliacao + 'T12:00:00')
+                            const daysSinceEval = differenceInDays(today, evalDate)
+                            let reevalColorClass = 'text-primary'
+                            let reevalDotClass = 'bg-primary'
+                            let isPulsing = false
+
+                            if (daysSinceEval <= 29) {
+                              reevalColorClass = 'text-primary'
+                              reevalDotClass = 'bg-primary'
+                            } else if (daysSinceEval <= 59) {
+                              reevalColorClass = 'text-amber-500'
+                              reevalDotClass = 'bg-amber-500'
+                            } else if (daysSinceEval <= 90) {
+                              reevalColorClass = 'text-destructive'
+                              reevalDotClass = 'bg-destructive'
+                            } else {
+                              reevalColorClass = 'text-destructive font-bold'
+                              reevalDotClass = 'bg-destructive'
+                              isPulsing = true
+                            }
+
+                            return (
+                              <span
+                                className={cn(
+                                  'font-bold inline-flex items-center gap-1.5',
+                                  reevalColorClass,
+                                  isPulsing && 'animate-pulse',
+                                )}
+                              >
+                                <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                                {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
+                              </span>
+                            )
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground font-medium">-</span>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-0.5">

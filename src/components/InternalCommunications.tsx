@@ -166,7 +166,15 @@ export function InternalCommunications() {
                             className="w-full h-full"
                           />
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="w-full h-[500px] rounded-md overflow-hidden border bg-background">
+                          <iframe
+                            src={msg.bulk_messages.file_url}
+                            title={msg.bulk_messages.file_name || 'Anexo Documento'}
+                            className="w-full h-full"
+                          />
+                        </div>
+                      )}
 
                       <a
                         href={msg.bulk_messages.file_url}

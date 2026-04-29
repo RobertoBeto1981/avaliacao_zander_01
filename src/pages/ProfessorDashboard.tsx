@@ -40,6 +40,7 @@ export default function ProfessorDashboard() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'meus' | 'todos'>('meus')
+  const [cycleFilter, setCycleFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -84,12 +85,32 @@ export default function ProfessorDashboard() {
       em_progresso: 2,
       concluido: 3,
     }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     const result = evaluations.filter((ev) => {
       const matchesSearch =
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm)
       const matchesType = filterType === 'meus' ? ev.professor_id === profile?.id : true
-      return matchesSearch && matchesType
+
+      let matchCycle = true
+      if (cycleFilter !== 'all') {
+        if (!ev.data_avaliacao) {
+          matchCycle = false
+        } else {
+          const evalDate = new Date(ev.data_avaliacao + 'T12:00:00')
+          const timeDiff = today.getTime() - evalDate.getTime()
+          const daysSinceEval = Math.floor(timeDiff / (1000 * 3600 * 24))
+
+          if (cycleFilter === '30') matchCycle = daysSinceEval >= 0 && daysSinceEval <= 29
+          else if (cycleFilter === '60') matchCycle = daysSinceEval >= 30 && daysSinceEval <= 59
+          else if (cycleFilter === '90') matchCycle = daysSinceEval >= 60 && daysSinceEval <= 90
+          else if (cycleFilter === 'over_90') matchCycle = daysSinceEval > 90
+        }
+      }
+
+      return matchesSearch && matchesType && matchCycle
     })
     return result.sort((a, b) => {
       const statusA = a.status || 'pendente'
@@ -124,7 +145,7 @@ export default function ProfessorDashboard() {
 
         <TabsContent value="inicio">
           <div className="flex flex-wrap gap-4 mb-6 items-center justify-between">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 w-full md:w-auto">
               <div className="relative w-full sm:w-[300px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -134,6 +155,18 @@ export default function ProfessorDashboard() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Select value={cycleFilter} onValueChange={setCycleFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                  <SelectValue placeholder="Ciclo de Avaliação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Ciclos</SelectItem>
+                  <SelectItem value="30">Até 30 dias (Verde)</SelectItem>
+                  <SelectItem value="60">De 31 a 60 dias (Amarelo)</SelectItem>
+                  <SelectItem value="90">De 61 a 90 dias (Vermelho)</SelectItem>
+                  <SelectItem value="over_90">Mais de 90 dias (Vencido)</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="bg-zinc-800/50 p-1 rounded-md flex w-full sm:w-auto items-center border border-zinc-700/50">
                 <Button
                   variant="ghost"
