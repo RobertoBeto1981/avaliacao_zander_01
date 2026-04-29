@@ -40,6 +40,7 @@ export default function ProfessorDashboard() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'meus' | 'todos'>('meus')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cycleFilter, setCycleFilter] = useState<string>('all')
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
@@ -89,6 +90,7 @@ export default function ProfessorDashboard() {
     today.setHours(0, 0, 0, 0)
 
     const result = evaluations.filter((ev) => {
+      const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
       const matchesSearch =
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.evo_id?.includes(searchTerm)
@@ -103,21 +105,21 @@ export default function ProfessorDashboard() {
           const timeDiff = today.getTime() - evalDate.getTime()
           const daysSinceEval = Math.floor(timeDiff / (1000 * 3600 * 24))
 
-          if (cycleFilter === '30') matchCycle = daysSinceEval >= 0 && daysSinceEval <= 29
+          if (cycleFilter === '30') matchCycle = daysSinceEval <= 29
           else if (cycleFilter === '60') matchCycle = daysSinceEval >= 30 && daysSinceEval <= 59
           else if (cycleFilter === '90') matchCycle = daysSinceEval >= 60 && daysSinceEval <= 90
           else if (cycleFilter === 'over_90') matchCycle = daysSinceEval > 90
         }
       }
 
-      return matchesSearch && matchesType && matchCycle
+      return matchStatus && matchesSearch && matchesType && matchCycle
     })
     return result.sort((a, b) => {
       const statusA = a.status || 'pendente'
       const statusB = b.status || 'pendente'
       return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
     })
-  }, [evaluations, searchTerm, filterType, profile?.id])
+  }, [evaluations, searchTerm, filterType, statusFilter, cycleFilter, profile?.id])
 
   return (
     <div className="container mx-auto py-8 animate-fade-in-up">
@@ -145,8 +147,8 @@ export default function ProfessorDashboard() {
 
         <TabsContent value="inicio">
           <div className="flex flex-wrap gap-4 mb-6 items-center justify-between">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 w-full md:w-auto">
-              <div className="relative w-full sm:w-[300px]">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 w-full md:w-auto flex-1">
+              <div className="relative w-full lg:w-[300px] shrink-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar aluno ou EVO..."
@@ -155,19 +157,30 @@ export default function ProfessorDashboard() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={cycleFilter} onValueChange={setCycleFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-background">
-                  <SelectValue placeholder="Ciclo de Avaliação" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full lg:w-[180px] bg-background shrink-0">
+                  <SelectValue placeholder="Status do Treino" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os Ciclos</SelectItem>
-                  <SelectItem value="30">Até 30 dias (Verde)</SelectItem>
-                  <SelectItem value="60">De 31 a 60 dias (Amarelo)</SelectItem>
-                  <SelectItem value="90">De 61 a 90 dias (Vermelho)</SelectItem>
-                  <SelectItem value="over_90">Mais de 90 dias (Vencido)</SelectItem>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="bg-zinc-800/50 p-1 rounded-md flex w-full sm:w-auto items-center border border-zinc-700/50">
+              <Select value={cycleFilter} onValueChange={setCycleFilter}>
+                <SelectTrigger className="w-full lg:w-[220px] bg-background shrink-0">
+                  <SelectValue placeholder="Prazo de Reavaliação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Prazos</SelectItem>
+                  <SelectItem value="30">Até 30 dias</SelectItem>
+                  <SelectItem value="60">De 31 a 60 dias</SelectItem>
+                  <SelectItem value="90">De 61 a 90 dias</SelectItem>
+                  <SelectItem value="over_90">Mais de 90 dias (Atrasada)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="bg-zinc-800/50 p-1 rounded-md flex w-full lg:w-auto items-center border border-zinc-700/50 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"

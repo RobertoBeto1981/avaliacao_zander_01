@@ -383,7 +383,7 @@ export default function CoordinatorDashboard() {
           const evalDate = new Date(ev.data_avaliacao + 'T12:00:00')
           const daysSinceEval = differenceInDays(today, evalDate)
 
-          if (cycleFilter === '30') matchCycle = daysSinceEval >= 0 && daysSinceEval <= 29
+          if (cycleFilter === '30') matchCycle = daysSinceEval <= 29
           else if (cycleFilter === '60') matchCycle = daysSinceEval >= 30 && daysSinceEval <= 59
           else if (cycleFilter === '90') matchCycle = daysSinceEval >= 60 && daysSinceEval <= 90
           else if (cycleFilter === 'over_90') matchCycle = daysSinceEval > 90
@@ -397,7 +397,7 @@ export default function CoordinatorDashboard() {
       const statusB = b.status || 'pendente'
       return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
     })
-  }, [evaluations, statusFilter, searchTerm])
+  }, [evaluations, statusFilter, searchTerm, cycleFilter])
 
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
@@ -533,8 +533,8 @@ export default function CoordinatorDashboard() {
             </Alert>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative w-full sm:w-[300px]">
+          <div className="flex flex-col lg:flex-row gap-4 mb-6">
+            <div className="relative w-full lg:w-[300px] shrink-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar aluno ou EVO..."
@@ -544,8 +544,8 @@ export default function CoordinatorDashboard() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filtrar por Status" />
+              <SelectTrigger className="w-full lg:w-[180px] shrink-0">
+                <SelectValue placeholder="Status do Treino" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
@@ -555,15 +555,15 @@ export default function CoordinatorDashboard() {
               </SelectContent>
             </Select>
             <Select value={cycleFilter} onValueChange={setCycleFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Ciclo de Avaliação" />
+              <SelectTrigger className="w-full lg:w-[220px] shrink-0">
+                <SelectValue placeholder="Prazo de Reavaliação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Ciclos</SelectItem>
-                <SelectItem value="30">Até 30 dias (Verde)</SelectItem>
-                <SelectItem value="60">De 31 a 60 dias (Amarelo)</SelectItem>
-                <SelectItem value="90">De 61 a 90 dias (Vermelho)</SelectItem>
-                <SelectItem value="over_90">Mais de 90 dias (Vencido)</SelectItem>
+                <SelectItem value="all">Todos os Prazos</SelectItem>
+                <SelectItem value="30">Até 30 dias</SelectItem>
+                <SelectItem value="60">De 31 a 60 dias</SelectItem>
+                <SelectItem value="90">De 61 a 90 dias</SelectItem>
+                <SelectItem value="over_90">Mais de 90 dias (Atrasada)</SelectItem>
               </SelectContent>
             </Select>
           </div>
