@@ -255,7 +255,7 @@ export function InternalCommunications() {
               {viewingFile?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-[50vh] overflow-hidden bg-muted/30 relative flex items-center justify-center">
+          <div className="flex-1 w-full h-full min-h-[60vh] overflow-hidden bg-muted/30 relative flex items-center justify-center">
             {viewingFile?.type === 'image' ? (
               <div className="w-full h-full overflow-auto p-4 flex items-center justify-center">
                 <img
@@ -268,11 +268,11 @@ export function InternalCommunications() {
               <object
                 data={`${viewingFile.url}#toolbar=0`}
                 type="application/pdf"
-                className="w-full h-full"
+                className="w-full h-full min-h-[60vh] flex-1"
               >
                 <iframe
                   src={`${viewingFile.url}#toolbar=0`}
-                  className="w-full h-full border-0"
+                  className="w-full h-full min-h-[60vh] border-0 flex-1"
                   title={viewingFile.name}
                 >
                   <div className="flex flex-col items-center justify-center p-8 text-center h-full">

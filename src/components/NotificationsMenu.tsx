@@ -103,6 +103,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     const handleUpdate = () => loadNotifications()
     window.addEventListener('acompanhamento_updated', handleUpdate)
     window.addEventListener('avaliacao_updated', handleUpdate)
+    window.addEventListener('notifications_updated', handleUpdate)
 
     if (!user) return
 
@@ -127,6 +128,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
       supabase.removeChannel(channel)
       window.removeEventListener('acompanhamento_updated', handleUpdate)
       window.removeEventListener('avaliacao_updated', handleUpdate)
+      window.removeEventListener('notifications_updated', handleUpdate)
     }
   }, [user, profile])
 
