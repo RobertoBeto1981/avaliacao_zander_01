@@ -98,17 +98,18 @@ export default function ProfessorDashboard() {
 
       let matchCycle = true
       if (cycleFilter !== 'all') {
-        if (!ev.data_avaliacao) {
+        const reavDateStr = ev.data_reavaliacao
+        if (!reavDateStr) {
           matchCycle = false
         } else {
-          const evalDate = new Date(ev.data_avaliacao + 'T12:00:00')
-          const timeDiff = today.getTime() - evalDate.getTime()
-          const daysSinceEval = Math.floor(timeDiff / (1000 * 3600 * 24))
+          const reavDate = new Date(reavDateStr + 'T12:00:00')
+          const timeDiff = reavDate.getTime() - today.getTime()
+          const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24))
 
-          if (cycleFilter === '30') matchCycle = daysSinceEval <= 29
-          else if (cycleFilter === '60') matchCycle = daysSinceEval >= 30 && daysSinceEval <= 59
-          else if (cycleFilter === '90') matchCycle = daysSinceEval >= 60 && daysSinceEval <= 90
-          else if (cycleFilter === 'over_90') matchCycle = daysSinceEval > 90
+          if (cycleFilter === 'late') matchCycle = daysRemaining < 0
+          else if (cycleFilter === '30') matchCycle = daysRemaining >= 0 && daysRemaining <= 30
+          else if (cycleFilter === '60') matchCycle = daysRemaining >= 31 && daysRemaining <= 60
+          else if (cycleFilter === '90') matchCycle = daysRemaining >= 61
         }
       }
 
@@ -169,15 +170,15 @@ export default function ProfessorDashboard() {
                 </SelectContent>
               </Select>
               <Select value={cycleFilter} onValueChange={setCycleFilter}>
-                <SelectTrigger className="w-full lg:w-[220px] bg-background shrink-0">
-                  <SelectValue placeholder="Prazo de Reavaliação" />
+                <SelectTrigger className="w-full lg:w-[260px] bg-background shrink-0">
+                  <SelectValue placeholder="Prazo para Reavaliação" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os Prazos</SelectItem>
-                  <SelectItem value="30">Até 30 dias</SelectItem>
-                  <SelectItem value="60">De 31 a 60 dias</SelectItem>
-                  <SelectItem value="90">De 61 a 90 dias</SelectItem>
-                  <SelectItem value="over_90">Mais de 90 dias (Atrasada)</SelectItem>
+                  <SelectItem value="all">Qualquer Prazo</SelectItem>
+                  <SelectItem value="late">Atrasada (Passou do prazo)</SelectItem>
+                  <SelectItem value="30">Vence em até 30 dias</SelectItem>
+                  <SelectItem value="60">Vence entre 31 e 60 dias</SelectItem>
+                  <SelectItem value="90">Vence entre 61 e 90 dias</SelectItem>
                 </SelectContent>
               </Select>
               <div className="bg-zinc-800/50 p-1 rounded-md flex w-full lg:w-auto items-center border border-zinc-700/50 shrink-0">

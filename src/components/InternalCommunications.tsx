@@ -9,16 +9,30 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { MessageSquare, Paperclip, Trash2 } from 'lucide-react'
+import {
+  MessageSquare,
+  Paperclip,
+  Trash2,
+  Download,
+  Eye,
+  FileText,
+  Image as ImageIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Link, useLocation } from 'react-router-dom'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export function InternalCommunications() {
   const { profile } = useAuth()
   const { toast } = useToast()
   const location = useLocation()
   const [messages, setMessages] = useState<any[]>([])
+  const [viewingFile, setViewingFile] = useState<{
+    url: string
+    name: string
+    type: string
+  } | null>(null)
 
   const isCommunicationsPage = location.pathname === '/communications'
 
@@ -142,49 +156,69 @@ export function InternalCommunications() {
                   </div>
 
                   {msg.bulk_messages?.file_url && (
-                    <div className="mb-4 space-y-3 p-4 border rounded-md bg-muted/10">
-                      <div className="text-sm font-medium flex items-center gap-2 mb-2">
-                        <Paperclip className="w-4 h-4" />
-                        Anexo: {msg.bulk_messages.file_name || 'Documento'}
+                    <div className="mb-4 p-4 border rounded-md bg-muted/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
+                          {msg.bulk_messages.file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ||
+                          (msg.bulk_messages.file_name || '').match(
+                            /\.(jpeg|jpg|gif|png|webp)$/i,
+                          ) ? (
+                            <ImageIcon className="w-6 h-6" />
+                          ) : (
+                            <FileText className="w-6 h-6" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground line-clamp-1">
+                            {msg.bulk_messages.file_name || 'Documento Anexado'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Clique em Visualizar para abrir sem sair do sistema
+                          </span>
+                        </div>
                       </div>
 
-                      {msg.bulk_messages.file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ||
-                      (msg.bulk_messages.file_name || '').match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-                        <div className="max-w-sm rounded-md overflow-hidden border bg-background">
-                          <img
-                            src={msg.bulk_messages.file_url}
-                            alt={msg.bulk_messages.file_name || 'Anexo'}
-                            className="w-full h-auto object-cover"
-                          />
-                        </div>
-                      ) : msg.bulk_messages.file_url.match(/\.(pdf)(\?.*)?$/i) ||
-                        (msg.bulk_messages.file_name || '').match(/\.(pdf)$/i) ? (
-                        <div className="w-full h-[500px] rounded-md overflow-hidden border bg-background">
-                          <iframe
-                            src={msg.bulk_messages.file_url}
-                            title={msg.bulk_messages.file_name || 'Anexo PDF'}
-                            className="w-full h-full"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-[500px] rounded-md overflow-hidden border bg-background">
-                          <iframe
-                            src={msg.bulk_messages.file_url}
-                            title={msg.bulk_messages.file_name || 'Anexo Documento'}
-                            className="w-full h-full"
-                          />
-                        </div>
-                      )}
-
-                      <a
-                        href={msg.bulk_messages.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-3 py-2 rounded-md border border-primary/20 w-fit mt-2"
-                      >
-                        <Paperclip className="w-4 h-4" />
-                        Fazer Download
-                      </a>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const isImage =
+                              msg.bulk_messages.file_url.match(
+                                /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i,
+                              ) ||
+                              (msg.bulk_messages.file_name || '').match(
+                                /\.(jpeg|jpg|gif|png|webp)$/i,
+                              )
+                            const isPdf =
+                              msg.bulk_messages.file_url.match(/\.(pdf)(\?.*)?$/i) ||
+                              (msg.bulk_messages.file_name || '').match(/\.(pdf)$/i)
+                            setViewingFile({
+                              url: msg.bulk_messages.file_url,
+                              name: msg.bulk_messages.file_name || 'Anexo',
+                              type: isImage ? 'image' : isPdf ? 'pdf' : 'other',
+                            })
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Visualizar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const downloadUrl = `${msg.bulk_messages.file_url}${msg.bulk_messages.file_url.includes('?') ? '&' : '?'}download=`
+                            window.open(downloadUrl, '_blank')
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
                     </div>
                   )}
 
@@ -206,6 +240,53 @@ export function InternalCommunications() {
           </Accordion>
         )}
       </CardContent>
+
+      <Dialog open={!!viewingFile} onOpenChange={(open) => !open && setViewingFile(null)}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
+            <DialogTitle className="text-base font-semibold truncate pr-4">
+              {viewingFile?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-muted/30 relative flex items-center justify-center">
+            {viewingFile?.type === 'image' ? (
+              <div className="w-full h-full overflow-auto p-4 flex items-center justify-center">
+                <img
+                  src={viewingFile.url}
+                  alt={viewingFile.name}
+                  className="max-w-full max-h-full object-contain rounded-md shadow-sm"
+                />
+              </div>
+            ) : viewingFile?.type === 'pdf' ? (
+              <iframe
+                src={`${viewingFile.url}#toolbar=0`}
+                className="w-full h-full border-0"
+                title={viewingFile.name}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <FileText className="w-16 h-16 text-muted-foreground mb-4" />
+                <p className="text-lg font-medium mb-2">Visualização não disponível</p>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                  Este tipo de arquivo não pode ser visualizado diretamente no sistema. Por favor,
+                  faça o download para abri-lo em seu computador.
+                </p>
+                <Button
+                  onClick={() => {
+                    if (viewingFile) {
+                      const downloadUrl = `${viewingFile.url}${viewingFile.url.includes('?') ? '&' : '?'}download=`
+                      window.open(downloadUrl, '_blank')
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Fazer Download
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

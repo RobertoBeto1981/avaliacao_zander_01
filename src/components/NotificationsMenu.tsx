@@ -422,7 +422,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                     {notif.bulk_messages?.file_url && (
                       <div className="pt-1.5 pb-0.5">
                         <a
-                          href={notif.bulk_messages.file_url}
+                          href={`${notif.bulk_messages.file_url}${notif.bulk_messages.file_url.includes('?') ? '&' : '?'}download=`}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-2.5 py-1.5 rounded-md w-fit border border-primary/20"
