@@ -128,7 +128,7 @@ export function InternalCommunications() {
                           <Paperclip className="w-3 h-3 mr-1" /> Anexo
                         </Badge>
                       )}
-                      {msg.priority === 'high' && (
+                      {msg.priority === 'high' && !msg.is_read && (
                         <Badge variant="destructive" className="text-xs">
                           Urgente
                         </Badge>
@@ -140,20 +140,48 @@ export function InternalCommunications() {
                   <div className="mb-4 bg-muted/30 p-4 rounded-md border text-sm text-foreground/90 whitespace-pre-wrap">
                     {msg.message}
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
-                    {msg.bulk_messages?.file_url ? (
+
+                  {msg.bulk_messages?.file_url && (
+                    <div className="mb-4 space-y-3 p-4 border rounded-md bg-muted/10">
+                      <div className="text-sm font-medium flex items-center gap-2 mb-2">
+                        <Paperclip className="w-4 h-4" />
+                        Anexo: {msg.bulk_messages.file_name || 'Documento'}
+                      </div>
+
+                      {msg.bulk_messages.file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ||
+                      (msg.bulk_messages.file_name || '').match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                        <div className="max-w-sm rounded-md overflow-hidden border bg-background">
+                          <img
+                            src={msg.bulk_messages.file_url}
+                            alt={msg.bulk_messages.file_name || 'Anexo'}
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
+                      ) : msg.bulk_messages.file_url.match(/\.(pdf)(\?.*)?$/i) ||
+                        (msg.bulk_messages.file_name || '').match(/\.(pdf)$/i) ? (
+                        <div className="w-full h-[500px] rounded-md overflow-hidden border bg-background">
+                          <iframe
+                            src={msg.bulk_messages.file_url}
+                            title={msg.bulk_messages.file_name || 'Anexo PDF'}
+                            className="w-full h-full"
+                          />
+                        </div>
+                      ) : null}
+
                       <a
                         href={msg.bulk_messages.file_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-3 py-2 rounded-md border border-primary/20 w-fit"
+                        className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium bg-primary/10 hover:bg-primary/20 transition-colors px-3 py-2 rounded-md border border-primary/20 w-fit mt-2"
                       >
                         <Paperclip className="w-4 h-4" />
-                        Baixar Anexo: {msg.bulk_messages.file_name || 'Documento'}
+                        Fazer Download
                       </a>
-                    ) : (
-                      <div />
-                    )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+                    <div />
                     <Button
                       variant="ghost"
                       size="sm"

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
@@ -28,15 +29,16 @@ export function NovoAlunoDialog({
   const [evoId, setEvoId] = useState('')
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
+  const [motivo, setMotivo] = useState('')
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const { profile } = useAuth()
 
   const handleSave = async () => {
-    if (!evoId || !nome) {
+    if (!evoId || !nome || !motivo.trim()) {
       toast({
         title: 'Atenção',
-        description: 'ID EVO e Nome são obrigatórios.',
+        description: 'ID EVO, Nome e Motivo da Inclusão são obrigatórios.',
         variant: 'destructive',
       })
       return
@@ -61,16 +63,31 @@ export function NovoAlunoDialog({
 
       if (error) throw error
 
-      if (data && !data.success) {
-        toast({ title: 'Atenção', description: data.message, variant: 'destructive' })
+      const result = data as { success?: boolean; message?: string; id?: string }
+
+      if (result && !result.success) {
+        toast({
+          title: 'Atenção',
+          description: result.message || 'Erro ao registrar.',
+          variant: 'destructive',
+        })
         setLoading(false)
         return
       }
 
-      toast({ title: 'Sucesso', description: data?.message || 'Aluno registrado com sucesso.' })
+      if (result && result.success && result.id && profile?.id) {
+        await supabase.from('avaliacao_acompanhamentos').insert({
+          avaliacao_id: result.id,
+          autor_id: profile.id,
+          observacao: `Motivo da inclusão no sistema: ${motivo.trim()}`,
+        })
+      }
+
+      toast({ title: 'Sucesso', description: result?.message || 'Aluno registrado com sucesso.' })
       setEvoId('')
       setNome('')
       setTelefone('')
+      setMotivo('')
       onSuccess()
     } catch (e: any) {
       toast({ title: 'Erro', description: e.message, variant: 'destructive' })
@@ -117,12 +134,26 @@ export function NovoAlunoDialog({
               maxLength={19}
             />
           </div>
+          <div className="space-y-2 pt-2 border-t mt-4">
+            <Label htmlFor="motivo">Motivo da Inclusão *</Label>
+            <Textarea
+              id="motivo"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Por qual motivo este aluno está sendo incluído no sistema?"
+              className="resize-none h-20"
+            />
+            <p className="text-xs text-muted-foreground mt-1 font-medium text-amber-600 dark:text-amber-500">
+              O cliente só será incluído se houver um motivo prévio. Esta informação será gravada no
+              histórico de acompanhamentos.
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={loading || !evoId || !nome}>
+          <Button onClick={handleSave} disabled={loading || !evoId || !nome || !motivo.trim()}>
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar
           </Button>
