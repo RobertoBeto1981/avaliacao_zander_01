@@ -118,6 +118,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
         },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev])
+          window.dispatchEvent(new CustomEvent('notifications_updated'))
         },
       )
       .subscribe()
@@ -152,6 +153,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
 
     try {
       await markAsRead(id)
+      window.dispatchEvent(new CustomEvent('notifications_updated'))
     } catch (e) {
       console.error(e)
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: false } : n)))
@@ -179,6 +181,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     )
     try {
       await supabase.from('notifications').update({ is_archived: true, is_read: true }).eq('id', id)
+      window.dispatchEvent(new CustomEvent('notifications_updated'))
     } catch (e) {
       console.error(e)
     }
@@ -209,6 +212,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
         .eq('is_read', true)
         .eq('is_archived', false)
 
+      window.dispatchEvent(new CustomEvent('notifications_updated'))
       toast({ title: 'Sucesso', description: 'Notificações lidas foram arquivadas.' })
     } catch (e) {
       console.error(e)
@@ -238,6 +242,7 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
         return next
       })
 
+      window.dispatchEvent(new CustomEvent('notifications_updated'))
       toast({ title: 'Sucesso', description: 'Todas marcadas como lidas.' })
     } catch (e) {
       console.error(e)

@@ -36,26 +36,32 @@ export function InternalCommunications() {
 
   const isCommunicationsPage = location.pathname === '/communications'
 
-  useEffect(() => {
-    if (profile?.id) {
-      loadMessages()
-    }
-  }, [profile?.id])
-
   const loadMessages = async () => {
+    if (!profile?.id) return
     try {
-      const data = await getNotifications(profile!.id)
+      const data = await getNotifications(profile.id)
       setMessages(data.filter((n: any) => n.type === 'message'))
     } catch (e) {
       console.error(e)
     }
   }
 
+  useEffect(() => {
+    if (profile?.id) {
+      loadMessages()
+    }
+
+    const handleUpdate = () => loadMessages()
+    window.addEventListener('notifications_updated', handleUpdate)
+    return () => window.removeEventListener('notifications_updated', handleUpdate)
+  }, [profile?.id])
+
   const handleArchive = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     try {
       await archiveNotification(id)
       setMessages((prev) => prev.filter((m) => m.id !== id))
+      window.dispatchEvent(new CustomEvent('notifications_updated'))
       toast({ title: 'Mensagem apagada', description: 'O comunicado foi removido da sua caixa.' })
     } catch (err) {
       toast({
@@ -71,6 +77,7 @@ export function InternalCommunications() {
       try {
         await markAsRead(id)
         setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, is_read: true } : m)))
+        window.dispatchEvent(new CustomEvent('notifications_updated'))
       } catch (e) {
         console.error(e)
       }
@@ -248,7 +255,7 @@ export function InternalCommunications() {
               {viewingFile?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden bg-muted/30 relative flex items-center justify-center">
+          <div className="flex-1 min-h-[50vh] overflow-hidden bg-muted/30 relative flex items-center justify-center">
             {viewingFile?.type === 'image' ? (
               <div className="w-full h-full overflow-auto p-4 flex items-center justify-center">
                 <img
@@ -258,11 +265,27 @@ export function InternalCommunications() {
                 />
               </div>
             ) : viewingFile?.type === 'pdf' ? (
-              <iframe
-                src={`${viewingFile.url}#toolbar=0`}
-                className="w-full h-full border-0"
-                title={viewingFile.name}
-              />
+              <object
+                data={`${viewingFile.url}#toolbar=0`}
+                type="application/pdf"
+                className="w-full h-full"
+              >
+                <iframe
+                  src={`${viewingFile.url}#toolbar=0`}
+                  className="w-full h-full border-0"
+                  title={viewingFile.name}
+                >
+                  <div className="flex flex-col items-center justify-center p-8 text-center h-full">
+                    <p className="text-muted-foreground mb-4">
+                      Seu navegador bloqueou a visualização direta do PDF.
+                    </p>
+                    <Button onClick={() => window.open(viewingFile?.url, '_blank')}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar PDF
+                    </Button>
+                  </div>
+                </iframe>
+              </object>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <FileText className="w-16 h-16 text-muted-foreground mb-4" />

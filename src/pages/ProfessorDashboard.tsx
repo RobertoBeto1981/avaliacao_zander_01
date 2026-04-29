@@ -61,13 +61,25 @@ export default function ProfessorDashboard() {
     setLoading(false)
   }
 
+  const loadUnreadCount = async () => {
+    if (!profile?.id) return
+    try {
+      const data = await getNotifications(profile.id)
+      setUnreadCount(data.filter((n: any) => !n.is_read && n.type === 'message').length)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     if (profile?.id) {
       loadData()
-      getNotifications(profile.id).then((data) => {
-        setUnreadCount(data.filter((n: any) => !n.is_read && n.type === 'message').length)
-      })
+      loadUnreadCount()
     }
+
+    const handleUpdate = () => loadUnreadCount()
+    window.addEventListener('notifications_updated', handleUpdate)
+    return () => window.removeEventListener('notifications_updated', handleUpdate)
   }, [profile?.id])
 
   const handleStatusChange = async (id: string, status: string) => {
