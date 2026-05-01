@@ -681,15 +681,36 @@ export function EditarAvaliacaoDialog({
 function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
   const [hasFiles, setHasFiles] = useState(false)
   useEffect(() => {
-    supabase
-      .from('avaliacao_acompanhamentos')
-      .select('id')
-      .eq('avaliacao_id', avaliacaoId)
-      .not('file_url', 'is', null)
-      .limit(1)
-      .then(({ data }) => {
-        if (data && data.length > 0) setHasFiles(true)
-      })
+    const fetchHasFiles = () => {
+      supabase
+        .from('avaliacao_acompanhamentos')
+        .select('id')
+        .eq('avaliacao_id', avaliacaoId)
+        .not('file_url', 'is', null)
+        .limit(1)
+        .then(({ data }) => {
+          setHasFiles(!!(data && data.length > 0))
+        })
+    }
+    fetchHasFiles()
+
+    const channel = supabase
+      .channel(`files-${avaliacaoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'avaliacao_acompanhamentos',
+          filter: `avaliacao_id=eq.${avaliacaoId}`,
+        },
+        () => fetchHasFiles(),
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [avaliacaoId])
 
   return (

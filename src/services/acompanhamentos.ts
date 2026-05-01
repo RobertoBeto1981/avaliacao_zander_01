@@ -23,6 +23,7 @@ export const addAcompanhamento = async (payload: {
   prazo?: string | null
   file_url?: string | null
   file_name?: string | null
+  file_category?: string | null
 }) => {
   const { data, error } = await supabase
     .from('avaliacao_acompanhamentos')
@@ -43,6 +44,26 @@ export const toggleAcompanhamento = async (id: string, concluido: boolean) => {
     })
     .eq('id', id)
 
+  if (error) throw new Error(error.message)
+}
+
+export const updateAcompanhamentoFile = async (
+  id: string,
+  payload: { file_url: string | null; file_name: string | null; file_category: string | null },
+) => {
+  const { data, error } = await supabase
+    .from('avaliacao_acompanhamentos')
+    .update(payload)
+    .eq('id', id)
+    .select('*, autor:autor_id (nome, role)')
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export const deleteAcompanhamento = async (id: string) => {
+  const { error } = await supabase.from('avaliacao_acompanhamentos').delete().eq('id', id)
   if (error) throw new Error(error.message)
 }
 

@@ -20,7 +20,9 @@ import {
   Plus,
   UserPlus,
   Loader2,
+  Upload,
 } from 'lucide-react'
+import { ImportStudentsDialog } from '@/components/coordinator/ImportStudentsDialog'
 import {
   getEvaluations,
   updateEvaluationStatus,
@@ -89,6 +91,7 @@ export default function CoordinatorDashboard() {
 
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [editCadastroEv, setEditCadastroEv] = useState<any>(null)
   const [editAvaliacaoEv, setEditAvaliacaoEv] = useState<any>(null)
   const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
@@ -437,6 +440,14 @@ export default function CoordinatorDashboard() {
           >
             <UserPlus className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Novo Aluno</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsImportOpen(true)}
+            className="flex-1 sm:flex-none bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/40"
+          >
+            <Upload className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Importar</span>
           </Button>
           <Button asChild className="flex-1 sm:flex-none">
             <Link to="/evaluation/new">
@@ -1047,6 +1058,12 @@ export default function CoordinatorDashboard() {
           setIsNewStudentOpen(false)
           loadData()
         }}
+      />
+
+      <ImportStudentsDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onSuccess={loadData}
       />
 
       <AcompanhamentoDialog
