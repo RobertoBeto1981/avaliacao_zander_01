@@ -31,6 +31,7 @@ import {
   Target,
   FileEdit,
   Loader2,
+  Paperclip,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn, formatPhone } from '@/lib/utils'
@@ -349,6 +350,7 @@ export function StudentCard({
               icon={<Target className="w-4 h-4" />}
               tooltip="My Score"
             />
+            <FileIconIndicator avaliacaoId={ev.id} />
           </div>
         </div>
 
@@ -673,6 +675,37 @@ export function EditarAvaliacaoDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
+  const [hasFiles, setHasFiles] = useState(false)
+  useEffect(() => {
+    supabase
+      .from('avaliacao_acompanhamentos')
+      .select('id')
+      .eq('avaliacao_id', avaliacaoId)
+      .not('file_url', 'is', null)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) setHasFiles(true)
+      })
+  }, [avaliacaoId])
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={cn(
+            'p-1.5 rounded transition-colors flex items-center justify-center',
+            hasFiles ? 'text-[#84cc16]' : 'text-zinc-600',
+          )}
+        >
+          <Paperclip className="w-4 h-4" />
+        </div>
+      </TooltipTrigger>
+      {hasFiles && <TooltipContent>Documentos Anexados (Ver Anotações)</TooltipContent>}
+    </Tooltip>
   )
 }
 

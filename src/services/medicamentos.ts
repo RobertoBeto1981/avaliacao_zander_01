@@ -97,6 +97,9 @@ const ANVISA_MEDS: Record<string, string> = {
   'sulfato ferroso': 'Suplemento Mineral',
   'vitamina d': 'Suplemento Vitamínico',
   'vitamina b12': 'Suplemento Vitamínico',
+  prep: 'Prevenção do HIV',
+  truvada: 'Prevenção do HIV',
+  profilaxia: 'Prevenção de Infecção',
 }
 
 const translateToPT = async (text: string): Promise<string> => {
@@ -159,6 +162,9 @@ const extractShortAction = (text: string): string => {
     emagrecimento: 'Auxiliar na Perda de Peso',
     corticoide: 'Corticoide',
     diurético: 'Diurético',
+    hiv: 'Prevenção/Tratamento HIV',
+    prep: 'Prevenção do HIV',
+    prevenção: 'Prevenção',
   }
 
   for (const [key, value] of Object.entries(actionDictionary)) {

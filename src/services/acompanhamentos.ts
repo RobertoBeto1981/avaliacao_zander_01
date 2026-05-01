@@ -21,6 +21,8 @@ export const addAcompanhamento = async (payload: {
   autor_id: string
   observacao: string
   prazo?: string | null
+  file_url?: string | null
+  file_name?: string | null
 }) => {
   const { data, error } = await supabase
     .from('avaliacao_acompanhamentos')

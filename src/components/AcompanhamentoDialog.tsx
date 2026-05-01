@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { CalendarIcon, Loader2, CheckCircle2, Circle, MessageSquare } from 'lucide-react'
+import {
+  CalendarIcon,
+  Loader2,
+  CheckCircle2,
+  Circle,
+  MessageSquare,
+  Paperclip,
+  X,
+} from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,6 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
 import {
   getAcompanhamentos,
   addAcompanhamento,
@@ -40,6 +49,7 @@ export function AcompanhamentoDialog({
   const [observacao, setObservacao] = useState('')
   const [hasPrazo, setHasPrazo] = useState(false)
   const [prazo, setPrazo] = useState<Date>()
+  const [file, setFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (open && avaliacaoId) {
@@ -60,27 +70,66 @@ export function AcompanhamentoDialog({
   }
 
   const handleSave = async () => {
-    if (!observacao.trim()) return
+    if (!observacao.trim() && !file) return
     if (!user) return
 
     setSaving(true)
     try {
+      let file_url = null
+      let file_name = null
+
+      if (file) {
+        const fileExt = file.name.split('.').pop()
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const filePath = `${avaliacaoId}/${uniqueName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('student-documents')
+          .upload(filePath, file)
+
+        if (uploadError) throw uploadError
+
+        file_url = filePath
+        file_name = file.name
+      }
+
       const payload = {
         avaliacao_id: avaliacaoId,
         autor_id: user.id,
-        observacao,
+        observacao: observacao || (file ? `Arquivo anexado: ${file.name}` : ''),
         prazo: hasPrazo && prazo ? format(prazo, 'yyyy-MM-dd') : null,
+        file_url,
+        file_name,
       }
       const newItem = await addAcompanhamento(payload)
       setItems((prev) => [newItem, ...prev])
       setObservacao('')
       setHasPrazo(false)
       setPrazo(undefined)
+      setFile(null)
       toast({ title: 'Sucesso', description: 'Acompanhamento registrado.' })
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro', description: e.message })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDownload = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('student-documents')
+        .createSignedUrl(filePath, 60)
+      if (error) throw error
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank')
+      }
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível acessar o arquivo.',
+      })
     }
   }
 
@@ -159,6 +208,17 @@ export function AcompanhamentoDialog({
                       <p className="text-sm text-foreground/90 whitespace-pre-wrap">
                         {item.observacao}
                       </p>
+                      {item.file_name && (
+                        <div
+                          onClick={() => handleDownload(item.file_url, item.file_name)}
+                          className="mt-2 flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 hover:underline cursor-pointer bg-blue-500/10 border border-blue-500/20 p-2 rounded-md w-fit transition-colors"
+                        >
+                          <Paperclip className="w-3.5 h-3.5" />
+                          <span className="truncate max-w-[200px] sm:max-w-[300px]">
+                            {item.file_name}
+                          </span>
+                        </div>
+                      )}
                       {item.prazo && (
                         <div className="mt-2 text-xs font-medium flex flex-wrap items-center gap-1.5">
                           <span
@@ -186,12 +246,43 @@ export function AcompanhamentoDialog({
           </ScrollArea>
 
           <div className="border-t pt-4 space-y-4 flex-shrink-0 bg-background">
-            <Textarea
-              placeholder="Nova observação, mudança de treino ou tarefa..."
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-              className="resize-none h-20"
-            />
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Nova observação, mudança de treino ou tarefa..."
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+                className="resize-none h-20"
+              />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className="h-8 text-xs"
+                  >
+                    <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                    Anexar
+                  </Button>
+                  {file && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 max-w-[150px] sm:max-w-[250px]">
+                      <span className="truncate">{file.name}</span>
+                      <X
+                        className="w-3.5 h-3.5 cursor-pointer hover:text-destructive shrink-0"
+                        onClick={() => setFile(null)}
+                      />
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-col gap-2">
@@ -229,7 +320,7 @@ export function AcompanhamentoDialog({
 
               <Button
                 onClick={handleSave}
-                disabled={saving || !observacao.trim()}
+                disabled={saving || (!observacao.trim() && !file)}
                 className="w-full sm:w-auto"
               >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
