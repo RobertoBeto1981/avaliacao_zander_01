@@ -50,6 +50,9 @@ export function ImportStudentsDialog({
       setTotal(dataLines.length)
       setProgress(0)
 
+      let insertedCount = 0
+      let ignoredCount = 0
+
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i]
         // Trata delimitadores CSV básicos, ignorando os mais complexos com aspas nesta versão
@@ -63,26 +66,40 @@ export function ImportStudentsDialog({
           const motivo = cols[3] || 'Importação via CSV'
 
           if (evoId && nome) {
-            const { data, error } = await supabase.rpc('upsert_aluno_dialog', {
+            const { data, error } = await supabase.rpc('import_aluno_csv_safely' as any, {
               p_evo_id: evoId,
-              p_nome_cliente: nome.trim().toUpperCase(),
+              p_nome_cliente: nome.trim(),
               p_telefone_cliente: tel,
               p_professor_id: null,
             })
 
-            if (!error && data && data.success && data.id && profile?.id) {
-              await supabase.from('avaliacao_acompanhamentos').insert({
-                avaliacao_id: data.id,
-                autor_id: profile.id,
-                observacao: `Motivo da inclusão: ${motivo}`,
-              })
+            if (!error && data) {
+              const res = data as { status: string; id: string; reason?: string }
+              if (res.status === 'inserted') {
+                insertedCount++
+                if (res.id && profile?.id) {
+                  await supabase.from('avaliacao_acompanhamentos').insert({
+                    avaliacao_id: res.id,
+                    autor_id: profile.id,
+                    observacao: `Motivo da inclusão: ${motivo}`,
+                  })
+                }
+              } else if (res.status === 'ignored') {
+                ignoredCount++
+              }
+            } else {
+              ignoredCount++ // fallback em caso de falha da request
             }
           }
         }
         setProgress(i + 1)
       }
 
-      toast({ title: 'Sucesso', description: 'Importação concluída com sucesso.' })
+      toast({
+        title: 'Importação Concluída',
+        description: `${insertedCount} novos clientes incluídos. ${ignoredCount > 0 ? `${ignoredCount} clientes ignorados por já constarem na base de dados.` : ''}`,
+        duration: 8000,
+      })
       onSuccess()
       onOpenChange(false)
     } catch (e: any) {
