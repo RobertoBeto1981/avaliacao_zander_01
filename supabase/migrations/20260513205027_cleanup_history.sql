@@ -1,7 +1,4 @@
-DO $$
-BEGIN
-  -- Trigger and function creation to automatically clean up video scheduling history older than 30 days
-END $$;
+-- Trigger and function creation to automatically clean up video scheduling history older than 30 days
 
 CREATE OR REPLACE FUNCTION public.cleanup_old_video_history()
 RETURNS trigger
@@ -15,7 +12,7 @@ BEGIN
   
   RETURN NULL;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_cleanup_old_video_history ON public.videos_agendados;
 CREATE TRIGGER trg_cleanup_old_video_history
