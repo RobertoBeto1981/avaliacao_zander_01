@@ -25,6 +25,46 @@ import CoordinatorDashboard from './pages/CoordinatorDashboard'
 
 // Global error handlers to prevent app crash on Supabase invalid refresh token
 if (typeof window !== 'undefined') {
+  const TAB_COUNT_KEY = 'app_active_tabs'
+  const LAST_UNLOAD_KEY = 'app_last_unload_time'
+
+  const lastUnload = localStorage.getItem(LAST_UNLOAD_KEY)
+  if (lastUnload) {
+    const timeSinceUnload = Date.now() - parseInt(lastUnload, 10)
+    // 5 seconds threshold for reload
+    if (timeSinceUnload > 5000) {
+      let cleaned = false
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach((k) => {
+        localStorage.removeItem(k)
+        cleaned = true
+      })
+      if (cleaned && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    localStorage.removeItem(LAST_UNLOAD_KEY)
+  }
+
+  const currentTabs = parseInt(localStorage.getItem(TAB_COUNT_KEY) || '0', 10)
+  localStorage.setItem(TAB_COUNT_KEY, (currentTabs + 1).toString())
+
+  window.addEventListener('unload', () => {
+    const tabs = parseInt(localStorage.getItem(TAB_COUNT_KEY) || '1', 10)
+    const newCount = Math.max(0, tabs - 1)
+    localStorage.setItem(TAB_COUNT_KEY, newCount.toString())
+
+    if (newCount === 0) {
+      localStorage.setItem(LAST_UNLOAD_KEY, Date.now().toString())
+    }
+  })
+
   try {
     let currentVersion = '1f913f6'
     const scriptTags = document.querySelectorAll('script')

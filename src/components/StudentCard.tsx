@@ -678,7 +678,7 @@ export function EditarAvaliacaoDialog({
   )
 }
 
-function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
+export function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
   const [hasFiles, setHasFiles] = useState(false)
   useEffect(() => {
     const fetchHasFiles = () => {

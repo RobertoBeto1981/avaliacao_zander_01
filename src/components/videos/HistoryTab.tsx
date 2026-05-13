@@ -68,8 +68,16 @@ export function HistoryTab() {
           data_envio: d.desafio_zander_enviado_em,
         }))
 
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const thirtyDaysAgoTime = thirtyDaysAgo.getTime()
+
         const combined = [...formattedVideos, ...formattedDesafios]
           .filter((item) => item.status !== 'pendente') // Histórico shows only non-pending
+          .filter((item) => {
+            if (!item.data_envio) return false
+            return new Date(item.data_envio).getTime() >= thirtyDaysAgoTime
+          })
           .sort((a, b) => {
             const dateA = a.data_envio ? new Date(a.data_envio).getTime() : 0
             const dateB = b.data_envio ? new Date(b.data_envio).getTime() : 0

@@ -14,7 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListFilter, AlertCircle, Edit, FileEdit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
+import {
+  EditarCadastroDialog,
+  EditarAvaliacaoDialog,
+  FileIconIndicator,
+} from '@/components/StudentCard'
 import { differenceInDays, startOfDay } from 'date-fns'
 
 function addWorkingDays(startDate: Date, days: number) {
@@ -75,7 +79,8 @@ export function DashboardTable({
                           {ev.nome_cliente}
                         </h3>
                         {!hideActions && (
-                          <div className="flex gap-1 shrink-0 -mt-1 -mr-1">
+                          <div className="flex gap-1 shrink-0 -mt-1 -mr-1 items-center">
+                            <FileIconIndicator avaliacaoId={ev.id} />
                             <Button
                               variant="ghost"
                               size="icon"

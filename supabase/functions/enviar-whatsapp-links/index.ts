@@ -4,7 +4,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 // Função para envio dos links da avaliação física via WhatsApp
@@ -29,7 +30,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     })
 
     const { data: avaliacao, error } = await supabaseClient
@@ -67,9 +68,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const firstName = avaliacao.nome_cliente.trim().split(' ')[0]
-    
-    const { data: tplData } = await supabaseClient.from('message_templates').select('template').eq('id', 'links_avaliacao').single()
-    let text = tplData?.template || `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada!`
+
+    const { data: tplData } = await supabaseClient
+      .from('message_templates')
+      .select('template')
+      .eq('id', 'links_avaliacao')
+      .single()
+    let text =
+      tplData?.template ||
+      `Olá, {{nome}}, tudo bem?\n\nAbaixo estão os links da sua avaliação:\n\n{{links}}\n\nMuito obrigado por realizar sua avaliação física na Zander Academia. Estamos juntos nessa jornada!`
 
     let linksStr = ''
     if (links.anamnese_url) linksStr += `*Anamnese:* ${links.anamnese_url}\n`
@@ -91,7 +98,7 @@ Deno.serve(async (req: Request) => {
       console.warn('WhatsApp credentials not set. Simulating success.')
       return new Response(
         JSON.stringify({ success: true, simulated: true, message: 'Simulado com sucesso' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } },
       )
     }
 
@@ -101,18 +108,18 @@ Deno.serve(async (req: Request) => {
       to: phone,
       type: 'text',
       text: {
-        body: message
-      }
-    };
+        body: message,
+      },
+    }
 
     const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${waToken}`,
+        Authorization: `Bearer ${waToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBodyObj)
-    });
+      body: JSON.stringify(requestBodyObj),
+    })
 
     const waData = await waRes.json()
 
@@ -121,15 +128,13 @@ Deno.serve(async (req: Request) => {
       throw new Error(waData.error?.message || 'Falha ao enviar mensagem pelo WhatsApp')
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: waData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } }
-    )
-
+    return new Response(JSON.stringify({ success: true, data: waData }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+    })
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } }
-    )
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+    })
   }
 })

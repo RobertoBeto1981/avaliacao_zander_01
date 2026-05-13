@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Command,
   CommandEmpty,
@@ -35,6 +36,7 @@ export function ManualClientMessagingTab({
   onMessageChange?: (msg: string) => void
 }) {
   const { toast } = useToast()
+  const [title, setTitle] = useState('Mensagem para Clientes')
   const [message, setMessage] = useState(initialMessage)
   const [targetFilters, setTargetFilters] = useState<string[]>([])
 
@@ -197,7 +199,7 @@ export function ManualClientMessagingTab({
             await supabase.from('bulk_messages').insert({
               sender_id: userId,
               target_role: 'clientes',
-              title: 'Mensagem para Clientes',
+              title: title.trim() || 'Mensagem para Clientes',
               message: message.trim(),
               priority: 'normal',
             })
@@ -432,6 +434,18 @@ export function ManualClientMessagingTab({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
+          <div className="space-y-2">
+            <Label className="font-semibold text-foreground">
+              Título da Mensagem (Identificação no Histórico)
+            </Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Lembrete de Reavaliação"
+              className="text-sm border-border/50"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label className="font-semibold text-foreground">Mensagem Personalizada</Label>
             <Textarea
