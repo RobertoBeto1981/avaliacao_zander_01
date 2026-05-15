@@ -189,19 +189,22 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
     }
   }
 
-  const handleArchiveAllRead = async () => {
+  const handleClearAll = async () => {
     if (!user) return
     try {
       // Atualiza a UI imediatamente para melhor responsividade
-      setNotifications((prev) => prev.map((n) => (n.is_read ? { ...n, is_archived: true } : n)))
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true, is_archived: true })))
 
-      const readAlertsIds = alerts
-        .filter((a) => dismissedAlerts.includes(a.id) && !archivedAlerts.includes(a.id))
-        .map((a) => a.id)
+      const allAlertsIds = alerts.filter((a) => !archivedAlerts.includes(a.id)).map((a) => a.id)
 
-      if (readAlertsIds.length > 0) {
+      if (allAlertsIds.length > 0) {
+        setDismissedAlerts((prev) => {
+          const next = Array.from(new Set([...prev, ...allAlertsIds]))
+          localStorage.setItem(`dismissed_alerts_${user.id}`, JSON.stringify(next))
+          return next
+        })
         setArchivedAlerts((prev) => {
-          const next = Array.from(new Set([...prev, ...readAlertsIds]))
+          const next = Array.from(new Set([...prev, ...allAlertsIds]))
           localStorage.setItem(`archived_alerts_${user.id}`, JSON.stringify(next))
           return next
         })
@@ -209,18 +212,17 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
 
       await supabase
         .from('notifications')
-        .update({ is_archived: true })
+        .update({ is_read: true, is_archived: true })
         .eq('user_id', user.id)
-        .eq('is_read', true)
         .eq('is_archived', false)
 
       window.dispatchEvent(new CustomEvent('notifications_updated'))
-      toast({ title: 'Sucesso', description: 'Notificações lidas foram arquivadas.' })
+      toast({ title: 'Sucesso', description: 'Todas as notificações foram limpas.' })
     } catch (e) {
       console.error(e)
       toast({
         title: 'Erro',
-        description: 'Falha ao arquivar notificações.',
+        description: 'Falha ao limpar notificações.',
         variant: 'destructive',
       })
     }
@@ -337,11 +339,11 @@ export default function NotificationsMenu({ profile }: { profile: any }) {
                 variant="link"
                 size="sm"
                 className="h-6 text-xs text-muted-foreground p-0 hover:text-primary disabled:opacity-50"
-                onClick={handleArchiveAllRead}
-                disabled={!activeItems.some((n) => n.is_read)}
+                onClick={handleClearAll}
+                disabled={activeItems.length === 0}
               >
                 <Archive className="w-3 h-3 mr-1" />
-                Limpar Lidas
+                Limpar Todas
               </Button>
             </div>
           )}
