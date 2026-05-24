@@ -103,7 +103,7 @@ export function UserManagementTab({
   const regularUsers = users.filter((u) => !u.pending_roles || u.pending_roles.length === 0)
 
   const getWorkload = (profId: string) => {
-    return evaluations.filter((e) => e.professor_id === profId).length
+    return evaluations.filter((e) => e.professor_id === profId && e.status !== 'concluido').length
   }
 
   const handleApproveRoles = async (

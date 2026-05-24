@@ -696,7 +696,7 @@ export default function CoordinatorDashboard() {
                             EVO: {ev.evo_id}
                           </Badge>
                         )}
-                        {ev.professor?.nome && (
+                        {ev.professor_id && ev.professor?.nome && (
                           <Badge
                             variant="outline"
                             className="text-[10px] h-5 px-1.5 border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 bg-transparent font-medium"
