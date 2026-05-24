@@ -182,6 +182,11 @@ export function StudentCard({
             <div className="text-[#84cc16] text-sm font-bold">
               {ev.nao_cliente ? 'NÃO CLIENTE' : ev.evo_id ? `EVO: ${ev.evo_id}` : 'EVO: -'}
             </div>
+            {ev.professor?.nome && (
+              <span className="bg-transparent text-zinc-400 border border-zinc-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap">
+                Prof: {ev.professor.nome.split(' ')[0]}
+              </span>
+            )}
             {ev.desafio_zander_status &&
               ev.desafio_zander_status !== 'nenhum' &&
               ev.status !== 'concluido' && (

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, UserPlus, ShieldAlert } from 'lucide-react'
+import { Edit, Trash2, UserPlus, ShieldAlert, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { updateUser, deleteUserCompletely } from '@/services/users'
 import {
@@ -31,7 +31,17 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 
-export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate: () => void }) {
+export function UserManagementTab({
+  users,
+  evaluations,
+  onUpdate,
+  onViewStudents,
+}: {
+  users: any[]
+  evaluations: any[]
+  onUpdate: () => void
+  onViewStudents: (id: string) => void
+}) {
   const { toast } = useToast()
   const [editingUser, setEditingUser] = useState<any>(null)
   const [isIncludeOpen, setIsIncludeOpen] = useState(false)
@@ -91,6 +101,12 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
 
   const pendingUsers = users.filter((u) => u.pending_roles && u.pending_roles.length > 0)
   const regularUsers = users.filter((u) => !u.pending_roles || u.pending_roles.length === 0)
+
+  const getWorkload = (profId: string) => {
+    return evaluations.filter(
+      (e) => e.professor_id === profId && (e.status === 'pendente' || e.status === 'em_progresso'),
+    ).length
+  }
 
   const handleApproveRoles = async (
     id: string,
@@ -186,6 +202,7 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                 <TableHead>E-mail</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead className="text-center">Alunos Ativos</TableHead>
                 <TableHead className="text-center">Recebe Alunos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -214,6 +231,15 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                     <TableCell>{u.telefone || '-'}</TableCell>
                     <TableCell className="text-center">
                       {u.roles?.includes('professor') || u.role === 'professor' ? (
+                        <Badge variant="secondary" className="font-bold">
+                          {getWorkload(u.id)}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {u.roles?.includes('professor') || u.role === 'professor' ? (
                         <Switch
                           checked={u.ativo ?? true}
                           onCheckedChange={async (val) => {
@@ -235,6 +261,17 @@ export function UserManagementTab({ users, onUpdate }: { users: any[]; onUpdate:
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
+                        {(u.roles?.includes('professor') || u.role === 'professor') && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-500 hover:bg-blue-500/10"
+                            onClick={() => onViewStudents(u.id)}
+                            title="Ver Alunos"
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

@@ -119,6 +119,14 @@ export function DashboardTable({
                         </div>
                       )}
                       <div className="flex gap-1.5 items-center flex-wrap mt-2">
+                        {ev.professor?.nome && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-5 px-1.5 py-0 border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 bg-transparent font-medium w-fit"
+                          >
+                            Prof: {ev.professor.nome.split(' ')[0]}
+                          </Badge>
+                        )}
                         {isPre && (
                           <Badge
                             variant="destructive"

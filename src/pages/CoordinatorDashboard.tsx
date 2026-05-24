@@ -77,6 +77,8 @@ export default function CoordinatorDashboard() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cycleFilter, setCycleFilter] = useState<string>('all')
+  const [professorFilter, setProfessorFilter] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<string>('overview')
   const [professorRequests, setProfessorRequests] = useState<any[]>([])
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
@@ -376,7 +378,13 @@ export default function CoordinatorDashboard() {
       const matchSearch =
         searchTerm === '' ||
         ev.nome_cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ev.evo_id?.includes(searchTerm)
+        ev.evo_id?.includes(searchTerm) ||
+        ev.professor?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchProfessor =
+        professorFilter === 'all' ||
+        (professorFilter === 'unassigned' && !ev.professor_id) ||
+        ev.professor_id === professorFilter
 
       let matchCycle = true
       if (cycleFilter !== 'all') {
@@ -393,14 +401,19 @@ export default function CoordinatorDashboard() {
         }
       }
 
-      return matchStatus && matchSearch && matchCycle
+      return matchStatus && matchSearch && matchCycle && matchProfessor
     })
     return result.sort((a, b) => {
       const statusA = a.status || 'pendente'
       const statusB = b.status || 'pendente'
       return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99)
     })
-  }, [evaluations, statusFilter, searchTerm, cycleFilter])
+  }, [evaluations, statusFilter, searchTerm, cycleFilter, professorFilter])
+
+  const handleViewStudents = (profId: string) => {
+    setProfessorFilter(profId)
+    setActiveTab('overview')
+  }
 
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
@@ -466,7 +479,7 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="team">Equipe e Colaboradores</TabsTrigger>
@@ -566,7 +579,7 @@ export default function CoordinatorDashboard() {
               </SelectContent>
             </Select>
             <Select value={cycleFilter} onValueChange={setCycleFilter}>
-              <SelectTrigger className="w-full lg:w-[220px] shrink-0">
+              <SelectTrigger className="w-full lg:w-[180px] shrink-0">
                 <SelectValue placeholder="Prazo de Reavaliação" />
               </SelectTrigger>
               <SelectContent>
@@ -575,6 +588,22 @@ export default function CoordinatorDashboard() {
                 <SelectItem value="60">De 31 a 60 dias</SelectItem>
                 <SelectItem value="90">De 61 a 90 dias</SelectItem>
                 <SelectItem value="over_90">Mais de 90 dias (Atrasada)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={professorFilter} onValueChange={setProfessorFilter}>
+              <SelectTrigger className="w-full lg:w-[200px] shrink-0">
+                <SelectValue placeholder="Professor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Professores</SelectItem>
+                <SelectItem value="unassigned">Sem Professor</SelectItem>
+                {users
+                  .filter((u) => u.roles?.includes('professor') || u.role === 'professor')
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -665,6 +694,14 @@ export default function CoordinatorDashboard() {
                             className="text-[10px] h-5 px-1.5 border-primary/30 text-primary/80"
                           >
                             EVO: {ev.evo_id}
+                          </Badge>
+                        )}
+                        {ev.professor?.nome && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-5 px-1.5 border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 bg-transparent font-medium"
+                          >
+                            Prof: {ev.professor.nome.split(' ')[0]}
                           </Badge>
                         )}
                         {ev.desafio_zander_status &&
@@ -987,7 +1024,12 @@ export default function CoordinatorDashboard() {
           </div>
         </TabsContent>
         <TabsContent value="team">
-          <UserManagementTab users={users} onUpdate={loadUsers} />
+          <UserManagementTab
+            users={users}
+            evaluations={evaluations}
+            onUpdate={loadUsers}
+            onViewStudents={handleViewStudents}
+          />
         </TabsContent>
       </Tabs>
 
