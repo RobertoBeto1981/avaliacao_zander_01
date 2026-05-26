@@ -103,7 +103,21 @@ export function UserManagementTab({
   const regularUsers = users.filter((u) => !u.pending_roles || u.pending_roles.length === 0)
 
   const getWorkload = (profId: string) => {
-    return evaluations.filter((e) => e.professor_id === profId && e.status !== 'concluido').length
+    const profEvals = evaluations.filter(
+      (e) => e.professor_id === profId && e.status !== 'concluido',
+    )
+    const uniqueClients = new Set()
+    let count = 0
+    for (const ev of profEvals) {
+      const key = ev.evo_id
+        ? `evo_${ev.evo_id}`
+        : `nome_${(ev.nome_cliente || '').trim().toUpperCase()}`
+      if (!uniqueClients.has(key)) {
+        uniqueClients.add(key)
+        count++
+      }
+    }
+    return count
   }
 
   const handleApproveRoles = async (

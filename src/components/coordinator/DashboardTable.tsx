@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { format } from 'date-fns'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,20 +46,33 @@ export function DashboardTable({
   const [editCadastroEv, setEditCadastroEv] = useState<any>(null)
   const [editAvaliacaoEv, setEditAvaliacaoEv] = useState<any>(null)
 
+  const uniqueData = useMemo(() => {
+    const map = new Map()
+    for (const ev of data) {
+      const key = ev.evo_id
+        ? `evo_${ev.evo_id}`
+        : `nome_${(ev.nome_cliente || '').trim().toUpperCase()}`
+      if (!map.has(key)) {
+        map.set(key, ev)
+      }
+    }
+    return Array.from(map.values())
+  }, [data])
+
   return (
     <Card className="border-border/50 shadow-sm overflow-hidden">
       <CardHeader className="bg-muted/30 border-b border-border/50 flex flex-row items-center gap-2 py-4">
         <ListFilter className="w-5 h-5 text-primary" />
-        <CardTitle className="text-lg">Listagem de Avaliações ({data.length})</CardTitle>
+        <CardTitle className="text-lg">Listagem de Avaliações ({uniqueData.length})</CardTitle>
       </CardHeader>
       <CardContent className="p-4 bg-muted/5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {data.length === 0 ? (
+          {uniqueData.length === 0 ? (
             <div className="col-span-full flex justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-background">
               Nenhum registro encontrado com os filtros atuais.
             </div>
           ) : (
-            data.map((ev) => {
+            uniqueData.map((ev) => {
               const status = ev.status || 'pendente'
               const isPre = ev.is_pre_avaliacao
 

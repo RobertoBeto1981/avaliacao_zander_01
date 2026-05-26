@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -31,8 +31,44 @@ export function NovoAlunoDialog({
   const [telefone, setTelefone] = useState('')
   const [motivo, setMotivo] = useState('')
   const [loading, setLoading] = useState(false)
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
   const { toast } = useToast()
   const { profile } = useAuth()
+
+  useEffect(() => {
+    const checkDuplicate = async () => {
+      const cleanEvo = evoId.trim()
+      const cleanNome = nome.trim().toUpperCase()
+
+      if (!cleanEvo && !cleanNome) {
+        setDuplicateWarning(null)
+        return
+      }
+
+      let query = supabase.from('avaliacoes').select('id').limit(1)
+
+      if (cleanEvo && cleanNome) {
+        query = query.or(`evo_id.eq.${cleanEvo},nome_cliente.ilike.${cleanNome}`)
+      } else if (cleanEvo) {
+        query = query.eq('evo_id', cleanEvo)
+      } else if (cleanNome) {
+        query = query.ilike('nome_cliente', cleanNome)
+      }
+
+      const { data } = await query.maybeSingle()
+
+      if (data) {
+        setDuplicateWarning(
+          'Este aluno já existe no sistema. Utilize a busca geral para localizá-lo.',
+        )
+      } else {
+        setDuplicateWarning(null)
+      }
+    }
+
+    const timer = setTimeout(checkDuplicate, 500)
+    return () => clearTimeout(timer)
+  }, [evoId, nome])
 
   const handleSave = async () => {
     if (!evoId || !nome || !motivo.trim()) {
@@ -55,7 +91,7 @@ export function NovoAlunoDialog({
       }
 
       const { data, error } = await supabase.rpc('upsert_aluno_dialog', {
-        p_evo_id: evoId,
+        p_evo_id: evoId.trim(),
         p_nome_cliente: nome.trim().toUpperCase(),
         p_telefone_cliente: telefone,
         p_professor_id: profId,
@@ -102,7 +138,7 @@ export function NovoAlunoDialog({
         <DialogHeader>
           <DialogTitle>Novo Aluno</DialogTitle>
           <DialogDescription>
-            Se o ID EVO já existir, as informações serão sincronizadas automaticamente.
+            Preencha os dados abaixo. Se o aluno já existir no sistema, você será alertado.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -134,6 +170,11 @@ export function NovoAlunoDialog({
               maxLength={19}
             />
           </div>
+          {duplicateWarning && (
+            <div className="p-3 bg-destructive/15 text-destructive rounded-md text-sm font-medium">
+              {duplicateWarning}
+            </div>
+          )}
           <div className="space-y-2 pt-2 border-t mt-4">
             <Label htmlFor="motivo">Motivo da Inclusão *</Label>
             <Textarea
@@ -153,7 +194,10 @@ export function NovoAlunoDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={loading || !evoId || !nome || !motivo.trim()}>
+          <Button
+            onClick={handleSave}
+            disabled={loading || !evoId || !nome || !motivo.trim() || !!duplicateWarning}
+          >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar
           </Button>

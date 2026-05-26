@@ -12,8 +12,15 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   let result
   let targetId = existingId
 
+  if (avaliacao.evo_id) {
+    avaliacao.evo_id = String(avaliacao.evo_id).trim()
+  }
+  if (avaliacao.nome_cliente) {
+    avaliacao.nome_cliente = String(avaliacao.nome_cliente).trim().toUpperCase()
+  }
+
   if (!targetId && avaliacao.evo_id) {
-    const cleanEvo = String(avaliacao.evo_id).trim()
+    const cleanEvo = avaliacao.evo_id
     const { data: existingPre } = await supabase
       .from('avaliacoes')
       .select('id')
@@ -121,19 +128,28 @@ export const createPreAvaliacao = async (data: {
   professor_id?: string
 }) => {
   const cleanEvo = data.evo_id ? String(data.evo_id).trim() : null
+  const cleanNome = data.nome_cliente ? String(data.nome_cliente).trim().toUpperCase() : ''
 
-  if (cleanEvo) {
-    const { data: existing } = await supabase
+  if (cleanEvo || cleanNome) {
+    let query = supabase
       .from('avaliacoes')
       .select('*')
-      .eq('evo_id', cleanEvo)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle()
+
+    if (cleanEvo && cleanNome) {
+      query = query.or(`evo_id.eq.${cleanEvo},nome_cliente.ilike.${cleanNome}`)
+    } else if (cleanEvo) {
+      query = query.eq('evo_id', cleanEvo)
+    } else if (cleanNome) {
+      query = query.ilike('nome_cliente', cleanNome)
+    }
+
+    const { data: existing } = await query.maybeSingle()
 
     if (existing) {
       const payload: any = {
-        nome_cliente: data.nome_cliente,
+        nome_cliente: cleanNome,
       }
       if (data.telefone_cliente) {
         payload.telefone_cliente = data.telefone_cliente
@@ -154,7 +170,7 @@ export const createPreAvaliacao = async (data: {
         if (data.professor_id) {
           const rpcPayload: any = {
             p_evo_id: cleanEvo,
-            p_nome_cliente: data.nome_cliente,
+            p_nome_cliente: cleanNome,
             p_telefone_cliente: data.telefone_cliente || '',
             p_professor_id: data.professor_id,
           }
@@ -192,7 +208,7 @@ export const createPreAvaliacao = async (data: {
 
   const payload: any = {
     evo_id: cleanEvo,
-    nome_cliente: data.nome_cliente,
+    nome_cliente: cleanNome,
     telefone_cliente: data.telefone_cliente,
     is_pre_avaliacao: true,
     data_avaliacao: null,

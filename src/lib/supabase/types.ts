@@ -1469,16 +1469,9 @@ export const Constants = {
 //     END IF;
 //
 //     IF v_nome_upper IS NOT NULL AND v_nome_upper <> '' THEN
-//       SELECT id, status INTO v_av_id, v_status FROM public.avaliacoes WHERE UPPER(nome_cliente) = v_nome_upper LIMIT 1;
+//       SELECT id, status INTO v_av_id, v_status FROM public.avaliacoes WHERE UPPER(btrim(nome_cliente)) = v_nome_upper LIMIT 1;
 //       IF FOUND THEN
 //         RETURN jsonb_build_object('status', 'ignored', 'reason', 'name_exists', 'id', v_av_id, 'avaliacao_status', v_status);
-//       END IF;
-//     END IF;
-//
-//     IF v_tel_clean IS NOT NULL AND v_tel_clean <> '' THEN
-//       SELECT id, status INTO v_av_id, v_status FROM public.avaliacoes WHERE telefone_cliente = v_tel_clean LIMIT 1;
-//       IF FOUND THEN
-//         RETURN jsonb_build_object('status', 'ignored', 'reason', 'phone_exists', 'id', v_av_id, 'avaliacao_status', v_status);
 //       END IF;
 //     END IF;
 //
@@ -1904,31 +1897,32 @@ export const Constants = {
 //     v_tel_clean text := btrim(p_telefone_cliente);
 //     v_evo_clean text := NULLIF(btrim(p_evo_id), '');
 //   BEGIN
-//     SELECT id, status, professor_id INTO v_av_id, v_status, v_prof
-//     FROM public.avaliacoes
-//     WHERE (v_evo_clean IS NOT NULL AND evo_id = v_evo_clean)
-//        OR (v_evo_clean IS NULL AND v_nome_upper IS NOT NULL AND nome_cliente = v_nome_upper AND (v_tel_clean IS NULL OR telefone_cliente = v_tel_clean))
-//     ORDER BY created_at ASC
-//     LIMIT 1;
+//     -- Tenta achar por EVO ID primeiro
+//     IF v_evo_clean IS NOT NULL THEN
+//       SELECT id, status, professor_id INTO v_av_id, v_status, v_prof
+//       FROM public.avaliacoes
+//       WHERE evo_id = v_evo_clean
+//       ORDER BY created_at DESC
+//       LIMIT 1;
+//     END IF;
 //
-//     IF FOUND THEN
-//       -- Se o registro estiver concluído, retorna com sucesso para direcionar pro fluxo de Reavaliação
-//       IF v_status = 'concluido' THEN
-//         RETURN jsonb_build_object('success', true, 'message', 'Aluno encontrado com histórico. Redirecionando para Reavaliação/Edição.', 'id', v_av_id, 'status', v_status);
-//       END IF;
+//     -- Se não achou por EVO ID, tenta por Nome (case-insensitive)
+//     IF v_av_id IS NULL AND v_nome_upper IS NOT NULL AND v_nome_upper <> '' THEN
+//       SELECT id, status, professor_id INTO v_av_id, v_status, v_prof
+//       FROM public.avaliacoes
+//       WHERE UPPER(btrim(nome_cliente)) = v_nome_upper
+//       ORDER BY created_at DESC
+//       LIMIT 1;
+//     END IF;
 //
-//       IF p_professor_id IS NOT NULL THEN
-//         IF v_prof IS NULL THEN
-//           UPDATE public.avaliacoes SET professor_id = p_professor_id WHERE id = v_av_id;
-//           RETURN jsonb_build_object('success', true, 'message', 'Aluno já existia e foi vinculado ao seu perfil.', 'id', v_av_id, 'status', v_status);
-//         ELSIF v_prof = p_professor_id THEN
-//           RETURN jsonb_build_object('success', true, 'message', 'Aluno já está vinculado ao seu perfil.', 'id', v_av_id, 'status', v_status);
-//         ELSE
-//           RETURN jsonb_build_object('success', false, 'message', 'Este aluno (EVO/Nome) já está vinculado a outro professor ou atendimento ativo.', 'id', v_av_id, 'status', v_status);
-//         END IF;
-//       ELSE
-//         RETURN jsonb_build_object('success', true, 'message', 'Aluno já existe no sistema.', 'id', v_av_id, 'status', v_status);
-//       END IF;
+//     IF v_av_id IS NOT NULL THEN
+//       -- Strict Duplicate Prevention
+//       RETURN jsonb_build_object(
+//         'success', false,
+//         'message', 'Este aluno já existe no sistema. Utilize a busca geral para localizá-lo.',
+//         'id', v_av_id,
+//         'status', v_status
+//       );
 //     ELSE
 //       INSERT INTO public.avaliacoes (
 //         evo_id,
@@ -1980,7 +1974,7 @@ export const Constants = {
 // Table: avaliacao_history
 //   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
 // Table: avaliacoes
-//   CREATE UNIQUE INDEX avaliacoes_evo_id_unique ON public.avaliacoes USING btree (evo_id) WHERE (evo_id IS NOT NULL)
+//   CREATE UNIQUE INDEX avaliacoes_evo_id_unique ON public.avaliacoes USING btree (evo_id) WHERE ((evo_id IS NOT NULL) AND (evo_id <> ''::text))
 //   CREATE INDEX idx_avaliacoes_evo_id ON public.avaliacoes USING btree (evo_id)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
