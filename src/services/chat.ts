@@ -26,6 +26,11 @@ export const getMessages = async (contactId: string, contactType: 'user' | 'grou
   return data || []
 }
 
+export const deleteChatMessage = async (id: string) => {
+  const { error } = await supabase.from('internal_chats').delete().eq('id', id)
+  if (error) throw error
+}
+
 export const sendMessage = async (payload: {
   receiver_id?: string | null
   target_role?: string | null

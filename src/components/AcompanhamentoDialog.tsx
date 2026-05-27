@@ -221,106 +221,193 @@ export function AcompanhamentoDialog({
                   Nenhuma observação ou tarefa registrada.
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="bg-muted/40 p-4 rounded-lg border flex gap-3">
-                      <div className="pt-0.5">
-                        {item.prazo ? (
-                          <button
-                            onClick={() => handleToggle(item.id, item.concluido)}
-                            className="text-primary hover:text-primary/80 transition-colors flex items-center justify-center"
-                          >
-                            {item.concluido ? (
-                              <CheckCircle2 className="w-5 h-5 text-green-500" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-muted-foreground" />
-                            )}
-                          </button>
-                        ) : (
-                          <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                <div className="space-y-6">
+                  {(() => {
+                    const sortedItems = [...items].sort(
+                      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+                    )
+                    const grouped: any[] = []
+                    let currentGroup: any = null
+
+                    for (const item of sortedItems) {
+                      const isFile = !!item.file_name
+                      const hasPrazo = !!item.prazo
+                      const isChatLike = !isFile && !hasPrazo
+
+                      if (
+                        currentGroup &&
+                        currentGroup.autor_id === item.autor_id &&
+                        currentGroup.isChatLike &&
+                        isChatLike
+                      ) {
+                        const diff =
+                          new Date(item.created_at).getTime() -
+                          new Date(
+                            currentGroup.items[currentGroup.items.length - 1].created_at,
+                          ).getTime()
+                        if (diff < 5 * 60 * 1000) {
+                          currentGroup.items.push(item)
+                          continue
+                        }
+                      }
+
+                      currentGroup = {
+                        id: item.id,
+                        autor_id: item.autor_id,
+                        autor: item.autor,
+                        isChatLike,
+                        items: [item],
+                      }
+                      grouped.push(currentGroup)
+                    }
+                    grouped.reverse()
+
+                    return grouped.map((group) => (
+                      <div
+                        key={group.id}
+                        className={cn(
+                          'flex flex-col gap-1',
+                          group.isChatLike ? '' : 'bg-muted/40 p-4 rounded-lg border',
                         )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1 gap-2">
-                          <span className="font-semibold text-sm truncate">
-                            {item.autor?.nome || 'Usuário'}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {group.isChatLike && (
+                            <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                          )}
+                          <span className="font-semibold text-sm">
+                            {group.autor?.nome || 'Usuário'}
                           </span>
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}
-                          </span>
-                        </div>
-                        <p className="text-sm text-foreground/90 whitespace-pre-wrap">
-                          {item.observacao}
-                        </p>
-
-                        {item.file_name && (
-                          <div className="mt-3 flex items-center justify-between bg-blue-500/10 border border-blue-500/20 p-2 rounded-md w-full sm:w-fit transition-colors group">
-                            <div
-                              onClick={() => handlePreview(item.file_url, item.file_name)}
-                              className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer pr-4"
-                            >
-                              <div className="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center shrink-0 text-blue-500">
-                                {item.file_name.toLowerCase().endsWith('.pdf') ? (
-                                  <FileText className="w-4 h-4" />
-                                ) : (
-                                  <Image className="w-4 h-4" />
-                                )}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-xs text-blue-500 hover:text-blue-400 font-bold truncate max-w-[180px] sm:max-w-[280px]">
-                                  {item.file_name}
-                                </span>
-                                {item.file_category && (
-                                  <span className="text-[9px] uppercase tracking-wider text-blue-500/70 font-black mt-0.5">
-                                    {item.file_category}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {(item.autor_id === user?.id || userRoles.includes('coordenador')) && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-7 h-7 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteFile(item.id, item.file_url, item.observacao)
-                                    }}
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Excluir Arquivo</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        )}
-
-                        {item.prazo && (
-                          <div className="mt-2 text-xs font-medium flex flex-wrap items-center gap-1.5">
-                            <span
-                              className={cn(
-                                'px-2 py-0.5 rounded-full border',
-                                item.concluido
-                                  ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-                                  : 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
-                              )}
-                            >
-                              Prazo: {format(new Date(item.prazo + 'T12:00:00'), 'dd/MM/yyyy')}
+                          {group.isChatLike && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {format(new Date(group.items[0].created_at), 'dd/MM/yyyy HH:mm')}
                             </span>
-                            {item.concluido && item.concluido_em && (
-                              <span className="text-muted-foreground">
-                                (Concluído em {format(new Date(item.concluido_em), 'dd/MM/yyyy')})
-                              </span>
-                            )}
+                          )}
+                        </div>
+
+                        {group.isChatLike ? (
+                          <div className="pl-6 space-y-2 relative before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-border/50">
+                            {group.items.map((item: any) => (
+                              <div key={item.id} className="relative">
+                                <div className="absolute -left-[19px] top-2.5 w-3 h-0.5 bg-border/50"></div>
+                                <div className="bg-muted/30 border border-border/50 p-2.5 rounded-r-lg rounded-bl-lg text-sm text-foreground/90 whitespace-pre-wrap break-words inline-block">
+                                  {item.observacao}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          // Non-chat items (files or deadlines)
+                          <div className="space-y-4">
+                            {group.items.map((item: any) => (
+                              <div key={item.id} className="flex gap-3">
+                                <div className="pt-0.5">
+                                  {item.prazo ? (
+                                    <button
+                                      onClick={() => handleToggle(item.id, item.concluido)}
+                                      className="text-primary hover:text-primary/80 transition-colors flex items-center justify-center"
+                                    >
+                                      {item.concluido ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-muted-foreground" />
+                                      )}
+                                    </button>
+                                  ) : (
+                                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {!group.isChatLike && (
+                                    <div className="flex justify-between items-start mb-1 gap-2">
+                                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                                        {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <p className="text-sm text-foreground/90 whitespace-pre-wrap">
+                                    {item.observacao}
+                                  </p>
+
+                                  {item.file_name && (
+                                    <div className="mt-3 flex items-center justify-between bg-blue-500/10 border border-blue-500/20 p-2 rounded-md w-full sm:w-fit transition-colors group/file">
+                                      <div
+                                        onClick={() => handlePreview(item.file_url, item.file_name)}
+                                        className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer pr-4"
+                                      >
+                                        <div className="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center shrink-0 text-blue-500">
+                                          {item.file_name.toLowerCase().endsWith('.pdf') ? (
+                                            <FileText className="w-4 h-4" />
+                                          ) : (
+                                            <Image className="w-4 h-4" />
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="text-xs text-blue-500 hover:text-blue-400 font-bold truncate max-w-[180px] sm:max-w-[280px]">
+                                            {item.file_name}
+                                          </span>
+                                          {item.file_category && (
+                                            <span className="text-[9px] uppercase tracking-wider text-blue-500/70 font-black mt-0.5">
+                                              {item.file_category}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {(item.autor_id === user?.id ||
+                                        userRoles.includes('coordenador')) && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="w-7 h-7 text-muted-foreground opacity-0 group-hover/file:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleDeleteFile(
+                                                  item.id,
+                                                  item.file_url,
+                                                  item.observacao,
+                                                )
+                                              }}
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Excluir Arquivo</TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {item.prazo && (
+                                    <div className="mt-2 text-xs font-medium flex flex-wrap items-center gap-1.5">
+                                      <span
+                                        className={cn(
+                                          'px-2 py-0.5 rounded-full border',
+                                          item.concluido
+                                            ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                                            : 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+                                        )}
+                                      >
+                                        Prazo:{' '}
+                                        {format(new Date(item.prazo + 'T12:00:00'), 'dd/MM/yyyy')}
+                                      </span>
+                                      {item.concluido && item.concluido_em && (
+                                        <span className="text-muted-foreground">
+                                          (Concluído em{' '}
+                                          {format(new Date(item.concluido_em), 'dd/MM/yyyy')})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  })()}
                 </div>
               )}
             </ScrollArea>
