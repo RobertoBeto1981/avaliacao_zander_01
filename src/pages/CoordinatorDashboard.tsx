@@ -366,6 +366,19 @@ export default function CoordinatorDashboard() {
     }
   }
 
+  const uniqueEvaluations = useMemo(() => {
+    const map = new Map()
+    for (const ev of evaluations) {
+      const key = ev.evo_id
+        ? `evo_${ev.evo_id}`
+        : `nome_${(ev.nome_cliente || '').trim().toUpperCase()}`
+      if (!map.has(key)) {
+        map.set(key, ev)
+      }
+    }
+    return Array.from(map.values())
+  }, [evaluations])
+
   const filtered = useMemo(() => {
     const statusOrder: Record<string, number> = {
       pendente: 1,
@@ -373,7 +386,7 @@ export default function CoordinatorDashboard() {
       concluido: 3,
     }
     const today = startOfDay(new Date())
-    const result = evaluations.filter((ev) => {
+    const result = uniqueEvaluations.filter((ev) => {
       const matchStatus = statusFilter === 'all' || (ev.status || 'pendente') === statusFilter
       const matchSearch =
         searchTerm === '' ||
@@ -417,7 +430,7 @@ export default function CoordinatorDashboard() {
 
   const lateEvals = useMemo(() => {
     const today = startOfDay(new Date())
-    return evaluations.filter((ev) => {
+    return uniqueEvaluations.filter((ev) => {
       if (ev.status === 'concluido' || ev.is_pre_avaliacao) return false
       const deadlineBase =
         ev.data_avaliacao ||
@@ -486,7 +499,7 @@ export default function CoordinatorDashboard() {
         </TabsList>
 
         <TabsContent value="overview">
-          {evaluations.length > 0 && <DashboardCharts data={evaluations} />}
+          {uniqueEvaluations.length > 0 && <DashboardCharts data={uniqueEvaluations} />}
 
           {professorRequests.length > 0 && (
             <Alert className="mb-6 border-purple-500/50 bg-purple-500/10">
@@ -1026,7 +1039,7 @@ export default function CoordinatorDashboard() {
         <TabsContent value="team">
           <UserManagementTab
             users={users}
-            evaluations={evaluations}
+            evaluations={uniqueEvaluations}
             onUpdate={loadUsers}
             onViewStudents={handleViewStudents}
           />

@@ -1975,7 +1975,6 @@ export const Constants = {
 //   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
 // Table: avaliacoes
 //   CREATE UNIQUE INDEX avaliacoes_evo_id_unique ON public.avaliacoes USING btree (evo_id) WHERE ((evo_id IS NOT NULL) AND (evo_id <> ''::text))
-//   CREATE INDEX idx_avaliacoes_evo_id ON public.avaliacoes USING btree (evo_id)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
 // Table: professor_change_requests
