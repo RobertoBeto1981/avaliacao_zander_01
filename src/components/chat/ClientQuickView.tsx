@@ -45,10 +45,6 @@ export function ClientQuickView({
 
   const links = data?.links_avaliacao?.[0] || {}
 
-  // Extrair circunferências se existirem de forma plana ou em objeto aninhado da avaliação mais recente
-  const getCirc = (key: string) =>
-    latestRespostas[key] || latestRespostas.circunferencias?.[key] || latestRespostas.medidas?.[key]
-
   return (
     <Sheet open={!!avaliacaoId} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="bg-zinc-900 border-zinc-800 text-zinc-100 sm:max-w-md w-full overflow-y-auto">
@@ -63,99 +59,29 @@ export function ClientQuickView({
           <div className="mt-6 space-y-6">
             <div className="space-y-2">
               <h3 className="font-semibold text-[#84cc16] flex items-center gap-2">
-                <Activity className="w-4 h-4" /> Antropometria
-              </h3>
-              <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 grid grid-cols-2 gap-y-3 gap-x-2">
-                <p>
-                  <span className="text-zinc-500 block text-xs">Peso</span>
-                  {latestRespostas.peso ? `${latestRespostas.peso} kg` : '-'}
-                </p>
-                <p>
-                  <span className="text-zinc-500 block text-xs">Altura</span>
-                  {latestRespostas.altura ? `${latestRespostas.altura} cm` : '-'}
-                </p>
-                <p>
-                  <span className="text-zinc-500 block text-xs">Massa Magra</span>
-                  {latestRespostas.massa_magra ? `${latestRespostas.massa_magra} kg` : '-'}
-                </p>
-                <p>
-                  <span className="text-zinc-500 block text-xs">Gordura</span>
-                  {latestRespostas.gordura_percentual
-                    ? `${latestRespostas.gordura_percentual}%`
-                    : '-'}
-                </p>
-
-                {/* Circunferências Comuns */}
-                {getCirc('cintura') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Cintura</span>
-                    {getCirc('cintura')} cm
-                  </p>
-                )}
-                {getCirc('abdomen') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Abdômen</span>
-                    {getCirc('abdomen')} cm
-                  </p>
-                )}
-                {getCirc('quadril') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Quadril</span>
-                    {getCirc('quadril')} cm
-                  </p>
-                )}
-                {getCirc('braco_direito') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Braço Dir.</span>
-                    {getCirc('braco_direito')} cm
-                  </p>
-                )}
-                {getCirc('coxa_direita') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Coxa Dir.</span>
-                    {getCirc('coxa_direita')} cm
-                  </p>
-                )}
-                {getCirc('panturrilha_direita') && (
-                  <p>
-                    <span className="text-zinc-500 block text-xs">Panturrilha Dir.</span>
-                    {getCirc('panturrilha_direita')} cm
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-semibold text-[#84cc16]">Medidas Hemodinâmicas</h3>
-              <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 grid grid-cols-2 gap-2">
-                <p>
-                  <span className="text-zinc-500 block text-xs">PA Repouso</span>{' '}
-                  {latestRespostas.pa_repouso || '-'}
-                </p>
-                <p>
-                  <span className="text-zinc-500 block text-xs">FC Repouso</span>{' '}
-                  {latestRespostas.fc_repouso || '-'}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-semibold text-[#84cc16] flex items-center gap-2">
-                <Target className="w-4 h-4" /> Rotina & Objetivos
+                <Target className="w-4 h-4" /> Campo Treinamento
               </h3>
               <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 space-y-3">
                 <div>
                   <span className="text-zinc-500 text-xs block mb-1">Período de Treino:</span>
-                  <span className="font-medium capitalize">{data.periodo_treino || '-'}</span>
+                  <span className="font-medium capitalize">
+                    {data.periodo_treino || latestRespostas.periodo_treino || '-'}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="text-zinc-500 text-xs block mb-1">Dias Disponíveis:</span>
-                    <span>{latestRespostas.dias_treino || '-'}</span>
+                    <span>
+                      {latestRespostas.dias_treino || latestRespostas.available_days || '-'}
+                    </span>
                   </div>
                   <div>
                     <span className="text-zinc-500 text-xs block mb-1">Frequência:</span>
-                    <span>{latestRespostas.frequencia_semanal || '-'}</span>
+                    <span>
+                      {latestRespostas.frequencia_semanal ||
+                        latestRespostas.training_frequency ||
+                        '-'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -174,6 +100,44 @@ export function ClientQuickView({
                       <span>-</span>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold text-[#84cc16] flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Preferência de Treino
+              </h3>
+              <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 space-y-3">
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Gosta de Treinar:</span>
+                  <span>
+                    {latestRespostas.enjoys_training?.join(', ') ||
+                      latestRespostas.gosta_treinar ||
+                      '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Não Gosta de Treinar:</span>
+                  <span>
+                    {latestRespostas.dislikes_training?.join(', ') ||
+                      latestRespostas.nao_gosta_treinar ||
+                      '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Exercícios Favoritos:</span>
+                  <span>
+                    {latestRespostas.favorite_exercises ||
+                      latestRespostas.exercicios_favoritos ||
+                      '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Exercícios que Odeia:</span>
+                  <span>
+                    {latestRespostas.hated_exercises || latestRespostas.exercicios_odiados || '-'}
+                  </span>
                 </div>
               </div>
             </div>

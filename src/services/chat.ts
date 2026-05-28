@@ -26,6 +26,25 @@ export const getMessages = async (contactId: string, contactType: 'user' | 'grou
   return data || []
 }
 
+export const markMessagesAsRead = async (contactId: string, contactType: 'user' | 'group') => {
+  const { data: user } = await supabase.auth.getUser()
+  if (!user.user) return
+
+  let query = supabase
+    .from('internal_chats')
+    .update({ is_read: true })
+    .eq('is_read', false)
+    .neq('sender_id', user.user.id)
+
+  if (contactType === 'group') {
+    query = query.eq('target_role', contactId)
+  } else {
+    query = query.eq('sender_id', contactId).eq('receiver_id', user.user.id)
+  }
+
+  await query
+}
+
 export const deleteChatMessage = async (id: string) => {
   const { error } = await supabase.from('internal_chats').delete().eq('id', id)
   if (error) throw error
@@ -36,6 +55,8 @@ export const sendMessage = async (payload: {
   target_role?: string | null
   message: string
   avaliacao_id?: string | null
+  file_url?: string | null
+  file_name?: string | null
 }) => {
   const { data: user } = await supabase.auth.getUser()
   if (!user.user) throw new Error('Not authenticated')
@@ -62,6 +83,10 @@ export const sendMessage = async (payload: {
       .limit(1)
       .maybeSingle()
 
+    const appendText = payload.file_name
+      ? `\n[Arquivo: ${payload.file_name}]\n${payload.message}`
+      : payload.message
+
     if (lastAcomp) {
       const hoursDiff =
         (new Date().getTime() - new Date(lastAcomp.created_at).getTime()) / (1000 * 60 * 60)
@@ -69,13 +94,13 @@ export const sendMessage = async (payload: {
       if (hoursDiff < 24) {
         await supabase
           .from('avaliacao_acompanhamentos')
-          .update({ observacao: lastAcomp.observacao + '\n\n' + payload.message })
+          .update({ observacao: lastAcomp.observacao + '\n\n' + appendText })
           .eq('id', lastAcomp.id)
       } else {
         await supabase.from('avaliacao_acompanhamentos').insert({
           avaliacao_id: payload.avaliacao_id,
           autor_id: user.user.id,
-          observacao: payload.message,
+          observacao: appendText,
           concluido: false,
         })
       }
@@ -83,7 +108,7 @@ export const sendMessage = async (payload: {
       await supabase.from('avaliacao_acompanhamentos').insert({
         avaliacao_id: payload.avaliacao_id,
         autor_id: user.user.id,
-        observacao: payload.message,
+        observacao: appendText,
         concluido: false,
       })
     }

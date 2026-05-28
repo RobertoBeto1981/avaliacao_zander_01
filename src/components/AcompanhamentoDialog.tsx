@@ -176,6 +176,17 @@ export function AcompanhamentoDialog({
     }
   }
 
+  const handleDeleteAcompanhamento = async (id: string) => {
+    if (!confirm('Deseja realmente apagar esta anotação permanentemente?')) return
+    try {
+      await deleteAcompanhamento(id)
+      setItems((prev) => prev.filter((i) => i.id !== id))
+      toast({ title: 'Sucesso', description: 'Anotação apagada.' })
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: e.message })
+    }
+  }
+
   const handleToggle = async (id: string, currentStatus: boolean) => {
     try {
       await toggleAcompanhamento(id, !currentStatus)
@@ -287,11 +298,25 @@ export function AcompanhamentoDialog({
                         {group.isChatLike ? (
                           <div className="pl-6 space-y-2 relative before:absolute before:left-2 before:top-0 before:bottom-0 before:w-0.5 before:bg-border/50">
                             {group.items.map((item: any) => (
-                              <div key={item.id} className="relative">
+                              <div
+                                key={item.id}
+                                className="relative group/msg flex items-center gap-2"
+                              >
                                 <div className="absolute -left-[19px] top-2.5 w-3 h-0.5 bg-border/50"></div>
                                 <div className="bg-muted/30 border border-border/50 p-2.5 rounded-r-lg rounded-bl-lg text-sm text-foreground/90 whitespace-pre-wrap break-words inline-block">
                                   {item.observacao}
                                 </div>
+                                {userRoles.includes('coordenador') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-6 h-6 text-muted-foreground opacity-0 group-hover/msg:opacity-100 hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                    onClick={() => handleDeleteAcompanhamento(item.id)}
+                                    title="Apagar anotação"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -299,7 +324,7 @@ export function AcompanhamentoDialog({
                           // Non-chat items (files or deadlines)
                           <div className="space-y-4">
                             {group.items.map((item: any) => (
-                              <div key={item.id} className="flex gap-3">
+                              <div key={item.id} className="flex gap-3 relative group/item">
                                 <div className="pt-0.5">
                                   {item.prazo ? (
                                     <button
@@ -324,9 +349,22 @@ export function AcompanhamentoDialog({
                                       </span>
                                     </div>
                                   )}
-                                  <p className="text-sm text-foreground/90 whitespace-pre-wrap">
-                                    {item.observacao}
-                                  </p>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="text-sm text-foreground/90 whitespace-pre-wrap flex-1">
+                                      {item.observacao}
+                                    </p>
+                                    {userRoles.includes('coordenador') && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-6 h-6 text-muted-foreground opacity-0 group-hover/item:opacity-100 hover:text-destructive hover:bg-destructive/10 shrink-0 mt-0.5"
+                                        onClick={() => handleDeleteAcompanhamento(item.id)}
+                                        title="Apagar anotação"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    )}
+                                  </div>
 
                                   {item.file_name && (
                                     <div className="mt-3 flex items-center justify-between bg-blue-500/10 border border-blue-500/20 p-2 rounded-md w-full sm:w-fit transition-colors group/file">

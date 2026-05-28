@@ -2097,8 +2097,17 @@ export const Constants = {
 //   CREATE INDEX idx_avaliacao_history_avaliacao_id ON public.avaliacao_history USING btree (avaliacao_id)
 // Table: avaliacoes
 //   CREATE UNIQUE INDEX avaliacoes_evo_id_unique ON public.avaliacoes USING btree (evo_id) WHERE ((evo_id IS NOT NULL) AND (evo_id <> ''::text))
+// Table: internal_chats
+//   CREATE INDEX idx_internal_chats_avaliacao_id ON public.internal_chats USING btree (avaliacao_id)
+//   CREATE INDEX idx_internal_chats_created_at ON public.internal_chats USING btree (created_at DESC)
+//   CREATE INDEX idx_internal_chats_receiver_id ON public.internal_chats USING btree (receiver_id)
+//   CREATE INDEX idx_internal_chats_sender_id ON public.internal_chats USING btree (sender_id)
+//   CREATE INDEX idx_internal_chats_target_role ON public.internal_chats USING btree (target_role)
 // Table: medicamentos
 //   CREATE UNIQUE INDEX medicamentos_nome_key ON public.medicamentos USING btree (nome)
+// Table: notifications
+//   CREATE INDEX idx_notifications_created_at ON public.notifications USING btree (created_at DESC)
+//   CREATE INDEX idx_notifications_user_id_archived ON public.notifications USING btree (user_id, is_archived)
 // Table: professor_change_requests
 //   CREATE UNIQUE INDEX idx_prof_change_req_pendente ON public.professor_change_requests USING btree (avaliacao_id, professor_id) WHERE (status = 'pendente'::text)
 // Table: video_automations_config
