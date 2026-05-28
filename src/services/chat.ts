@@ -52,12 +52,41 @@ export const sendMessage = async (payload: {
   if (error) throw error
 
   if (payload.avaliacao_id) {
-    await supabase.from('avaliacao_acompanhamentos').insert({
-      avaliacao_id: payload.avaliacao_id,
-      autor_id: user.user.id,
-      observacao: payload.message,
-      concluido: false,
-    })
+    const { data: lastAcomp } = await supabase
+      .from('avaliacao_acompanhamentos')
+      .select('id, observacao, concluido, autor_id, created_at')
+      .eq('avaliacao_id', payload.avaliacao_id)
+      .eq('autor_id', user.user.id)
+      .eq('concluido', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (lastAcomp) {
+      const hoursDiff =
+        (new Date().getTime() - new Date(lastAcomp.created_at).getTime()) / (1000 * 60 * 60)
+
+      if (hoursDiff < 24) {
+        await supabase
+          .from('avaliacao_acompanhamentos')
+          .update({ observacao: lastAcomp.observacao + '\n\n' + payload.message })
+          .eq('id', lastAcomp.id)
+      } else {
+        await supabase.from('avaliacao_acompanhamentos').insert({
+          avaliacao_id: payload.avaliacao_id,
+          autor_id: user.user.id,
+          observacao: payload.message,
+          concluido: false,
+        })
+      }
+    } else {
+      await supabase.from('avaliacao_acompanhamentos').insert({
+        avaliacao_id: payload.avaliacao_id,
+        autor_id: user.user.id,
+        observacao: payload.message,
+        concluido: false,
+      })
+    }
   }
 
   return data

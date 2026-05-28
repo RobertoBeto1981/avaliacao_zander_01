@@ -48,6 +48,10 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
     if (data) {
       setMessages((prev) => {
         if (prev.find((m) => m.id === data.id)) return prev
+        const isPendingOptimistic = prev.some(
+          (m) => m.isOptimistic && m.message === data.message && m.sender_id === data.sender_id,
+        )
+        if (isPendingOptimistic) return prev
         return [...prev, data]
       })
       scrollToBottom()
@@ -105,12 +109,39 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
       target_role: contact.type === 'group' ? contact.id : null,
     }
 
+    const tempId = `temp-${Date.now()}`
+    const optimisticMsg = {
+      id: tempId,
+      ...payload,
+      sender_id: currentUser?.id,
+      created_at: new Date().toISOString(),
+      sender: { nome: currentUser?.nome, role: currentUser?.roles?.[0] || currentUser?.role },
+      avaliacao:
+        selectedAvaliacaoId !== 'none'
+          ? evaluations.find((ev: any) => ev.id === selectedAvaliacaoId)
+          : null,
+      isOptimistic: true,
+    }
+
+    setMessages((prev) => [...prev, optimisticMsg])
+    scrollToBottom()
+    setNewMessage('')
+    setSelectedAvaliacaoId('none')
+
     try {
-      setNewMessage('')
-      setSelectedAvaliacaoId('none')
-      await sendMessage(payload)
+      const savedMsg = await sendMessage(payload)
+      if (savedMsg) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? { ...savedMsg, sender: optimisticMsg.sender, avaliacao: optimisticMsg.avaliacao }
+              : m,
+          ),
+        )
+      }
     } catch (e) {
       console.error(e)
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
     }
   }
 
@@ -160,6 +191,7 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
                       isMe
                         ? 'bg-[#84cc16] text-zinc-900 rounded-tr-none'
                         : 'bg-zinc-800 text-zinc-100 rounded-tl-none border border-zinc-700',
+                      msg.isOptimistic && 'opacity-70',
                     )}
                   >
                     {msg.avaliacao && (
@@ -221,7 +253,7 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
             </PopoverTrigger>
             <PopoverContent className="w-[280px] p-0 border-zinc-700 bg-zinc-800" side="top">
               <Command className="bg-transparent">
-                <CommandInput placeholder="Buscar aluno ou EVO..." className="h-9" />
+                <CommandInput placeholder="Buscar aluno por Nome ou EVO..." className="h-9" />
                 <CommandList>
                   <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
                   <CommandGroup>

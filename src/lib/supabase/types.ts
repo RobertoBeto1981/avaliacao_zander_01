@@ -1245,6 +1245,8 @@ export const Constants = {
 //     USING: (auth.uid() = user_id)
 //     WITH CHECK: (auth.uid() = user_id)
 // Table: internal_chats
+//   Policy "Coordenador can delete chats" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND (('coordenador'::text = ANY (users.roles)) OR (users.role = 'coordenador'::user_role)))))
 //   Policy "Users can insert chats" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (sender_id = auth.uid())
 //   Policy "Users can select their chats" (SELECT, PERMISSIVE) roles={authenticated}
@@ -1703,6 +1705,48 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION notify_internal_chat_message()
+//   CREATE OR REPLACE FUNCTION public.notify_internal_chat_message()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     v_sender_name text;
+//   BEGIN
+//     -- Pega o nome do remetente
+//     SELECT nome INTO v_sender_name FROM public.users WHERE id = NEW.sender_id;
+//
+//     IF NEW.receiver_id IS NOT NULL THEN
+//       -- Mensagem direta
+//       INSERT INTO public.notifications (user_id, title, message, type, priority)
+//       VALUES (
+//         NEW.receiver_id,
+//         'Nova mensagem de ' || COALESCE(v_sender_name, 'Usuário'),
+//         NEW.message,
+//         'message',
+//         'normal'
+//       );
+//     ELSIF NEW.target_role IS NOT NULL THEN
+//       -- Mensagem para grupo/role
+//       IF NEW.target_role = 'todos' THEN
+//         INSERT INTO public.notifications (user_id, title, message, type, priority)
+//         SELECT id, 'Nova mensagem no grupo Todos', NEW.message, 'message', 'normal'
+//         FROM public.users
+//         WHERE id != NEW.sender_id AND ativo = true;
+//       ELSE
+//         INSERT INTO public.notifications (user_id, title, message, type, priority)
+//         SELECT id, 'Nova mensagem no grupo ' || NEW.target_role, NEW.message, 'message', 'normal'
+//         FROM public.users
+//         WHERE (roles && ARRAY[NEW.target_role] OR role::text = NEW.target_role)
+//           AND id != NEW.sender_id AND ativo = true;
+//       END IF;
+//     END IF;
+//
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION notify_professor_on_acompanhamento()
 //   CREATE OR REPLACE FUNCTION public.notify_professor_on_acompanhamento()
 //    RETURNS trigger
@@ -2040,6 +2084,8 @@ export const Constants = {
 //   on_desafio_zander_set_date: CREATE TRIGGER on_desafio_zander_set_date BEFORE UPDATE OF desafio_zander_status ON public.avaliacoes FOR EACH ROW EXECUTE FUNCTION set_desafio_zander_activation_date()
 // Table: evaluations
 //   force_uppercase_evaluations: CREATE TRIGGER force_uppercase_evaluations BEFORE INSERT OR UPDATE OF client_name ON public.evaluations FOR EACH ROW EXECUTE FUNCTION force_uppercase_names()
+// Table: internal_chats
+//   on_internal_chat_message: CREATE TRIGGER on_internal_chat_message AFTER INSERT ON public.internal_chats FOR EACH ROW EXECUTE FUNCTION notify_internal_chat_message()
 // Table: users
 //   force_uppercase_users: CREATE TRIGGER force_uppercase_users BEFORE INSERT OR UPDATE OF nome ON public.users FOR EACH ROW EXECUTE FUNCTION force_uppercase_names()
 //   trg_prevent_role_update: CREATE TRIGGER trg_prevent_role_update BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION prevent_role_update()

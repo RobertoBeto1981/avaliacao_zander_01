@@ -11,6 +11,7 @@ export function ClientQuickView({
   onClose: () => void
 }) {
   const [data, setData] = useState<any>(null)
+  const [latestRespostas, setLatestRespostas] = useState<any>({})
 
   useEffect(() => {
     if (!avaliacaoId) return
@@ -19,23 +20,34 @@ export function ClientQuickView({
         .from('avaliacoes')
         .select(`
         *,
-        links_avaliacao (*)
+        links_avaliacao (*),
+        reavaliacoes (id, created_at, data_reavaliacao, respostas_novas)
       `)
         .eq('id', avaliacaoId)
         .single()
-      setData(av)
+
+      if (av) {
+        setData(av)
+        let latest = av.respostas || {}
+        if (av.reavaliacoes && av.reavaliacoes.length > 0) {
+          const sortedReavs = av.reavaliacoes.sort(
+            (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          )
+          latest = { ...latest, ...sortedReavs[0].respostas_novas }
+        }
+        setLatestRespostas(latest)
+      }
     }
     fetchAv()
   }, [avaliacaoId])
 
   if (!avaliacaoId) return null
 
-  const respostas = data?.respostas || {}
   const links = data?.links_avaliacao?.[0] || {}
 
-  // Extrair circunferências se existirem de forma plana ou em objeto aninhado
+  // Extrair circunferências se existirem de forma plana ou em objeto aninhado da avaliação mais recente
   const getCirc = (key: string) =>
-    respostas[key] || respostas.circunferencias?.[key] || respostas.medidas?.[key]
+    latestRespostas[key] || latestRespostas.circunferencias?.[key] || latestRespostas.medidas?.[key]
 
   return (
     <Sheet open={!!avaliacaoId} onOpenChange={(open) => !open && onClose()}>
@@ -56,19 +68,21 @@ export function ClientQuickView({
               <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 grid grid-cols-2 gap-y-3 gap-x-2">
                 <p>
                   <span className="text-zinc-500 block text-xs">Peso</span>
-                  {respostas.peso ? `${respostas.peso} kg` : '-'}
+                  {latestRespostas.peso ? `${latestRespostas.peso} kg` : '-'}
                 </p>
                 <p>
                   <span className="text-zinc-500 block text-xs">Altura</span>
-                  {respostas.altura ? `${respostas.altura} cm` : '-'}
+                  {latestRespostas.altura ? `${latestRespostas.altura} cm` : '-'}
                 </p>
                 <p>
                   <span className="text-zinc-500 block text-xs">Massa Magra</span>
-                  {respostas.massa_magra ? `${respostas.massa_magra} kg` : '-'}
+                  {latestRespostas.massa_magra ? `${latestRespostas.massa_magra} kg` : '-'}
                 </p>
                 <p>
                   <span className="text-zinc-500 block text-xs">Gordura</span>
-                  {respostas.gordura_percentual ? `${respostas.gordura_percentual}%` : '-'}
+                  {latestRespostas.gordura_percentual
+                    ? `${latestRespostas.gordura_percentual}%`
+                    : '-'}
                 </p>
 
                 {/* Circunferências Comuns */}
@@ -116,11 +130,11 @@ export function ClientQuickView({
               <div className="bg-zinc-800/50 p-3 rounded-md text-sm text-zinc-300 grid grid-cols-2 gap-2">
                 <p>
                   <span className="text-zinc-500 block text-xs">PA Repouso</span>{' '}
-                  {respostas.pa_repouso || '-'}
+                  {latestRespostas.pa_repouso || '-'}
                 </p>
                 <p>
                   <span className="text-zinc-500 block text-xs">FC Repouso</span>{' '}
-                  {respostas.fc_repouso || '-'}
+                  {latestRespostas.fc_repouso || '-'}
                 </p>
               </div>
             </div>
@@ -137,11 +151,11 @@ export function ClientQuickView({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="text-zinc-500 text-xs block mb-1">Dias Disponíveis:</span>
-                    <span>{respostas.dias_treino || '-'}</span>
+                    <span>{latestRespostas.dias_treino || '-'}</span>
                   </div>
                   <div>
                     <span className="text-zinc-500 text-xs block mb-1">Frequência:</span>
-                    <span>{respostas.frequencia_semanal || '-'}</span>
+                    <span>{latestRespostas.frequencia_semanal || '-'}</span>
                   </div>
                 </div>
                 <div>
