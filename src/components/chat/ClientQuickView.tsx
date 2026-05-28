@@ -1,7 +1,10 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { FileText, Link as LinkIcon, Activity, Target } from 'lucide-react'
+import { FileText, Link as LinkIcon, Activity, Target, Trash2, Paperclip } from 'lucide-react'
+import { getAcompanhamentos, deleteAcompanhamento } from '@/services/acompanhamentos'
+import { useAuth } from '@/hooks/use-auth'
+import { Button } from '@/components/ui/button'
 
 export function ClientQuickView({
   avaliacaoId,
@@ -10,8 +13,11 @@ export function ClientQuickView({
   avaliacaoId: string | null
   onClose: () => void
 }) {
+  const { profile } = useAuth()
+  const isCoordenador = profile?.roles?.includes('coordenador') || profile?.role === 'coordenador'
   const [data, setData] = useState<any>(null)
   const [latestRespostas, setLatestRespostas] = useState<any>({})
+  const [acompanhamentos, setAcompanhamentos] = useState<any[]>([])
 
   useEffect(() => {
     if (!avaliacaoId) return
@@ -38,12 +44,47 @@ export function ClientQuickView({
         setLatestRespostas(latest)
       }
     }
+
+    const fetchAcomps = async () => {
+      try {
+        const result = await getAcompanhamentos(avaliacaoId)
+        setAcompanhamentos(result || [])
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
     fetchAv()
+    fetchAcomps()
   }, [avaliacaoId])
+
+  const handleDeleteAcomp = async (id: string) => {
+    if (!confirm('Deseja realmente excluir esta anotação?')) return
+    try {
+      await deleteAcompanhamento(id)
+      setAcompanhamentos((prev) => prev.filter((a) => a.id !== id))
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   if (!avaliacaoId) return null
 
   const links = data?.links_avaliacao?.[0] || {}
+
+  const formatDays = (days: any) => {
+    if (Array.isArray(days)) return days.join(', ')
+    if (typeof days === 'string') {
+      try {
+        const parsed = JSON.parse(days)
+        if (Array.isArray(parsed)) return parsed.join(', ')
+      } catch {
+        /* intentionally ignored */
+      }
+      return days
+    }
+    return '-'
+  }
 
   return (
     <Sheet open={!!avaliacaoId} onOpenChange={(open) => !open && onClose()}>
@@ -68,21 +109,19 @@ export function ClientQuickView({
                     {data.periodo_treino || latestRespostas.periodo_treino || '-'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-zinc-500 text-xs block mb-1">Dias Disponíveis:</span>
-                    <span>
-                      {latestRespostas.dias_treino || latestRespostas.available_days || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 text-xs block mb-1">Frequência:</span>
-                    <span>
-                      {latestRespostas.frequencia_semanal ||
-                        latestRespostas.training_frequency ||
-                        '-'}
-                    </span>
-                  </div>
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Dias Disponíveis:</span>
+                  <span className="capitalize block">
+                    {formatDays(latestRespostas.dias_treino || latestRespostas.available_days)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 text-xs block mb-1">Frequência:</span>
+                  <span className="capitalize block">
+                    {latestRespostas.frequencia_semanal ||
+                      latestRespostas.training_frequency ||
+                      '-'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-zinc-500 text-xs block mb-1">Objetivos Selecionados:</span>
@@ -205,6 +244,49 @@ export function ClientQuickView({
                   )}
               </div>
             </div>
+
+            {acompanhamentos.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-[#84cc16]">Anotações</h3>
+                <div className="space-y-3">
+                  {acompanhamentos.map((acomp) => (
+                    <div
+                      key={acomp.id}
+                      className="bg-zinc-800/50 p-3 rounded-md relative group flex flex-col gap-1 border border-zinc-700/50"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-zinc-400">
+                          {acomp.autor?.nome || 'Sistema'}
+                        </span>
+                        <span className="text-[10px] text-zinc-500">
+                          {new Date(acomp.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+                        {acomp.observacao}
+                      </p>
+                      {acomp.file_name && (
+                        <div className="flex items-center gap-1 text-xs text-blue-400 mt-1">
+                          <Paperclip className="w-3 h-3" />
+                          <span>{acomp.file_name}</span>
+                        </div>
+                      )}
+                      {isCoordenador && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 w-6 h-6 text-red-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteAcomp(acomp.id)}
+                          title="Excluir anotação"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </SheetContent>

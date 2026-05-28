@@ -175,7 +175,6 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
     setMessages((prev) => [...prev, optimisticMsg])
     scrollToBottom()
     setNewMessage('')
-    setSelectedAvaliacaoId('none')
     setFile(null)
 
     try {
@@ -312,9 +311,9 @@ export function ChatArea({ contact, currentUser, evaluations }: any) {
                         (msg.isOptimistic ? (
                           <Check className="w-3 h-3 opacity-50" />
                         ) : msg.is_read ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-blue-700" />
+                          <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
                         ) : (
-                          <Check className="w-3.5 h-3.5" />
+                          <Check className="w-3.5 h-3.5 text-zinc-400" />
                         ))}
                     </div>
                   </div>

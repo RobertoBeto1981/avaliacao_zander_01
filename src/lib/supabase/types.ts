@@ -378,6 +378,8 @@ export type Database = {
         Row: {
           avaliacao_id: string | null
           created_at: string
+          file_name: string | null
+          file_url: string | null
           id: string
           is_read: boolean
           message: string
@@ -388,6 +390,8 @@ export type Database = {
         Insert: {
           avaliacao_id?: string | null
           created_at?: string
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           is_read?: boolean
           message: string
@@ -398,6 +402,8 @@ export type Database = {
         Update: {
           avaliacao_id?: string | null
           created_at?: string
+          file_name?: string | null
+          file_url?: string | null
           id?: string
           is_read?: boolean
           message?: string
@@ -1070,6 +1076,8 @@ export const Constants = {
 //   avaliacao_id: uuid (nullable)
 //   is_read: boolean (not null, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
+//   file_url: text (nullable)
+//   file_name: text (nullable)
 // Table: links_avaliacao
 //   id: uuid (not null, default: gen_random_uuid())
 //   avaliacao_id: uuid (not null)
@@ -1213,6 +1221,8 @@ export const Constants = {
 //     USING: true
 //   Policy "Allow update for authenticated" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "Coordinators can delete acompanhamentos" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('coordenador'::text = ANY (users.roles)))))
 // Table: avaliacao_history
 //   Policy "Allow select for authenticated" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -1252,7 +1262,7 @@ export const Constants = {
 //   Policy "Users can select their chats" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((sender_id = auth.uid()) OR (receiver_id = auth.uid()) OR ((target_role IS NOT NULL) AND (EXISTS ( SELECT 1    FROM users u   WHERE ((u.id = auth.uid()) AND ((internal_chats.target_role = ANY (u.roles)) OR ((u.role)::text = internal_chats.target_role) OR (internal_chats.target_role = 'todos'::text)))))))
 //   Policy "Users can update their chats" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: ((sender_id = auth.uid()) OR (receiver_id = auth.uid()))
+//     USING: ((sender_id = auth.uid()) OR (receiver_id = auth.uid()) OR ((target_role IS NOT NULL) AND (EXISTS ( SELECT 1    FROM users u   WHERE ((u.id = auth.uid()) AND ((internal_chats.target_role = ANY (u.roles)) OR ((u.role)::text = internal_chats.target_role) OR (internal_chats.target_role = 'todos'::text)))))))
 // Table: links_avaliacao
 //   Policy "Avaliadores can manage links" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM users   WHERE ((users.id = auth.uid()) AND ('avaliador'::text = ANY (users.roles)))))
