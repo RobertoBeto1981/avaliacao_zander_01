@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 export function IdentificationFields({
   setExistingId,
 }: {
-  setExistingId?: (id: string | null, status?: string) => void
+  setExistingId?: (id: string | null, status?: string, isReval?: boolean) => void
 }) {
   const { control, setValue } = useFormContext()
   const evalDate = useWatch({ control, name: 'data_avaliacao' })
@@ -46,7 +46,7 @@ export function IdentificationFields({
 
       const { data: preEval, error } = await supabase
         .from('avaliacoes')
-        .select('id, nome_cliente, telefone_cliente, status')
+        .select('id, nome_cliente, telefone_cliente, status, is_pre_avaliacao, respostas')
         .eq('evo_id', cleanEvoId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -67,21 +67,26 @@ export function IdentificationFields({
         if (preEval.telefone_cliente) {
           setValue('telefone_cliente', preEval.telefone_cliente)
         }
-        if (setExistingId) setExistingId(preEval.id, preEval.status || undefined)
 
-        const isReval = preEval.status === 'concluido'
+        const isReval =
+          preEval.status === 'concluido' &&
+          preEval.is_pre_avaliacao === false &&
+          preEval.respostas != null
+
+        if (setExistingId) setExistingId(preEval.id, preEval.status || undefined, isReval)
+
         setFoundInfo({
           found: true,
           message: isReval
             ? 'Reavaliação (Aluno já avaliado)'
-            : 'Atualização (Aluno pendente/em progresso)',
+            : 'Primeira Avaliação (Aluno localizado)',
         })
 
         toast({
           title: 'Aluno Encontrado',
           description: isReval
-            ? 'Aluno já possui avaliação concluída. Ao salvar, será registrada como Reavaliação.'
-            : 'Dados do aluno carregados com sucesso.',
+            ? 'Aluno localizado. Iniciando reavaliação.'
+            : 'Aluno localizado. Iniciando primeira avaliação completa.',
         })
       } else {
         setFoundInfo({

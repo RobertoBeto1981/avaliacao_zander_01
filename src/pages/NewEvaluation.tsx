@@ -37,6 +37,7 @@ export default function NewEvaluation() {
   const { toast } = useToast()
   const [existingId, setExistingId] = useState<string | null>(null)
   const [existingStatus, setExistingStatus] = useState<string | null>(null)
+  const [isReval, setIsReval] = useState(false)
   const [isNaoCliente, setIsNaoCliente] = useState(false)
 
   const form = useForm<EvaluationFormValues>({
@@ -113,9 +114,10 @@ export default function NewEvaluation() {
     },
   })
 
-  const handleSetExistingId = (id: string | null, status?: string) => {
+  const handleSetExistingId = (id: string | null, status?: string, isRevalFlag?: boolean) => {
     setExistingId(id)
     setExistingStatus(status || null)
+    setIsReval(!!isRevalFlag)
   }
 
   const onSubmit = async (data: EvaluationFormValues) => {
@@ -155,13 +157,13 @@ export default function NewEvaluation() {
       }
 
       let finalId = existingId
-      let finalStatus = existingStatus
+      let finalIsReval = isReval
 
       if (!finalId && avaliacao.evo_id && !isNaoCliente) {
         const cleanEvo = String(avaliacao.evo_id).trim()
         const { data: existingPre } = await supabase
           .from('avaliacoes')
-          .select('id, status')
+          .select('id, status, is_pre_avaliacao, respostas')
           .eq('evo_id', cleanEvo)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -169,13 +171,16 @@ export default function NewEvaluation() {
 
         if (existingPre) {
           finalId = existingPre.id
-          finalStatus = existingPre.status
+          finalIsReval =
+            existingPre.status === 'concluido' &&
+            existingPre.is_pre_avaliacao === false &&
+            existingPre.respostas != null
         }
       }
 
       let resId: string
 
-      if (finalId && finalStatus === 'concluido') {
+      if (finalId && finalIsReval) {
         const respostasNovas = {
           ...avaliacao.respostas,
           objectives: avaliacao.objectives,
