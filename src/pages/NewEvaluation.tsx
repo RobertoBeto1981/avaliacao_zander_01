@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { evaluationSchema, EvaluationFormValues } from '@/schemas/evaluation'
 import { createEvaluation } from '@/services/evaluations'
+import { createReavaliacao } from '@/services/reavaliacoes'
 import { triggerPostSaveAutomation } from '@/services/automation'
 import { IdentificationFields } from './eval-sections/Identification'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -35,8 +36,8 @@ export default function NewEvaluation() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [existingId, setExistingId] = useState<string | null>(null)
+  const [existingStatus, setExistingStatus] = useState<string | null>(null)
   const [isNaoCliente, setIsNaoCliente] = useState(false)
-  const [existingEval, setExistingEval] = useState<any>(null)
 
   const form = useForm<EvaluationFormValues>({
     resolver: zodResolver(evaluationSchema),
@@ -112,34 +113,9 @@ export default function NewEvaluation() {
     },
   })
 
-  const evoIdValue = form.watch('evo_id')
-
-  useEffect(() => {
-    const checkEvoId = async () => {
-      const cleanEvo = String(evoIdValue || '').trim()
-      if (!cleanEvo || cleanEvo.length < 1 || isNaoCliente) return
-      const { data } = await supabase
-        .from('avaliacoes')
-        .select('id, nome_cliente, evo_id')
-        .eq('evo_id', cleanEvo)
-        .eq('is_pre_avaliacao', false)
-        .not('data_avaliacao', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (data) {
-        setExistingEval(data)
-      } else {
-        setExistingEval(null)
-      }
-    }
-    const timeoutId = setTimeout(checkEvoId, 800)
-    return () => clearTimeout(timeoutId)
-  }, [evoIdValue, isNaoCliente])
-
-  const handleSetExistingId = (id: string | null) => {
+  const handleSetExistingId = (id: string | null, status?: string) => {
     setExistingId(id)
+    setExistingStatus(status || null)
   }
 
   const onSubmit = async (data: EvaluationFormValues) => {
@@ -178,14 +154,46 @@ export default function NewEvaluation() {
         my_score_url: client_links?.myscore,
       }
 
-      const res = await createEvaluation(avaliacao, links, existingId || undefined)
+      let finalId = existingId
+      let finalStatus = existingStatus
+
+      if (!finalId && avaliacao.evo_id && !isNaoCliente) {
+        const cleanEvo = String(avaliacao.evo_id).trim()
+        const { data: existingPre } = await supabase
+          .from('avaliacoes')
+          .select('id, status')
+          .eq('evo_id', cleanEvo)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (existingPre) {
+          finalId = existingPre.id
+          finalStatus = existingPre.status
+        }
+      }
+
+      let resId: string
+
+      if (finalId && finalStatus === 'concluido') {
+        const respostasNovas = {
+          ...avaliacao.respostas,
+          objectives: avaliacao.objectives,
+          periodo_treino: avaliacao.periodo_treino,
+          client_links: client_links,
+        }
+        await createReavaliacao(finalId, respostasNovas, [], avaliacao.data_avaliacao)
+        resId = finalId
+      } else {
+        const res = await createEvaluation(avaliacao, links, finalId || undefined)
+        resId = res.id
+      }
 
       toast({ title: 'Sucesso!', description: 'Avaliação registrada com sucesso.' })
 
-      // Disparar automações de WhatsApp e fila de vídeos
-      triggerPostSaveAutomation(res.id).catch(console.error)
+      triggerPostSaveAutomation(resId).catch(console.error)
 
-      navigate(`/evaluation/${res.id}`)
+      navigate(`/evaluation/${resId}`)
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message })
     }
@@ -205,34 +213,6 @@ export default function NewEvaluation() {
           Cancelar
         </Button>
       </div>
-
-      <AlertDialog open={!!existingEval} onOpenChange={(open) => !open && setExistingEval(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Aluno já cadastrado</AlertDialogTitle>
-            <AlertDialogDescription>
-              Encontramos uma avaliação existente para o aluno{' '}
-              <strong>{existingEval?.nome_cliente}</strong> (EVO: {existingEval?.evo_id}). Deseja
-              iniciar uma reavaliação para este aluno?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                form.setValue('evo_id', '')
-                setExistingEval(null)
-              }}
-            >
-              Não, limpar ID
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => navigate(`/evaluation/${existingEval?.id}/reevaluate`)}
-            >
-              Sim, Iniciar Reavaliação
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">

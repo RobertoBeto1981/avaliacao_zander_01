@@ -13,13 +13,14 @@ import { useToast } from '@/hooks/use-toast'
 export function IdentificationFields({
   setExistingId,
 }: {
-  setExistingId?: (id: string | null) => void
+  setExistingId?: (id: string | null, status?: string) => void
 }) {
   const { control, setValue } = useFormContext()
   const evalDate = useWatch({ control, name: 'data_avaliacao' })
   const evoId = useWatch({ control, name: 'evo_id' })
   const dataNascimento = useWatch({ control, name: 'data_nascimento' })
   const [isSearching, setIsSearching] = useState(false)
+  const [foundInfo, setFoundInfo] = useState<{ found: boolean; message: string } | null>(null)
   const { toast } = useToast()
 
   const idade = useMemo(() => {
@@ -33,6 +34,10 @@ export function IdentificationFields({
     }
   }, [evalDate, setValue])
 
+  useEffect(() => {
+    setFoundInfo(null)
+  }, [evoId])
+
   const handleSearchEvo = async () => {
     if (!evoId) return
     setIsSearching(true)
@@ -41,9 +46,8 @@ export function IdentificationFields({
 
       const { data: preEval, error } = await supabase
         .from('avaliacoes')
-        .select('id, nome_cliente, telefone_cliente')
+        .select('id, nome_cliente, telefone_cliente, status')
         .eq('evo_id', cleanEvoId)
-        .eq('is_pre_avaliacao', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -63,15 +67,31 @@ export function IdentificationFields({
         if (preEval.telefone_cliente) {
           setValue('telefone_cliente', preEval.telefone_cliente)
         }
-        if (setExistingId) setExistingId(preEval.id)
+        if (setExistingId) setExistingId(preEval.id, preEval.status || undefined)
+
+        const isReval = preEval.status === 'concluido'
+        setFoundInfo({
+          found: true,
+          message: isReval
+            ? 'Reavaliação (Aluno já avaliado)'
+            : 'Atualização (Aluno pendente/em progresso)',
+        })
+
         toast({
           title: 'Aluno Encontrado',
-          description: 'Dados da pré-avaliação carregados com sucesso.',
+          description: isReval
+            ? 'Aluno já possui avaliação concluída. Ao salvar, será registrada como Reavaliação.'
+            : 'Dados do aluno carregados com sucesso.',
         })
       } else {
+        setFoundInfo({
+          found: false,
+          message: 'Novo Aluno',
+        })
         toast({
           title: 'Não Encontrado',
-          description: 'Nenhuma pré-avaliação pendente encontrada para este ID EVO.',
+          description:
+            'Nenhum aluno encontrado para este ID EVO. Um novo cadastro será criado ao salvar.',
           variant: 'default',
         })
         if (setExistingId) setExistingId(null)
@@ -89,24 +109,33 @@ export function IdentificationFields({
         <CardTitle className="text-xl text-primary">Identificação do Cliente</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 animate-fade-in">
-        <div className="flex gap-4 items-end">
-          <div className="flex-1">
-            <FInput name="evo_id" label="ID EVO" placeholder="Ex: 12345" />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <FInput name="evo_id" label="ID EVO" placeholder="Ex: 12345" />
+            </div>
+            <Button
+              type="button"
+              onClick={handleSearchEvo}
+              disabled={!evoId || isSearching}
+              variant="secondary"
+              className="mb-[2px]"
+            >
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Search className="w-4 h-4 mr-2" />
+              )}
+              Buscar Aluno
+            </Button>
           </div>
-          <Button
-            type="button"
-            onClick={handleSearchEvo}
-            disabled={!evoId || isSearching}
-            variant="secondary"
-            className="mb-[2px]"
-          >
-            {isSearching ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Search className="w-4 h-4 mr-2" />
-            )}
-            Buscar Aluno
-          </Button>
+          {foundInfo && (
+            <p
+              className={`text-sm font-medium ${foundInfo.found ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+              Status: {foundInfo.message}
+            </p>
+          )}
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           <FInput name="nome_cliente" label="Nome do Cliente" placeholder="Ex: João da Silva" />

@@ -21,17 +21,16 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
 
   if (!targetId && avaliacao.evo_id) {
     const cleanEvo = avaliacao.evo_id
-    const { data: existingPre } = await supabase
+    const { data: existingRecord } = await supabase
       .from('avaliacoes')
       .select('id')
       .eq('evo_id', cleanEvo)
-      .eq('is_pre_avaliacao', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (existingPre) {
-      targetId = existingPre.id
+    if (existingRecord) {
+      targetId = existingRecord.id
     }
   }
 
