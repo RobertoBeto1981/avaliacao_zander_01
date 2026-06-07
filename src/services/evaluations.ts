@@ -39,7 +39,12 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
 
     const { data, error } = await supabase
       .from('avaliacoes')
-      .update({ ...avaliacao, is_pre_avaliacao: false, avaliador_id: userData.user?.id })
+      .update({
+        ...avaliacao,
+        is_pre_avaliacao: false,
+        avaliador_id: userData.user?.id,
+        status: 'pendente',
+      })
       .eq('id', targetId)
       .select()
       .single()
@@ -48,7 +53,12 @@ export const createEvaluation = async (avaliacao: any, links: any, existingId?: 
   } else {
     const { data, error } = await supabase
       .from('avaliacoes')
-      .insert({ ...avaliacao, is_pre_avaliacao: false, avaliador_id: userData.user?.id })
+      .insert({
+        ...avaliacao,
+        is_pre_avaliacao: false,
+        avaliador_id: userData.user?.id,
+        status: 'pendente',
+      })
       .select()
       .single()
     if (error) throw error
