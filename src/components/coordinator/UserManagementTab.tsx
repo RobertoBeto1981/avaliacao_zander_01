@@ -106,15 +106,28 @@ export function UserManagementTab({
     if (!redistributeUser) return
     setIsRedistributing(true)
     try {
-      const { failedShifts } = await redistributeProfessorStudents(redistributeUser.id)
-      if (failedShifts.length > 0) {
+      const { updated, failedNames, failedShifts } = await redistributeProfessorStudents(
+        redistributeUser.id,
+      )
+      if (failedNames.length > 0) {
+        const studentList = failedNames.slice(0, 5).join(', ')
+        const suffix = failedNames.length > 5 ? ` e mais ${failedNames.length - 5}` : ''
         toast({
           variant: 'destructive',
           title: 'Atenção',
-          description: `Não foi possível redistribuir alguns alunos: Nenhum professor disponível para o turno ${failedShifts.join(', ')}`,
+          description: `${updated} aluno(s) redistribuído(s). Não foi possível mover ${failedNames.length} aluno(s) (${studentList}${suffix}) — nenhum professor disponível para o(s) turno(s): ${failedShifts.join(', ')}.`,
+        })
+      } else if (updated === 0) {
+        toast({
+          title: 'Nenhuma alteração',
+          description:
+            'Este professor não possui alunos pendentes ou em progresso para redistribuir.',
         })
       } else {
-        toast({ title: 'Sucesso', description: 'Alunos redistribuídos com sucesso!' })
+        toast({
+          title: 'Sucesso',
+          description: `${updated} aluno(s) redistribuído(s) com sucesso!`,
+        })
       }
       setRedistributeUser(null)
       onUpdate()
