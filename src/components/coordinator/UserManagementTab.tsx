@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, UserPlus, ShieldAlert, Users } from 'lucide-react'
+import { Edit, Trash2, UserPlus, ShieldAlert, Users, Shuffle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { redistributeProfessorStudents } from '@/services/evaluations'
 import { updateUser, deleteUserCompletely } from '@/services/users'
 import {
   Dialog,
@@ -45,6 +46,8 @@ export function UserManagementTab({
   const { toast } = useToast()
   const [editingUser, setEditingUser] = useState<any>(null)
   const [isIncludeOpen, setIsIncludeOpen] = useState(false)
+  const [redistributeUser, setRedistributeUser] = useState<any>(null)
+  const [isRedistributing, setIsRedistributing] = useState(false)
 
   const handleApprove = async (id: string, role: string) => {
     try {
@@ -96,6 +99,29 @@ export function UserManagementTab({
       onUpdate()
     } catch (e: any) {
       toast({ variant: 'destructive', description: e.message })
+    }
+  }
+
+  const handleRedistribute = async () => {
+    if (!redistributeUser) return
+    setIsRedistributing(true)
+    try {
+      const { failedShifts } = await redistributeProfessorStudents(redistributeUser.id)
+      if (failedShifts.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Atenção',
+          description: `Não foi possível redistribuir alguns alunos: Nenhum professor disponível para o turno ${failedShifts.join(', ')}`,
+        })
+      } else {
+        toast({ title: 'Sucesso', description: 'Alunos redistribuídos com sucesso!' })
+      }
+      setRedistributeUser(null)
+      onUpdate()
+    } catch (e: any) {
+      toast({ variant: 'destructive', description: e.message })
+    } finally {
+      setIsRedistributing(false)
     }
   }
 
@@ -270,6 +296,17 @@ export function UserManagementTab({
                             <Users className="w-4 h-4" />
                           </Button>
                         )}
+                        {(u.roles?.includes('professor') || u.role === 'professor') && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-purple-500 hover:bg-purple-500/10"
+                            onClick={() => setRedistributeUser(u)}
+                            title="Redistribuir Alunos"
+                          >
+                            <Shuffle className="w-4 h-4" />
+                          </Button>
+                        )}{' '}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -414,6 +451,33 @@ export function UserManagementTab({
               }}
             >
               Copiar Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!redistributeUser} onOpenChange={(v) => !v && setRedistributeUser(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shuffle className="w-5 h-5 text-purple-500" /> Redistribuir Alunos
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Tem certeza que deseja redistribuir todos os alunos deste professor? Os alunos serão
+              realocados para outros professores disponíveis no mesmo turno.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end gap-2 border-t border-border mt-2">
+            <Button type="button" variant="outline" onClick={() => setRedistributeUser(null)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              disabled={isRedistributing}
+              onClick={handleRedistribute}
+            >
+              {isRedistributing ? 'Redistribuindo...' : 'Confirmar'}
             </Button>
           </div>
         </DialogContent>

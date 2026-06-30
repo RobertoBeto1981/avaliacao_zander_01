@@ -466,3 +466,73 @@ export const getStudentRequestStatus = async (avaliacaoId: string, professorId: 
     .maybeSingle()
   return data?.status || null
 }
+
+export const redistributeProfessorStudents = async (professorId: string) => {
+  const { data: students, error: fetchErr } = await supabase
+    .from('avaliacoes')
+    .select('id, periodo_treino')
+    .eq('professor_id', professorId)
+    .in('status', ['pendente', 'em_progresso'])
+
+  if (fetchErr) throw fetchErr
+
+  const { data: allProfs, error: profErr } = await supabase
+    .from('users')
+    .select('id, roles, role, ativo, periodos')
+
+  if (profErr) throw profErr
+
+  const eligibleProfs = (allProfs || []).filter(
+    (u) =>
+      u.ativo && (u.roles?.includes('professor') || u.role === 'professor') && u.id !== professorId,
+  )
+
+  const { data: currentWorkload } = await supabase
+    .from('avaliacoes')
+    .select('professor_id')
+    .in(
+      'professor_id',
+      eligibleProfs.length > 0
+        ? eligibleProfs.map((p) => p.id)
+        : ['00000000-0000-0000-0000-000000000000'],
+    )
+    .in('status', ['pendente', 'em_progresso'])
+
+  const workload: Record<string, number> = {}
+  eligibleProfs.forEach((p) => (workload[p.id] = 0))
+  currentWorkload?.forEach((w) => {
+    if (workload[w.professor_id] !== undefined) workload[w.professor_id]++
+  })
+
+  const failedShifts = new Set<string>()
+  let updated = 0
+
+  for (const student of students || []) {
+    const periodo = student.periodo_treino
+
+    const candidates = periodo
+      ? eligibleProfs.filter((p) => p.periodos?.includes(periodo))
+      : eligibleProfs
+
+    if (candidates.length === 0) {
+      failedShifts.add(periodo || 'Indefinido')
+      continue
+    }
+
+    candidates.sort((a, b) => workload[a.id] - workload[b.id])
+    const targetId = candidates[0].id
+
+    const { error: updateErr } = await supabase
+      .from('avaliacoes')
+      .update({ professor_id: targetId })
+      .eq('id', student.id)
+
+    if (updateErr) throw updateErr
+    workload[targetId]++
+    updated++
+  }
+
+  window.dispatchEvent(new CustomEvent('avaliacao_updated'))
+
+  return { updated, failedShifts: Array.from(failedShifts) }
+}
