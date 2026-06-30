@@ -804,6 +804,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      redistribute_professor_students: {
+        Args: { p_professor_id: string }
+        Returns: Json
+      }
       reset_user_password: { Args: { p_email: string }; Returns: undefined }
       send_bulk_message: {
         Args: {
