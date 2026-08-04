@@ -293,7 +293,7 @@ const AppRoutes = () => (
         path="/evaluation/new"
         element={
           <PrivateRoute>
-            <RoleGuard allowedRoles={['avaliador', 'coordenador']}>
+            <RoleGuard allowedRoles={['avaliador', 'coordenador', 'nutricionista']}>
               <NewEvaluation />
             </RoleGuard>
           </PrivateRoute>

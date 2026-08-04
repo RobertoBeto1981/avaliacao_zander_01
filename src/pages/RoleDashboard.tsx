@@ -36,7 +36,7 @@ export default function RoleDashboard() {
   const { toast } = useToast()
 
   const role = profile?.role || ''
-  const isRestricted = role === 'fisioterapeuta' || role === 'nutricionista'
+  const isRestricted = role === 'fisioterapeuta'
 
   const loadData = async () => {
     try {
