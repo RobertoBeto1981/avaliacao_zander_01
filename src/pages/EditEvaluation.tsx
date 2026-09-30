@@ -38,7 +38,7 @@ export default function EditEvaluation() {
   const isAvaliadorMode = isAvaliadorOrHigher && !isCoordenador
 
   const form = useForm<EvaluationFormValues>({
-    resolver: zodResolver(evaluationSchema),
+    resolver: zodResolver(evaluationSchema) as any,
   })
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function EditEvaluation() {
         const data = await getEvaluationById(id)
         if (!data) throw new Error('Avaliação não encontrada')
 
-        const respostas = data.respostas || {}
+        const respostas = (data.respostas || {}) as any
         const links = data.links_avaliacao?.[0] || {}
 
         const parseDate = (d?: string) => {

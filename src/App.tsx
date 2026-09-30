@@ -152,7 +152,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
   const { session, loading } = useAuth()
   if (loading) return null
   return session ? children : <Navigate to="/login" />
@@ -163,7 +163,7 @@ const RoleGuard = ({
   children,
 }: {
   allowedRoles: string[]
-  children: JSX.Element
+  children: React.ReactElement
 }) => {
   const { profile, loading } = useAuth()
   if (loading) return null
@@ -356,7 +356,7 @@ const AppRoutes = () => (
 )
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+  <BrowserRouter>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />

@@ -14,11 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListFilter, AlertCircle, Edit, FileEdit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  EditarCadastroDialog,
-  EditarAvaliacaoDialog,
-  FileIconIndicator,
-} from '@/components/StudentCard'
+import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
+import { FileIconIndicator } from '@/components/StudentCard'
 import { differenceInDays, startOfDay } from 'date-fns'
 
 function addWorkingDays(startDate: Date, days: number) {
@@ -36,15 +33,18 @@ function addWorkingDays(startDate: Date, days: number) {
 
 export function DashboardTable({
   data,
+  filesMap,
   onDelete,
   hideActions = false,
 }: {
   data: any[]
+  filesMap?: Set<string>
   onDelete?: (id: string) => void
   hideActions?: boolean
 }) {
   const [editCadastroEv, setEditCadastroEv] = useState<any>(null)
   const [editAvaliacaoEv, setEditAvaliacaoEv] = useState<any>(null)
+  const [visibleCount, setVisibleCount] = useState(20)
 
   return (
     <Card className="border-border/50 shadow-sm overflow-hidden">
@@ -59,7 +59,7 @@ export function DashboardTable({
               Nenhum registro encontrado com os filtros atuais.
             </div>
           ) : (
-            data.map((ev) => {
+            data.slice(0, visibleCount).map((ev) => {
               const status = ev.status || 'pendente'
               const isPre = ev.is_pre_avaliacao
 
@@ -80,7 +80,10 @@ export function DashboardTable({
                         </h3>
                         {!hideActions && (
                           <div className="flex gap-1 shrink-0 -mt-1 -mr-1 items-center">
-                            <FileIconIndicator avaliacaoId={ev.id} />
+                            <FileIconIndicator
+                              avaliacaoId={ev.id}
+                              hasFiles={filesMap ? filesMap.has(ev.id) : undefined}
+                            />
                             <Button
                               variant="ghost"
                               size="icon"
@@ -287,6 +290,19 @@ export function DashboardTable({
             })
           )}
         </div>
+
+        {data.length > visibleCount && (
+          <div className="flex justify-center mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-bold border-primary text-primary hover:bg-primary/10 px-6"
+              onClick={() => setVisibleCount((prev) => prev + 20)}
+            >
+              Carregar mais ({data.length - visibleCount} restantes)
+            </Button>
+          </div>
+        )}
       </CardContent>
 
       {editCadastroEv && (

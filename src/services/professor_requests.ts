@@ -20,6 +20,28 @@ export const getPendingProfessorRequests = async () => {
   return data || []
 }
 
+export const getPendingRequestedEvaluationIds = async (
+  professorId: string,
+): Promise<Set<string>> => {
+  if (!professorId) return new Set<string>()
+  const { data, error } = await supabase
+    .from('professor_change_requests')
+    .select('avaliacao_id')
+    .eq('professor_id', professorId)
+    .eq('status', 'pendente')
+
+  if (error) {
+    console.error('Error fetching pending professor change requests:', error)
+    return new Set<string>()
+  }
+
+  const ids = new Set<string>()
+  data?.forEach((row: { avaliacao_id: string }) => {
+    if (row.avaliacao_id) ids.add(row.avaliacao_id)
+  })
+  return ids
+}
+
 export const respondProfessorRequest = async (
   requestId: string,
   status: 'aprovado' | 'rejeitado',

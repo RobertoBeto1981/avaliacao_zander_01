@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT' || (event as string) === 'USER_DELETED') {
         setSession(null)
         setUser(null)
         setProfile(null)

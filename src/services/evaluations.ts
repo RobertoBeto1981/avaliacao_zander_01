@@ -253,18 +253,77 @@ export const getPreAvaliacaoByEvoId = async (evoId: string) => {
   return data
 }
 
+export const EVALUATION_LIST_SELECT = `
+  id,
+  avaliador_id,
+  nome_cliente,
+  telefone_cliente,
+  data_avaliacao,
+  data_reavaliacao,
+  periodo_treino,
+  objectives,
+  status,
+  created_at,
+  professor_id,
+  evo_id,
+  is_pre_avaliacao,
+  desafio_zander_status,
+  desafio_zander_ativado_em,
+  desafio_zander_enviado_em,
+  nao_cliente,
+  avaliador:users!avaliacoes_avaliador_id_fkey (nome),
+  professor:users!avaliacoes_professor_id_fkey (nome),
+  links_avaliacao (*)
+`
+
 export const getEvaluations = async () => {
+  const pageSize = 500
+  let allRows: any[] = []
+  let from = 0
+  let hasMore = true
+
+  while (hasMore) {
+    const to = from + pageSize - 1
+    const { data, error } = await supabase
+      .from('avaliacoes')
+      .select(EVALUATION_LIST_SELECT)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (error) throw error
+
+    const rows = data || []
+    allRows = allRows.concat(rows)
+
+    if (rows.length < pageSize) {
+      hasMore = false
+    } else {
+      from += pageSize
+    }
+  }
+
+  return allRows
+}
+
+export const getEvaluationFileIndicators = async (): Promise<Set<string>> => {
   const { data, error } = await supabase
-    .from('avaliacoes')
-    .select(`
-      *,
-      avaliador:users!avaliacoes_avaliador_id_fkey (nome),
-      professor:users!avaliacoes_professor_id_fkey (nome),
-      links_avaliacao (*)
-    `)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data || []
+    .from('avaliacao_acompanhamentos')
+    .select('avaliacao_id')
+    .not('file_url', 'is', null)
+
+  if (error) {
+    console.error('Error fetching acompanhamentos file indicators:', error)
+    return new Set<string>()
+  }
+
+  const idsWithFiles = new Set<string>()
+  data?.forEach((row: { avaliacao_id: string | null }) => {
+    if (row.avaliacao_id) {
+      idsWithFiles.add(row.avaliacao_id)
+    }
+  })
+
+  return idsWithFiles
 }
 
 export const getEvaluationById = async (id: string) => {

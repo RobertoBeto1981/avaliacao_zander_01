@@ -1,7 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
-import { getEvaluations, updateEvaluationStatus } from '@/services/evaluations'
+import {
+  getEvaluations,
+  getEvaluationFileIndicators,
+  updateEvaluationStatus,
+} from '@/services/evaluations'
+import { getPendingRequestedEvaluationIds } from '@/services/professor_requests'
 import { InternalCommunications } from '@/components/InternalCommunications'
 import { getNotifications } from '@/services/notifications'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -32,16 +37,20 @@ import { useToast } from '@/hooks/use-toast'
 import { AcompanhamentoDialog } from '@/components/AcompanhamentoDialog'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
 import { StudentCard } from '@/components/StudentCard'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 export default function ProfessorDashboard() {
   const { profile } = useAuth()
   const [evaluations, setEvaluations] = useState<any[]>([])
+  const [filesMap, setFilesMap] = useState<Set<string>>(new Set())
+  const [requestedEvalIds, setRequestedEvalIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'meus' | 'todos'>('meus')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cycleFilter, setCycleFilter] = useState<string>('all')
+  const [visibleCount, setVisibleCount] = useState(20)
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -53,13 +62,28 @@ export default function ProfessorDashboard() {
 
   const loadData = async () => {
     try {
-      const data = await getEvaluations()
-      setEvaluations(data)
+      setLoading(true)
+      const [evals, files, requestedIds] = await Promise.all([
+        getEvaluations(),
+        getEvaluationFileIndicators(),
+        profile?.id
+          ? getPendingRequestedEvaluationIds(profile.id)
+          : Promise.resolve(new Set<string>()),
+      ])
+      setEvaluations(evals)
+      setFilesMap(files)
+      setRequestedEvalIds(requestedIds)
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
+
+  // Reset pagination on filter or search change
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchTerm, filterType, statusFilter, cycleFilter])
 
   const loadUnreadCount = async () => {
     if (!profile?.id) return
@@ -226,43 +250,80 @@ export default function ProfessorDashboard() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Card
+                  key={i}
+                  className="h-80 flex flex-col p-4 justify-between bg-[#3f3f46]/40 border-zinc-700"
+                >
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-3/4 bg-zinc-700" />
+                    <Skeleton className="h-4 w-1/2 bg-zinc-700" />
+                    <div className="grid grid-cols-2 gap-3 pt-4">
+                      <Skeleton className="h-10 w-full bg-zinc-700" />
+                      <Skeleton className="h-10 w-full bg-zinc-700" />
+                      <Skeleton className="h-10 w-full bg-zinc-700" />
+                      <Skeleton className="h-10 w-full bg-zinc-700" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-10 w-full mt-4 bg-zinc-700" />
+                </Card>
+              ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filtered.map((ev) => (
-                <StudentCard
-                  key={ev.id}
-                  ev={ev}
-                  currentUserRoles={profile?.roles || [profile?.role]}
-                  currentUserId={profile?.id}
-                  onStatusChange={handleStatusChange}
-                  onAnotacoesClick={(evalData) =>
-                    setAcompanhamentoEval({
-                      id: evalData.id,
-                      nome: evalData.nome_cliente,
-                      evo_id: evalData.evo_id,
-                    })
-                  }
-                  onHistoricoClick={(evalData) => {
-                    // Utilizando o acompanhamento para o histórico conforme permissões solicitadas
-                    setAcompanhamentoEval({
-                      id: evalData.id,
-                      nome: evalData.nome_cliente,
-                      evo_id: evalData.evo_id,
-                    })
-                  }}
-                />
-              ))}
-              {filtered.length === 0 && (
-                <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed border-zinc-700/50 rounded-xl">
-                  {filterType === 'meus'
-                    ? 'Nenhum aluno atribuído a você no momento.'
-                    : 'Nenhum aluno encontrado.'}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filtered.slice(0, visibleCount).map((ev) => (
+                  <StudentCard
+                    key={ev.id}
+                    ev={ev}
+                    currentUserRoles={profile?.roles || [profile?.role]}
+                    currentUserId={profile?.id}
+                    hasRequested={requestedEvalIds.has(ev.id)}
+                    hasFiles={filesMap.has(ev.id)}
+                    onStatusChange={handleStatusChange}
+                    onRequestedSuccess={(evalId) => {
+                      setRequestedEvalIds((prev) => new Set(prev).add(evalId))
+                    }}
+                    onAnotacoesClick={(evalData) =>
+                      setAcompanhamentoEval({
+                        id: evalData.id,
+                        nome: evalData.nome_cliente,
+                        evo_id: evalData.evo_id,
+                      })
+                    }
+                    onHistoricoClick={(evalData) => {
+                      // Utilizando o acompanhamento para o histórico conforme permissões solicitadas
+                      setAcompanhamentoEval({
+                        id: evalData.id,
+                        nome: evalData.nome_cliente,
+                        evo_id: evalData.evo_id,
+                      })
+                    }}
+                  />
+                ))}
+                {filtered.length === 0 && (
+                  <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed border-zinc-700/50 rounded-xl">
+                    {filterType === 'meus'
+                      ? 'Nenhum aluno atribuído a você no momento.'
+                      : 'Nenhum aluno encontrado.'}
+                  </div>
+                )}
+              </div>
+
+              {filtered.length > visibleCount && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="font-bold border-[#84cc16] text-[#84cc16] hover:bg-[#84cc16]/10 px-8"
+                    onClick={() => setVisibleCount((prev) => prev + 20)}
+                  >
+                    Carregar mais ({filtered.length - visibleCount} restantes)
+                  </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
         </TabsContent>
 

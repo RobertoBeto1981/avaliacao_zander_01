@@ -25,6 +25,7 @@ import {
 import { ImportStudentsDialog } from '@/components/coordinator/ImportStudentsDialog'
 import {
   getEvaluations,
+  getEvaluationFileIndicators,
   updateEvaluationStatus,
   deleteEvaluation,
   activateDesafioZander,
@@ -32,6 +33,7 @@ import {
 } from '@/services/evaluations'
 import {
   getPendingProfessorRequests,
+  getPendingRequestedEvaluationIds,
   respondProfessorRequest,
   updateAvaliacaoProfessor,
 } from '@/services/professor_requests'
@@ -69,17 +71,24 @@ import { DashboardCharts } from '@/components/coordinator/DashboardCharts'
 import { supabase } from '@/lib/supabase/client'
 import { UserManagementTab } from '@/components/coordinator/UserManagementTab'
 import { NovoAlunoDialog } from '@/components/NovoAlunoDialog'
-import { EditarCadastroDialog, EditarAvaliacaoDialog } from '@/components/StudentCard'
+import {
+  EditarCadastroDialog,
+  EditarAvaliacaoDialog,
+  FileIconIndicator,
+} from '@/components/StudentCard'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function CoordinatorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
+  const [cardsLoading, setCardsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cycleFilter, setCycleFilter] = useState<string>('all')
   const [professorFilter, setProfessorFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<string>('overview')
   const [professorRequests, setProfessorRequests] = useState<any[]>([])
+  const [filesMap, setFilesMap] = useState<Set<string>>(new Set())
   const [acompanhamentoEval, setAcompanhamentoEval] = useState<{
     id: string
     nome: string
@@ -99,15 +108,20 @@ export default function CoordinatorDashboard() {
   const [exportMonth, setExportMonth] = useState<string>(new Date().getMonth().toString())
   const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString())
   const [searchTerm, setSearchTerm] = useState('')
+  const [visibleCount, setVisibleCount] = useState(20)
 
   const { toast } = useToast()
 
   const loadData = async () => {
     try {
-      const data = await getEvaluations()
-      setEvaluations(data)
+      setCardsLoading(true)
+      const [evals, files] = await Promise.all([getEvaluations(), getEvaluationFileIndicators()])
+      setEvaluations(evals)
+      setFilesMap(files)
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Erro Avaliações', description: e.message })
+    } finally {
+      setCardsLoading(false)
     }
   }
 
@@ -130,7 +144,11 @@ export default function CoordinatorDashboard() {
   }
 
   const initializeData = useCallback(async () => {
-    await Promise.all([loadData(), loadUsers(), loadRequests()])
+    setInitialLoading(true)
+    // Dispara usuários e requests primeiro para liberar a tela e o topo rapidamente
+    loadUsers()
+    loadRequests()
+    await loadData()
     setInitialLoading(false)
   }, [])
 
@@ -141,6 +159,11 @@ export default function CoordinatorDashboard() {
     window.addEventListener('avaliacao_updated', handleUpdate)
     return () => window.removeEventListener('avaliacao_updated', handleUpdate)
   }, [initializeData])
+
+  // Reset pagination on filter or search change
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchTerm, statusFilter, cycleFilter, professorFilter])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -621,420 +644,463 @@ export default function CoordinatorDashboard() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filtered.map((ev) => {
-              const today = startOfDay(new Date())
-              const evalDate = ev.data_avaliacao ? new Date(ev.data_avaliacao + 'T12:00:00') : null
-              const isPre = ev.is_pre_avaliacao
+          {cardsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="h-80 flex flex-col p-4 justify-between">
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="grid grid-cols-2 gap-3 pt-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-10 w-full mt-4" />
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filtered.slice(0, visibleCount).map((ev) => {
+                  const today = startOfDay(new Date())
+                  const evalDate = ev.data_avaliacao
+                    ? new Date(ev.data_avaliacao + 'T12:00:00')
+                    : null
+                  const isPre = ev.is_pre_avaliacao
 
-              const deadlineBaseDate =
-                ev.data_avaliacao ||
-                (ev.desafio_zander_ativado_em ? ev.desafio_zander_ativado_em.split('T')[0] : null)
-              const deadline = deadlineBaseDate ? calculateDeadline(deadlineBaseDate, 3) : null
+                  const deadlineBaseDate =
+                    ev.data_avaliacao ||
+                    (ev.desafio_zander_ativado_em
+                      ? ev.desafio_zander_ativado_em.split('T')[0]
+                      : null)
+                  const deadline = deadlineBaseDate ? calculateDeadline(deadlineBaseDate, 3) : null
 
-              const isLate =
-                !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
-              const links = ev.links_avaliacao?.[0] || {}
+                  const isLate =
+                    !isPre && deadline && isAfter(today, deadline) && ev.status !== 'concluido'
+                  const links = ev.links_avaliacao?.[0] || {}
 
-              let reevalColorClass = ''
-              let reevalDotClass = ''
-              let isPulsing = false
+                  let reevalColorClass = ''
+                  let reevalDotClass = ''
+                  let isPulsing = false
 
-              if (!isPre && ev.data_reavaliacao && evalDate) {
-                const daysSinceEval = differenceInDays(today, evalDate)
-                if (daysSinceEval <= 29) {
-                  reevalColorClass = 'text-primary'
-                  reevalDotClass = 'bg-primary'
-                } else if (daysSinceEval <= 59) {
-                  reevalColorClass = 'text-amber-500'
-                  reevalDotClass = 'bg-amber-500'
-                } else if (daysSinceEval <= 90) {
-                  reevalColorClass = 'text-destructive'
-                  reevalDotClass = 'bg-destructive'
-                } else {
-                  reevalColorClass = 'text-destructive font-bold'
-                  reevalDotClass = 'bg-destructive'
-                  isPulsing = true
-                }
-              }
+                  if (!isPre && ev.data_reavaliacao && evalDate) {
+                    const daysSinceEval = differenceInDays(today, evalDate)
+                    if (daysSinceEval <= 29) {
+                      reevalColorClass = 'text-primary'
+                      reevalDotClass = 'bg-primary'
+                    } else if (daysSinceEval <= 59) {
+                      reevalColorClass = 'text-amber-500'
+                      reevalDotClass = 'bg-amber-500'
+                    } else if (daysSinceEval <= 90) {
+                      reevalColorClass = 'text-destructive'
+                      reevalDotClass = 'bg-destructive'
+                    } else {
+                      reevalColorClass = 'text-destructive font-bold'
+                      reevalDotClass = 'bg-destructive'
+                      isPulsing = true
+                    }
+                  }
 
-              const linkItems = [
-                {
-                  type: 'external',
-                  url: links.mapeamento_sintomas_url,
-                  icon: HeartPulse,
-                  label: 'Sintomas',
-                },
-                {
-                  type: 'external',
-                  url: links.mapeamento_dor_url,
-                  icon: Activity,
-                  label: 'Dor',
-                },
-                { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
-                { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
-              ]
+                  const linkItems = [
+                    {
+                      type: 'external',
+                      url: links.mapeamento_sintomas_url,
+                      icon: HeartPulse,
+                      label: 'Sintomas',
+                    },
+                    {
+                      type: 'external',
+                      url: links.mapeamento_dor_url,
+                      icon: Activity,
+                      label: 'Dor',
+                    },
+                    { type: 'external', url: links.bia_url, icon: Scale, label: 'BIA' },
+                    { type: 'external', url: links.my_score_url, icon: Target, label: 'My Score' },
+                  ]
 
-              return (
-                <Card
-                  key={ev.id}
-                  className={cn(
-                    'flex flex-col h-full transition-all hover:border-primary/50 overflow-hidden shadow-sm',
-                    isPre &&
-                      'bg-blue-50/10 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900/50',
-                  )}
-                >
-                  <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between gap-2 border-b border-border/10">
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <CardTitle
-                        className="text-base font-bold leading-tight line-clamp-2"
-                        title={ev.nome_cliente}
-                      >
-                        {ev.nome_cliente}
-                      </CardTitle>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {isPre && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] h-5 px-1.5 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1 w-fit"
+                  return (
+                    <Card
+                      key={ev.id}
+                      className={cn(
+                        'flex flex-col h-full transition-all hover:border-primary/50 overflow-hidden shadow-sm',
+                        isPre &&
+                          'bg-blue-50/10 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900/50',
+                      )}
+                    >
+                      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between gap-2 border-b border-border/10">
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <CardTitle
+                            className="text-base font-bold leading-tight line-clamp-2"
+                            title={ev.nome_cliente}
                           >
-                            <AlertCircle className="w-3 h-3" /> Pendente
-                          </Badge>
-                        )}
-                        {ev.evo_id && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] h-5 px-1.5 border-primary/30 text-primary/80"
-                          >
-                            EVO: {ev.evo_id}
-                          </Badge>
-                        )}
-                        {ev.professor_id && ev.professor?.nome && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] h-5 px-1.5 border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 bg-transparent font-medium"
-                          >
-                            Prof: {ev.professor.nome.split(' ')[0]}
-                          </Badge>
-                        )}
-                        {ev.desafio_zander_status &&
-                          ev.desafio_zander_status !== 'nenhum' &&
-                          ev.status !== 'concluido' && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] h-5 px-1.5 border-purple-500/50 text-purple-700 bg-purple-50 dark:bg-purple-500/10 dark:text-purple-400"
+                            {ev.nome_cliente}
+                          </CardTitle>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {isPre && (
+                              <Badge
+                                variant="destructive"
+                                className="text-[10px] h-5 px-1.5 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-none flex items-center gap-1 w-fit"
+                              >
+                                <AlertCircle className="w-3 h-3" /> Pendente
+                              </Badge>
+                            )}
+                            {ev.evo_id && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] h-5 px-1.5 border-primary/30 text-primary/80"
+                              >
+                                EVO: {ev.evo_id}
+                              </Badge>
+                            )}
+                            {ev.professor_id && ev.professor?.nome && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] h-5 px-1.5 border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 bg-transparent font-medium"
+                              >
+                                Prof: {ev.professor.nome.split(' ')[0]}
+                              </Badge>
+                            )}
+                            {ev.desafio_zander_status &&
+                              ev.desafio_zander_status !== 'nenhum' &&
+                              ev.status !== 'concluido' && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] h-5 px-1.5 border-purple-500/50 text-purple-700 bg-purple-50 dark:bg-purple-500/10 dark:text-purple-400"
+                                >
+                                  #DesafioZander
+                                </Badge>
+                              )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0 -mr-2 -mt-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                onClick={() => setEditCadastroEv(ev)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar Cadastro</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-[#84cc16] hover:text-[#84cc16] hover:bg-[#84cc16]/10"
+                                onClick={() => setEditAvaliacaoEv(ev)}
+                              >
+                                <FileEdit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar Avaliação</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(ev.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excluir Cliente</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="p-4 flex flex-col gap-4 flex-grow">
+                        {/* Infos Grid */}
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
+                              Avaliação
+                            </span>
+                            <span className="font-medium">
+                              {isPre ? '-' : evalDate ? format(evalDate, 'dd/MM/yyyy') : '-'}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
+                              Reavaliação
+                            </span>
+                            {isPre || !ev.data_reavaliacao ? (
+                              <span className="text-muted-foreground font-medium">-</span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  'font-bold inline-flex items-center gap-1.5',
+                                  reevalColorClass,
+                                  isPulsing && 'animate-pulse',
+                                )}
+                              >
+                                <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
+                                {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
+                              Professor
+                            </span>
+                            <Select
+                              value={ev.professor_id || 'unassigned'}
+                              onValueChange={(val) => handleProfessorChange(ev.id, val)}
                             >
-                              #DesafioZander
-                            </Badge>
-                          )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0 -mr-2 -mt-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                            onClick={() => setEditCadastroEv(ev)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar Cadastro</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-[#84cc16] hover:text-[#84cc16] hover:bg-[#84cc16]/10"
-                            onClick={() => setEditAvaliacaoEv(ev)}
-                          >
-                            <FileEdit className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar Avaliação</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(ev.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Excluir Cliente</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-4 flex flex-col gap-4 flex-grow">
-                    {/* Infos Grid */}
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Avaliação
-                        </span>
-                        <span className="font-medium">
-                          {isPre ? '-' : evalDate ? format(evalDate, 'dd/MM/yyyy') : '-'}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Reavaliação
-                        </span>
-                        {isPre || !ev.data_reavaliacao ? (
-                          <span className="text-muted-foreground font-medium">-</span>
-                        ) : (
-                          <span
-                            className={cn(
-                              'font-bold inline-flex items-center gap-1.5',
-                              reevalColorClass,
-                              isPulsing && 'animate-pulse',
-                            )}
-                          >
-                            <span className={cn('w-2 h-2 rounded-full', reevalDotClass)} />
-                            {format(new Date(ev.data_reavaliacao + 'T12:00:00'), 'dd/MM/yyyy')}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Professor
-                        </span>
-                        <Select
-                          value={ev.professor_id || 'unassigned'}
-                          onValueChange={(val) => handleProfessorChange(ev.id, val)}
-                        >
-                          <SelectTrigger className="h-7 text-xs font-semibold px-2 w-full border-dashed bg-transparent">
-                            <SelectValue placeholder="Não atribuído" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unassigned" className="text-muted-foreground italic">
-                              Não atribuído
-                            </SelectItem>
-                            {users
-                              .filter((u) => u.roles?.includes('professor'))
-                              .map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.nome}
+                              <SelectTrigger className="h-7 text-xs font-semibold px-2 w-full border-dashed bg-transparent">
+                                <SelectValue placeholder="Não atribuído" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  value="unassigned"
+                                  className="text-muted-foreground italic"
+                                >
+                                  Não atribuído
                                 </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                                {users
+                                  .filter((u) => u.roles?.includes('professor'))
+                                  .map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.nome}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
-                          Período
-                        </span>
-                        <span className="font-medium">{ev.periodo_treino || '-'}</span>
-                      </div>
-                    </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium">
+                              Período
+                            </span>
+                            <span className="font-medium">{ev.periodo_treino || '-'}</span>
+                          </div>
+                        </div>
 
-                    {/* Status & Prazo */}
-                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/40 mt-auto">
-                      <div className="flex-1">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium block mb-1">
-                          Status do Treino
-                        </span>
-                        <Select
-                          value={ev.status || 'pendente'}
-                          onValueChange={(val) => handleStatusChange(ev.id, val)}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              'h-8 text-xs font-bold w-full',
-                              (!ev.status || ev.status === 'pendente') &&
-                                'border-amber-500/30 text-amber-600 bg-amber-500/10 dark:text-amber-400',
-                              ev.status === 'em_progresso' &&
-                                'border-blue-500/30 text-blue-600 bg-blue-500/10 dark:text-blue-400',
-                              ev.status === 'concluido' &&
-                                'border-primary/40 text-primary bg-primary/10',
+                        {/* Status & Prazo */}
+                        <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/40 mt-auto">
+                          <div className="flex-1">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium block mb-1">
+                              Status do Treino
+                            </span>
+                            <Select
+                              value={ev.status || 'pendente'}
+                              onValueChange={(val) => handleStatusChange(ev.id, val)}
+                            >
+                              <SelectTrigger
+                                className={cn(
+                                  'h-8 text-xs font-bold w-full',
+                                  (!ev.status || ev.status === 'pendente') &&
+                                    'border-amber-500/30 text-amber-600 bg-amber-500/10 dark:text-amber-400',
+                                  ev.status === 'em_progresso' &&
+                                    'border-blue-500/30 text-blue-600 bg-blue-500/10 dark:text-blue-400',
+                                  ev.status === 'concluido' &&
+                                    'border-primary/40 text-primary bg-primary/10',
+                                )}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pendente">Pendente</SelectItem>
+                                <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                                <SelectItem value="concluido">Concluído</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium block mb-1">
+                              Prazo
+                            </span>
+                            {isPre || !deadline ? (
+                              <span className="text-muted-foreground font-medium">-</span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  'font-bold text-sm',
+                                  isLate ? 'text-destructive animate-pulse' : 'text-foreground',
+                                )}
+                              >
+                                {format(deadline, 'dd/MM/yyyy')}
+                              </span>
                             )}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendente">Pendente</SelectItem>
-                            <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                            <SelectItem value="concluido">Concluído</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-muted-foreground text-[11px] uppercase tracking-wider font-medium block mb-1">
-                          Prazo
-                        </span>
-                        {isPre || !deadline ? (
-                          <span className="text-muted-foreground font-medium">-</span>
-                        ) : (
-                          <span
-                            className={cn(
-                              'font-bold text-sm',
-                              isLate ? 'text-destructive animate-pulse' : 'text-foreground',
-                            )}
-                          >
-                            {format(deadline, 'dd/MM/yyyy')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
+                          </div>
+                        </div>
+                      </CardContent>
 
-                  <CardFooter className="p-4 pt-0 flex flex-col gap-3 bg-muted/10 border-t border-border/10">
-                    {/* Botões de Ação Secundários */}
-                    <div className="flex items-center gap-1.5 w-full pt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-[1.2] h-8 text-[11px] font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors px-0 min-w-0"
-                        onClick={() =>
-                          setAcompanhamentoEval({
-                            id: ev.id,
-                            nome: ev.nome_cliente,
-                            evo_id: ev.evo_id,
-                          })
-                        }
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 sm:mr-1 text-primary shrink-0" />{' '}
-                        <span className="truncate px-1">Anot.</span>
-                      </Button>
-                      <Button
-                        className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-8 px-0 shadow-sm min-w-0"
-                        asChild
-                      >
-                        <Link to={`/evaluation/${ev.id}`} className="truncate px-1">
-                          Avaliação
-                        </Link>
-                      </Button>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                      <CardFooter className="p-4 pt-0 flex flex-col gap-3 bg-muted/10 border-t border-border/10">
+                        {/* Botões de Ação Secundários */}
+                        <div className="flex items-center gap-1.5 w-full pt-3">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 shrink-0 text-muted-foreground bg-background shadow-sm hover:text-foreground"
+                            className="flex-[1.2] h-8 text-[11px] font-semibold bg-background shadow-sm hover:bg-secondary/50 transition-colors px-0 min-w-0"
                             onClick={() =>
-                              setHistoryEval({
+                              setAcompanhamentoEval({
                                 id: ev.id,
                                 nome: ev.nome_cliente,
                                 evo_id: ev.evo_id,
                               })
                             }
                           >
-                            <History className="w-4 h-4" />
+                            <MessageSquare className="w-3.5 h-3.5 sm:mr-1 text-primary shrink-0" />{' '}
+                            <span className="truncate px-1">Anot.</span>
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Ver Histórico</TooltipContent>
-                      </Tooltip>
-                      {!ev.is_pre_avaliacao && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 shrink-0 text-green-600 bg-background shadow-sm hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30 border-green-200 dark:border-green-900/50"
-                              onClick={() => handleSendWhatsApp(ev)}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Enviar links via WhatsApp</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-
-                    {/* Botões Desafio Zander */}
-                    {(!ev.desafio_zander_status || ev.desafio_zander_status === 'nenhum') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full h-8 text-xs font-bold border-purple-500/30 text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20 shadow-sm transition-colors"
-                        onClick={() => handleActivateDesafio(ev.id)}
-                      >
-                        <Trophy className="w-3.5 h-3.5 mr-1.5" /> Ativar #DesafioZander
-                      </Button>
-                    )}
-                    {ev.desafio_zander_status === 'ativo' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full h-8 text-xs font-bold border-purple-500/50 text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:hover:bg-purple-500/30 shadow-sm animate-pulse transition-colors"
-                        onClick={() => handleSendDesafioWhatsApp(ev)}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Enviar Whats Desafio
-                      </Button>
-                    )}
-                    {ev.desafio_zander_status === 'enviado' && (
-                      <Badge
-                        variant="outline"
-                        className="w-full h-8 justify-center font-bold border-green-500/50 text-green-700 bg-green-50 dark:bg-green-500/10 dark:text-green-400 shadow-sm"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Desafio Aceito
-                      </Badge>
-                    )}
-
-                    {/* Links Externos / Internos Icons */}
-                    <div className="flex justify-center items-center w-full gap-1 pt-3 border-t border-border/40">
-                      {linkItems.map((item, idx) => {
-                        const Icon = item.icon
-                        if (!ev.is_pre_avaliacao && item.url) {
-                          return (
-                            <Tooltip key={idx}>
-                              <TooltipTrigger asChild>
-                                {item.type === 'internal' ? (
-                                  <Link
-                                    to={item.url}
-                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                  >
-                                    <Icon className="w-[18px] h-[18px]" />
-                                  </Link>
-                                ) : (
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
-                                  >
-                                    <Icon className="w-[18px] h-[18px]" />
-                                  </a>
-                                )}
-                              </TooltipTrigger>
-                              <TooltipContent>{item.label}</TooltipContent>
-                            </Tooltip>
-                          )
-                        }
-                        return (
-                          <Tooltip key={idx}>
+                          <Button
+                            className="flex-[1.5] bg-[#84cc16] hover:bg-[#65a30d] text-zinc-900 font-bold text-[11px] h-8 px-0 shadow-sm min-w-0"
+                            asChild
+                          >
+                            <Link to={`/evaluation/${ev.id}`} className="truncate px-1">
+                              Avaliação
+                            </Link>
+                          </Button>
+                          <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="p-1.5 opacity-20 cursor-not-allowed text-muted-foreground">
-                                <Icon className="w-[18px] h-[18px]" />
-                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 shrink-0 text-muted-foreground bg-background shadow-sm hover:text-foreground"
+                                onClick={() =>
+                                  setHistoryEval({
+                                    id: ev.id,
+                                    nome: ev.nome_cliente,
+                                    evo_id: ev.evo_id,
+                                  })
+                                }
+                              >
+                                <History className="w-4 h-4" />
+                              </Button>
                             </TooltipTrigger>
-                            <TooltipContent>{item.label} (Indisponível)</TooltipContent>
+                            <TooltipContent>Ver Histórico</TooltipContent>
                           </Tooltip>
-                        )
-                      })}
-                    </div>
-                  </CardFooter>
-                </Card>
-              )
-            })}
+                          {!ev.is_pre_avaliacao && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 shrink-0 text-green-600 bg-background shadow-sm hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30 border-green-200 dark:border-green-900/50"
+                                  onClick={() => handleSendWhatsApp(ev)}
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Enviar links via WhatsApp</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
 
-            {filtered.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl bg-muted/10">
-                <AlertCircle className="w-10 h-10 mb-3 text-muted-foreground/50" />
-                <p className="text-base font-medium">Nenhuma avaliação encontrada.</p>
-                <p className="text-sm mt-1">Tente ajustar os filtros de status.</p>
+                        {/* Botões Desafio Zander */}
+                        {(!ev.desafio_zander_status || ev.desafio_zander_status === 'nenhum') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 text-xs font-bold border-purple-500/30 text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:hover:bg-purple-500/20 shadow-sm transition-colors"
+                            onClick={() => handleActivateDesafio(ev.id)}
+                          >
+                            <Trophy className="w-3.5 h-3.5 mr-1.5" /> Ativar #DesafioZander
+                          </Button>
+                        )}
+                        {ev.desafio_zander_status === 'ativo' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 text-xs font-bold border-purple-500/50 text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:hover:bg-purple-500/30 shadow-sm animate-pulse transition-colors"
+                            onClick={() => handleSendDesafioWhatsApp(ev)}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Enviar Whats Desafio
+                          </Button>
+                        )}
+                        {ev.desafio_zander_status === 'enviado' && (
+                          <Badge
+                            variant="outline"
+                            className="w-full h-8 justify-center font-bold border-green-500/50 text-green-700 bg-green-50 dark:bg-green-500/10 dark:text-green-400 shadow-sm"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Desafio Aceito
+                          </Badge>
+                        )}
+
+                        {/* Links Externos / Internos Icons */}
+                        <div className="flex justify-center items-center w-full gap-1 pt-3 border-t border-border/40">
+                          {linkItems.map((item, idx) => {
+                            const Icon = item.icon
+                            if (!ev.is_pre_avaliacao && item.url) {
+                              return (
+                                <Tooltip key={idx}>
+                                  <TooltipTrigger asChild>
+                                    {item.type === 'internal' ? (
+                                      <Link
+                                        to={item.url}
+                                        className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
+                                      >
+                                        <Icon className="w-[18px] h-[18px]" />
+                                      </Link>
+                                    ) : (
+                                      <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
+                                      >
+                                        <Icon className="w-[18px] h-[18px]" />
+                                      </a>
+                                    )}
+                                  </TooltipTrigger>
+                                  <TooltipContent>{item.label}</TooltipContent>
+                                </Tooltip>
+                              )
+                            }
+                            return (
+                              <Tooltip key={idx}>
+                                <TooltipTrigger asChild>
+                                  <div className="p-1.5 opacity-20 cursor-not-allowed text-muted-foreground">
+                                    <Icon className="w-[18px] h-[18px]" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>{item.label} (Indisponível)</TooltipContent>
+                              </Tooltip>
+                            )
+                          })}
+                          <FileIconIndicator avaliacaoId={ev.id} hasFiles={filesMap.has(ev.id)} />
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  )
+                })}
+
+                {filtered.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl bg-muted/10">
+                    <AlertCircle className="w-10 h-10 mb-3 text-muted-foreground/50" />
+                    <p className="text-base font-medium">Nenhuma avaliação encontrada.</p>
+                    <p className="text-sm mt-1">Tente ajustar os filtros de status.</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {filtered.length > visibleCount && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="font-bold border-[#84cc16] text-[#84cc16] hover:bg-[#84cc16]/10 px-8"
+                    onClick={() => setVisibleCount((prev) => prev + 20)}
+                  >
+                    Carregar mais ({filtered.length - visibleCount} restantes)
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
         <TabsContent value="team">
           <UserManagementTab

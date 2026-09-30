@@ -46,10 +46,13 @@ interface StudentCardProps {
   currentUserRoles: string[]
   currentUserId: string
   professors?: any[]
+  hasRequested?: boolean
+  hasFiles?: boolean
   onStatusChange: (id: string, status: string) => void
   onAnotacoesClick: (ev: any) => void
   onHistoricoClick: (ev: any) => void
   onProfessorChange?: (id: string, profId: string) => void
+  onRequestedSuccess?: (avaliacaoId: string) => void
 }
 
 export function StudentCard({
@@ -57,47 +60,26 @@ export function StudentCard({
   currentUserRoles,
   currentUserId,
   professors,
+  hasRequested = false,
+  hasFiles,
   onStatusChange,
   onAnotacoesClick,
   onHistoricoClick,
   onProfessorChange,
+  onRequestedSuccess,
 }: StudentCardProps) {
   const isCoordenador = currentUserRoles.includes('coordenador')
   const isProfessor = currentUserRoles.includes('professor')
   const isAvaliador = currentUserRoles.includes('avaliador')
   const { toast } = useToast()
   const [isRequesting, setIsRequesting] = useState(false)
-  const [hasRequested, setHasRequested] = useState(false)
-  const [isLoadingRequest, setIsLoadingRequest] = useState(true)
+  const [requestedState, setRequestedState] = useState(hasRequested)
   const [isEditCadastroOpen, setIsEditCadastroOpen] = useState(false)
   const [isEditAvaliacaoOpen, setIsEditAvaliacaoOpen] = useState(false)
 
   useEffect(() => {
-    if (isProfessor && ev.professor_id !== currentUserId) {
-      const checkRequest = async () => {
-        try {
-          const { data } = await supabase
-            .from('professor_change_requests')
-            .select('id, status')
-            .eq('avaliacao_id', ev.id)
-            .eq('professor_id', currentUserId)
-            .eq('status', 'pendente')
-            .maybeSingle()
-
-          if (data) {
-            setHasRequested(true)
-          }
-        } catch (error) {
-          console.error(error)
-        } finally {
-          setIsLoadingRequest(false)
-        }
-      }
-      checkRequest()
-    } else {
-      setIsLoadingRequest(false)
-    }
-  }, [ev.id, currentUserId, isProfessor, ev.professor_id])
+    setRequestedState(hasRequested)
+  }, [hasRequested])
 
   // Regra: Professor edita apenas situação "TREINO" se o aluno foi distribuído para ele
   const canEditTreino = isCoordenador || (isProfessor && ev.professor_id === currentUserId)
@@ -154,11 +136,13 @@ export function StudentCard({
     try {
       setIsRequesting(true)
       await requestProfessorChange(ev.id, currentUserId)
-      setHasRequested(true)
+      setRequestedState(true)
+      onRequestedSuccess?.(ev.id)
       toast({ title: 'Solicitação enviada', description: 'O coordenador foi notificado.' })
     } catch (e: any) {
       if (e.code === '23505' || e.message?.includes('duplicate key')) {
-        setHasRequested(true)
+        setRequestedState(true)
+        onRequestedSuccess?.(ev.id)
         toast({ title: 'Aviso', description: 'Você já solicitou este aluno.' })
       } else {
         toast({ variant: 'destructive', title: 'Erro', description: e.message })
@@ -325,15 +309,13 @@ export function StudentCard({
             variant="outline"
             className="w-full text-xs font-bold h-8 border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 disabled:opacity-50"
             onClick={handleSolicitar}
-            disabled={isRequesting || isLoadingRequest || hasRequested}
+            disabled={isRequesting || requestedState}
           >
-            {isLoadingRequest
-              ? 'Carregando...'
-              : hasRequested
-                ? 'Aluno Solicitado'
-                : isRequesting
-                  ? 'Solicitando...'
-                  : 'Solicitar Aluno'}
+            {requestedState
+              ? 'Aluno Solicitado'
+              : isRequesting
+                ? 'Solicitando...'
+                : 'Solicitar Aluno'}
           </Button>
         )}
         <div className="flex items-center justify-between w-full bg-zinc-800/50 p-2 rounded-md border border-zinc-700/50">
@@ -355,7 +337,7 @@ export function StudentCard({
               icon={<Target className="w-4 h-4" />}
               tooltip="My Score"
             />
-            <FileIconIndicator avaliacaoId={ev.id} />
+            <FileIconIndicator avaliacaoId={ev.id} hasFiles={hasFiles} />
           </div>
         </div>
 
@@ -683,40 +665,41 @@ export function EditarAvaliacaoDialog({
   )
 }
 
-export function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
-  const [hasFiles, setHasFiles] = useState(false)
-  useEffect(() => {
-    const fetchHasFiles = () => {
-      supabase
-        .from('avaliacao_acompanhamentos')
-        .select('id')
-        .eq('avaliacao_id', avaliacaoId)
-        .not('file_url', 'is', null)
-        .limit(1)
-        .then(({ data }) => {
-          setHasFiles(!!(data && data.length > 0))
-        })
-    }
-    fetchHasFiles()
+export function FileIconIndicator({
+  avaliacaoId,
+  hasFiles: propHasFiles,
+}: {
+  avaliacaoId: string
+  hasFiles?: boolean
+}) {
+  const [internalHasFiles, setInternalHasFiles] = useState(false)
 
-    const channel = supabase
-      .channel(`files-${avaliacaoId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'avaliacao_acompanhamentos',
-          filter: `avaliacao_id=eq.${avaliacaoId}`,
-        },
-        () => fetchHasFiles(),
-      )
-      .subscribe()
+  // Se propHasFiles foi informado pelo pai, usamos ele e evitamos qualquer query
+  const effectiveHasFiles = propHasFiles !== undefined ? propHasFiles : internalHasFiles
+
+  useEffect(() => {
+    // Se o pai passou o prop, não fazemos fetch inicial de rede por card!
+    if (propHasFiles !== undefined) {
+      return
+    }
+
+    let isMounted = true
+    supabase
+      .from('avaliacao_acompanhamentos')
+      .select('id')
+      .eq('avaliacao_id', avaliacaoId)
+      .not('file_url', 'is', null)
+      .limit(1)
+      .then(({ data }) => {
+        if (isMounted) {
+          setInternalHasFiles(!!(data && data.length > 0))
+        }
+      })
 
     return () => {
-      supabase.removeChannel(channel)
+      isMounted = false
     }
-  }, [avaliacaoId])
+  }, [avaliacaoId, propHasFiles])
 
   return (
     <Tooltip>
@@ -724,13 +707,13 @@ export function FileIconIndicator({ avaliacaoId }: { avaliacaoId: string }) {
         <div
           className={cn(
             'p-1.5 rounded transition-colors flex items-center justify-center',
-            hasFiles ? 'text-[#84cc16]' : 'text-zinc-600',
+            effectiveHasFiles ? 'text-[#84cc16]' : 'text-zinc-600',
           )}
         >
           <Paperclip className="w-4 h-4" />
         </div>
       </TooltipTrigger>
-      {hasFiles && <TooltipContent>Documentos Anexados (Ver Anotações)</TooltipContent>}
+      {effectiveHasFiles && <TooltipContent>Documentos Anexados (Ver Anotações)</TooltipContent>}
     </Tooltip>
   )
 }

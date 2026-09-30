@@ -34,12 +34,15 @@ export function ClientQuickView({
 
       if (av) {
         setData(av)
-        let latest = av.respostas || {}
+        let latest = (av.respostas && typeof av.respostas === 'object' ? av.respostas : {}) as Record<string, any>
         if (av.reavaliacoes && av.reavaliacoes.length > 0) {
           const sortedReavs = av.reavaliacoes.sort(
             (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
           )
-          latest = { ...latest, ...sortedReavs[0].respostas_novas }
+          const firstNovas = (sortedReavs[0].respostas_novas && typeof sortedReavs[0].respostas_novas === 'object'
+            ? sortedReavs[0].respostas_novas
+            : {}) as Record<string, any>
+          latest = { ...latest, ...firstNovas }
         }
         setLatestRespostas(latest)
       }
