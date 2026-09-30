@@ -348,7 +348,7 @@ export const updateEvaluationStatus = async (id: string, status: string) => {
 
   const { data, error } = await supabase
     .from('avaliacoes')
-    .update({ status })
+    .update({ status: status as any })
     .eq('id', id)
     .select()
     .single()

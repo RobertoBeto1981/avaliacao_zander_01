@@ -4,13 +4,10 @@ export const evaluationSchema = z.object({
   evo_id: z.string().optional(),
   nome_cliente: z.string().min(2, 'Obrigatório'),
   telefone_cliente: z.string().min(8, 'Obrigatório'),
-  data_avaliacao: z.preprocess(
-    (arg) => {
-      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
-      return arg
-    },
-    z.date({ required_error: 'Obrigatório' }),
-  ),
+  data_avaliacao: z.preprocess((arg) => {
+    if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+    return arg
+  }, z.date()),
   data_reavaliacao: z.preprocess((arg) => {
     if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
     return arg

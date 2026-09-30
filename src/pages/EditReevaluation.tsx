@@ -38,7 +38,7 @@ export default function EditReevaluation() {
   const isAvaliadorMode = isAvaliadorOrHigher && !isCoordenador
 
   const form = useForm<EvaluationFormValues>({
-    resolver: zodResolver(evaluationSchema),
+    resolver: zodResolver(evaluationSchema) as any,
   })
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function EditReevaluation() {
         const data = await getReavaliacaoById(id)
         if (!data) throw new Error('Reavaliação não encontrada')
 
-        const respostas = data.respostas_novas || {}
+        const respostas = (data.respostas_novas || {}) as any
         const links = respostas.client_links || {}
 
         const parseDate = (d?: string) => {
@@ -167,10 +167,10 @@ export default function EditReevaluation() {
     })
   }
 
-  const onSubmit = async (data: EvaluationFormValues) => {
+  const onSubmit = async (submittedData: EvaluationFormValues) => {
     try {
       const originalReav = await getReavaliacaoById(id!)
-      const originalRespostas = originalReav?.respostas_novas || {}
+      const originalRespostas = (originalReav?.respostas_novas || {}) as any
 
       const {
         evo_id,
@@ -182,10 +182,9 @@ export default function EditReevaluation() {
         objectives,
         client_links,
         ...rest
-      } = data
+      } = submittedData
 
       const respostasToSave: any = { ...originalRespostas, ...rest }
-
       if (respostasToSave.target_date && isValid(respostasToSave.target_date)) {
         respostasToSave.target_date = format(respostasToSave.target_date, 'yyyy-MM-dd')
       } else {

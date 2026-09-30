@@ -49,7 +49,7 @@ export default function EditEvaluation() {
         if (!data) throw new Error('Avaliação não encontrada')
 
         const respostas = (data.respostas || {}) as any
-        const links = data.links_avaliacao?.[0] || {}
+        const links = (data.links_avaliacao?.[0] || {}) as any
 
         const parseDate = (d?: string) => {
           if (!d) return new Date()
@@ -167,7 +167,7 @@ export default function EditEvaluation() {
     try {
       const mergedData = { ...form.getValues(), ...submittedData }
       const originalEval = await getEvaluationById(id!)
-      const originalRespostas = originalEval?.respostas || {}
+      const originalRespostas = (originalEval?.respostas || {}) as any
 
       const {
         evo_id,
@@ -267,10 +267,7 @@ export default function EditEvaluation() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8 pb-20">
-          <div
-            {...(isProfessorMode ? { inert: '' } : {})}
-            className={`space-y-8 ${isProfessorMode ? 'opacity-60 pointer-events-none' : ''}`}
-          >
+          <div className={`space-y-8 ${isProfessorMode ? 'opacity-60 pointer-events-none' : ''}`}>
             <IdentificationFields />
             <TrainingHistoryFields />
             <CurrentLifestyleFields />

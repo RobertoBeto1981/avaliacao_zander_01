@@ -41,7 +41,7 @@ export default function NewEvaluation() {
   const [isNaoCliente, setIsNaoCliente] = useState(false)
 
   const form = useForm<EvaluationFormValues>({
-    resolver: zodResolver(evaluationSchema),
+    resolver: zodResolver(evaluationSchema) as any,
     defaultValues: {
       data_avaliacao: new Date(),
       nome_cliente: '',

@@ -35,7 +35,7 @@ export default function NewReevaluation() {
     profile?.roles?.includes('avaliador') || profile?.role?.toLowerCase() === 'avaliador'
 
   const form = useForm<EvaluationFormValues>({
-    resolver: zodResolver(evaluationSchema),
+    resolver: zodResolver(evaluationSchema) as any,
   })
 
   useEffect(() => {
@@ -45,17 +45,17 @@ export default function NewReevaluation() {
         const data = await getEvaluationById(id)
         if (!data) throw new Error('Avaliação não encontrada')
 
-        const respostas = data.respostas || {}
-        const links = data.links_avaliacao?.[0] || {}
+        const respostas = (data.respostas || {}) as any
+        const links = (data.links_avaliacao?.[0] || {}) as any
 
         const flatPrev = {
           ...data,
           ...respostas,
           client_links: {
-            symptoms: links.mapeamento_sintomas_url || '',
-            pain: links.mapeamento_dor_url || '',
-            bia: links.bia_url || '',
-            myscore: links.my_score_url || '',
+            symptoms: links?.mapeamento_sintomas_url || '',
+            pain: links?.mapeamento_dor_url || '',
+            bia: links?.bia_url || '',
+            myscore: links?.my_score_url || '',
           },
         }
 

@@ -356,7 +356,7 @@ export function DashboardCharts({ data }: { data: any[] }) {
                       allowDecimals={false}
                     />
                     <ChartTooltip
-                      content={(props) => <ChartTooltipContent {...props} />}
+                      content={(props) => <ChartTooltipContent {...(props as any)} />}
                       cursor={{ fill: 'hsl(var(--muted))' }}
                     />
                     <Bar
@@ -384,7 +384,9 @@ export function DashboardCharts({ data }: { data: any[] }) {
               ) : (
                 <ChartContainer config={pieConfig} className="h-[300px] w-full">
                   <PieChart>
-                    <ChartTooltip content={(props) => <ChartTooltipContent {...props} hideLabel />} />
+                    <ChartTooltip
+                      content={(props) => <ChartTooltipContent {...(props as any)} hideLabel />}
+                    />
                     <Pie
                       data={pieData}
                       dataKey="count"

@@ -31,7 +31,7 @@ export default function RoleDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [filesMap, setFilesMap] = useState<Set<string>>(new Set())
   const [requestedEvalIds, setRequestedEvalIds] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
+  const [cardsLoading, setCardsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cycleFilter, setCycleFilter] = useState<string>('all')
@@ -49,7 +49,7 @@ export default function RoleDashboard() {
 
   const loadData = async () => {
     try {
-      setLoading(true)
+      setCardsLoading(true)
       const [evals, files, requestedIds] = await Promise.all([
         getEvaluations(),
         getEvaluationFileIndicators(),
@@ -63,7 +63,7 @@ export default function RoleDashboard() {
     } catch (err) {
       console.error(err)
     } finally {
-      setLoading(false)
+      setCardsLoading(false)
     }
   }
 
@@ -74,7 +74,7 @@ export default function RoleDashboard() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [profile?.id])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -192,7 +192,7 @@ export default function RoleDashboard() {
             )}
           </div>
 
-          {loading ? (
+          {cardsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Card

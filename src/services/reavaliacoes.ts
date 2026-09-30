@@ -36,7 +36,7 @@ export const createReavaliacao = async (
       avaliacao_original_id: avaliacaoId,
       data_reavaliacao: oldAvaliacao.data_avaliacao || new Date().toISOString().split('T')[0],
       respostas_novas: {
-        ...oldAvaliacao.respostas,
+        ...((oldAvaliacao.respostas || {}) as any),
         objectives: oldAvaliacao.objectives,
         periodo_treino: oldAvaliacao.periodo_treino,
         client_links: oldLinks

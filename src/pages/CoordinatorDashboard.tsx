@@ -146,10 +146,9 @@ export default function CoordinatorDashboard() {
   const initializeData = useCallback(async () => {
     setInitialLoading(true)
     // Dispara usuários e requests primeiro para liberar a tela e o topo rapidamente
-    loadUsers()
-    loadRequests()
-    await loadData()
+    await Promise.all([loadUsers(), loadRequests()])
     setInitialLoading(false)
+    await loadData()
   }, [])
 
   useEffect(() => {

@@ -45,7 +45,8 @@ export default function ProfessorDashboard() {
   const [evaluations, setEvaluations] = useState<any[]>([])
   const [filesMap, setFilesMap] = useState<Set<string>>(new Set())
   const [requestedEvalIds, setRequestedEvalIds] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [cardsLoading, setCardsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'meus' | 'todos'>('meus')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -60,9 +61,9 @@ export default function ProfessorDashboard() {
   const [unreadCount, setUnreadCount] = useState(0)
   const { toast } = useToast()
 
-  const loadData = async () => {
+  const loadCards = async () => {
     try {
-      setLoading(true)
+      setCardsLoading(true)
       const [evals, files, requestedIds] = await Promise.all([
         getEvaluations(),
         getEvaluationFileIndicators(),
@@ -76,7 +77,7 @@ export default function ProfessorDashboard() {
     } catch (err) {
       console.error(err)
     } finally {
-      setLoading(false)
+      setCardsLoading(false)
     }
   }
 
@@ -97,15 +98,15 @@ export default function ProfessorDashboard() {
 
   useEffect(() => {
     if (profile?.id) {
-      loadData()
-      loadUnreadCount()
+      // Carregamento progressivo: contadores/comunicados aparecem antes dos cards
+      loadUnreadCount().then(() => setInitialLoading(false))
+      loadCards()
     }
 
     const handleUpdate = () => loadUnreadCount()
     window.addEventListener('notifications_updated', handleUpdate)
     return () => window.removeEventListener('notifications_updated', handleUpdate)
   }, [profile?.id])
-
   const handleStatusChange = async (id: string, status: string) => {
     try {
       await updateEvaluationStatus(id, status)
@@ -249,7 +250,7 @@ export default function ProfessorDashboard() {
             </Button>
           </div>
 
-          {loading ? (
+          {cardsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Card
@@ -342,7 +343,7 @@ export default function ProfessorDashboard() {
       <NovoAlunoDialog
         open={isNewStudentOpen}
         onOpenChange={setIsNewStudentOpen}
-        onSuccess={loadData}
+        onSuccess={loadCards}
       />
     </div>
   )
