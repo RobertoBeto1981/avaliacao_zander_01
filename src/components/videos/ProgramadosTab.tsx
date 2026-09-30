@@ -26,6 +26,20 @@ export function ProgramadosTab() {
       try {
         const videos = await getScheduledVideos()
 
+        // Data base = avaliação mais recente do aluno (avaliação ou reavaliação).
+        // Regra do coordenador: os gatilhos de 7/30/60/90 dias contam da ÚLTIMA avaliação.
+        const { data: reavs } = await supabase
+          .from('reavaliacoes')
+          .select('avaliacao_original_id, data_reavaliacao')
+
+        const ultimaReavaliacao = new Map<string, string>()
+        for (const r of reavs || []) {
+          const atual = ultimaReavaliacao.get(r.avaliacao_original_id)
+          if (!atual || r.data_reavaliacao > atual) {
+            ultimaReavaliacao.set(r.avaliacao_original_id, r.data_reavaliacao)
+          }
+        }
+
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
@@ -33,7 +47,12 @@ export function ProgramadosTab() {
           .filter((v) => v.status === 'pendente' && v.avaliacoes?.data_avaliacao)
           .map((v) => {
             const dataAvaliacao = new Date(v.avaliacoes!.data_avaliacao + 'T00:00:00')
-            const dataEstimada = addDays(dataAvaliacao, v.dias_apos_avaliacao)
+            const reav = ultimaReavaliacao.get(v.avaliacao_id)
+            const dataBase =
+              reav && new Date(reav + 'T00:00:00') > dataAvaliacao
+                ? new Date(reav + 'T00:00:00')
+                : dataAvaliacao
+            const dataEstimada = addDays(dataBase, v.dias_apos_avaliacao)
 
             return {
               id: v.id,

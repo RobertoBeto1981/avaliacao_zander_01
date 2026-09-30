@@ -113,6 +113,20 @@ export const getPendingVideosForToday = async () => {
   if (agError) throw agError
   if (!agendados || agendados.length === 0) return []
 
+  // Data base = avaliação mais recente do aluno (avaliação ou reavaliação).
+  // Regra do coordenador: os gatilhos de 7/30/60/90 dias contam da ÚLTIMA avaliação.
+  const { data: reavs } = await supabase
+    .from('reavaliacoes')
+    .select('avaliacao_original_id, data_reavaliacao')
+
+  const ultimaReavaliacao = new Map<string, string>()
+  for (const r of reavs || []) {
+    const atual = ultimaReavaliacao.get(r.avaliacao_original_id)
+    if (!atual || r.data_reavaliacao > atual) {
+      ultimaReavaliacao.set(r.avaliacao_original_id, r.data_reavaliacao)
+    }
+  }
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -125,7 +139,12 @@ export const getPendingVideosForToday = async () => {
     if (!config) continue
 
     const dataAvaliacao = new Date(item.avaliacoes.data_avaliacao + 'T00:00:00')
-    const triggerDate = new Date(dataAvaliacao)
+    const reav = ultimaReavaliacao.get(item.avaliacao_id)
+    const dataBase =
+      reav && new Date(reav + 'T00:00:00') > dataAvaliacao
+        ? new Date(reav + 'T00:00:00')
+        : dataAvaliacao
+    const triggerDate = new Date(dataBase)
     triggerDate.setDate(triggerDate.getDate() + item.dias_apos_avaliacao)
     triggerDate.setHours(0, 0, 0, 0)
 
