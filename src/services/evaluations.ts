@@ -350,33 +350,43 @@ export const activateDesafioZander = async (id: string) => {
 
   let professor_id = ev.professor_id
 
-  if (!professor_id) {
-    const { data: allUsers } = await supabase.from('users').select('id, roles, role, ativo')
-    const activeProfs =
-      allUsers?.filter(
-        (u: any) => u.ativo && (u.roles?.includes('professor') || u.role === 'professor'),
-      ) || []
+if (!professor_id) {
+  const { data: allUsers } = await supabase
+    .from('users')
+    .select('id, roles, role, ativo, periodos')
+  const activeProfs =
+    allUsers?.filter(
+      (u: any) => u.ativo && (u.roles?.includes('professor') || u.role === 'professor'),
+    ) || []
 
-    if (activeProfs.length > 0) {
-      const { data: pendingEvals } = await supabase
-        .from('avaliacoes')
-        .select('professor_id')
-        .in('status', ['pendente', 'em_progresso'])
-        .not('professor_id', 'is', null)
+  if (activeProfs.length > 0) {
+    const { data: pendingEvals } = await supabase
+      .from('avaliacoes')
+      .select('professor_id')
+      .in('status', ['pendente', 'em_progresso'])
+      .not('professor_id', 'is', null')
 
-      const workload: Record<string, number> = {}
-      activeProfs.forEach((p: any) => (workload[p.id] = 0))
+    const workload: Record<string, number> = {}
+    activeProfs.forEach((p: any) => (workload[p.id] = 0))
+    pendingEvals?.forEach((e: any) => {
+      if (e.professor_id && workload[e.professor_id] !== undefined) {
+        workload[e.professor_id]++
+      }
+    })
 
-      pendingEvals?.forEach((e: any) => {
-        if (e.professor_id && workload[e.professor_id] !== undefined) {
-          workload[e.professor_id]++
-        }
-      })
+    // Regra: respeitar o período de treino do aluno (igual ao gatilho automático)
+    const periodoAluno = ev.periodo_treino
+    const doPeriodo =
+      periodoAluno && periodoAluno !== '-'
+        ? activeProfs.filter((p: any) => p.periodos?.includes(periodoAluno))
+        : []
 
-      activeProfs.sort((a: any, b: any) => workload[a.id] - workload[b.id])
-      professor_id = activeProfs[0].id
-    }
+    // 1º tenta professor do mesmo período com menor carga; se não houver, menor carga geral
+    const candidatos = doPeriodo.length > 0 ? doPeriodo : activeProfs
+    candidatos.sort((a: any, b: any) => workload[a.id] - workload[b.id])
+    professor_id = candidatos[0].id
   }
+}
 
   const todayStr = new Date().toISOString().split('T')[0]
 
